@@ -24,12 +24,14 @@ import { ORG_A } from "@/test/factories";
 
 const ROBOT = "aaaaaaaa-0000-4000-8000-00000000a0a9";
 let selects: string[] = [];
+let queries: URL[] = [];
 
 const server = setupServer(
   http.get("http://127.0.0.1:54321/rest/v1/agents", ({ request }) => {
     const url = new URL(request.url);
     const select = url.searchParams.get("select") ?? "";
     selects.push(select);
+    queries.push(url);
     const row = {
       id: ROBOT,
       organization_id: ORG_A,
@@ -61,6 +63,7 @@ afterEach(() => server.resetHandlers());
 
 beforeEach(() => {
   selects = [];
+  queries = [];
   useBoundStore.setState((state) => ({
     ui: {
       ...state.ui,
@@ -103,5 +106,26 @@ describe("F23: agent lists and avatars do not fetch extra", () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(selects).toEqual(["id,name,picture"]);
     expect(result.current.data?.name).toBe("Robot A");
+  });
+});
+
+// P8 — a retired agent is a soft delete, and the SELECT policy keeps the row
+// readable on purpose: a message it wrote still has to say who wrote it, and a
+// local roster still has to name everyone in it. Which means the filtering is
+// the reader's job, and a list that forgets it offers a former colleague as if
+// they were still there.
+describe("P8: retired agents stay out of the lists", () => {
+  it("the organization's agents list asks for the live ones only", async () => {
+    const { result } = renderHook(() => useCurrentAgents(), { wrapper });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(queries[0].searchParams.get("deleted_at")).toBe("is.null");
+  });
+
+  it("but an author's profile does not: that is the row it exists for", async () => {
+    const { result } = renderHook(() => useAgentProfile(ROBOT), { wrapper });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(queries[0].searchParams.get("deleted_at")).toBeNull();
   });
 });
