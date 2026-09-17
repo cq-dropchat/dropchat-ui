@@ -196,6 +196,19 @@ export type ChatState = {
   /** F10: conversation ids with messages, newest message first. */
   convOrder: string[];
   messages: Map<string, Map<string, MessageRow>>; // TODO: replace the nested maps with a data structure capable of prefix search (a Trie) - cabra 2024/07/26
+  /**
+   * P6: the root Map above is updated in place — copying it cost
+   * O(#conversations) on every realtime event, measured at about 3 ms of the
+   * 4 this push took with 50,000 conversations. Its identity therefore no
+   * longer says "something changed": this counter does.
+   *
+   * A subscriber that follows one conversation keeps selecting
+   * `messages.get(convId)`, whose identity still changes only when that
+   * conversation's rows do; one that has to react to any message at all
+   * (ChatList, whose filters read every conversation's newest row) reads
+   * this instead.
+   */
+  messagesVersion: number;
   textDrafts: Map<string, string>;
   fileDrafts: Map<string, FileDraft[]>;
   mediaLoads: Map<string, MediaLoad>;
@@ -234,6 +247,7 @@ export function emptyChatState(): ChatState {
     ownAgentId: null,
     membershipExtras: new Map(),
     messages: new Map(),
+    messagesVersion: 0,
     convOrder: [],
     textDrafts: new Map(),
     fileDrafts: new Map(),
@@ -364,7 +378,12 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         (m) => m.content.version === "1",
       );
 
-      const messages = new Map(state.chat.messages);
+      // P6: kept in place. Every subscriber reads through `chat`, which is a
+      // new object on every set, so the root Map's identity was buying
+      // nothing but a copy of one entry per conversation on every event.
+      // What changed is announced by `messagesVersion` and, for whoever
+      // follows a single conversation, by that conversation's own Map.
+      const messages = state.chat.messages;
 
       const msgsByConv = groupBy(
         msgs.filter((m) => m.timestamp <= m.updated_at), // do not display scheduled messages (timestamp in the future)
@@ -395,6 +414,7 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         chat: {
           ...state.chat,
           messages,
+          messagesVersion: state.chat.messagesVersion + 1,
           convOrder: reorderConversations(
             state.chat.convOrder,
             messages,

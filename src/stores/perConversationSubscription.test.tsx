@@ -8,11 +8,13 @@ import { conversationRow, messageRow, ORG_A } from "@/test/factories";
 // P6 point 3. ChatListItem, Chat, ItemActions and useCustomerServiceWindow
 // each follow one conversation, through the same selector shape this file
 // exercises: `state.chat.messages.get(convId)`. An event on another
-// conversation must not re-render them.
+// conversation must not re-render them — and must not, now that pushMessages
+// updates the root Map in place instead of copying it, stop re-rendering the
+// one it does touch.
 //
-// They already did not, before P6 touched anything: the point was already
-// satisfied and nothing here was red. What this file adds is the guard, so
-// that a future change to how pushMessages keeps its Maps cannot quietly
+// The isolation itself already held before P6 touched anything: those three
+// cases were green against the old store too. What this file adds is the
+// guard, so that a change to how pushMessages keeps its Maps cannot quietly
 // turn every event into a re-render of every open conversation.
 
 const CONV_A = "c0000000-0000-4000-8000-00000000000a";
@@ -128,5 +130,23 @@ describe("a subscriber follows its own conversation", () => {
     ]);
 
     expect(useBoundStore.getState().chat.messages.get(CONV_B)).toBe(rowsOfB);
+  });
+
+  // P6: the root Map is no longer copied, so whoever needs to hear about any
+  // message at all — ChatList, whose filters read every conversation's newest
+  // row — follows this counter instead of the Map's identity.
+  it("messagesVersion advances on every push, the root Map stays the same object", () => {
+    const { messages, messagesVersion } = useBoundStore.getState().chat;
+
+    push([
+      messageRow({
+        conversation_id: CONV_B,
+        timestamp: "2026-09-01T11:00:00.000Z",
+      }),
+    ]);
+
+    const after = useBoundStore.getState().chat;
+    expect(after.messagesVersion).toBe(messagesVersion + 1);
+    expect(after.messages).toBe(messages);
   });
 });
