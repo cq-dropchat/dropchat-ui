@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import {
   newMessage,
@@ -8,72 +8,25 @@ import {
 import useBoundStore from "@/stores/useBoundStore";
 import { pushConversationToDb, saveDraft } from "@/utils/ConversationUtils";
 import { type FileDraft } from "@/stores/chatSlice";
-import {
-  type Draft,
-  type MessageRow,
-  type TemplateMessage,
-  isIncoming,
-  isTeamChat,
-} from "@/supabase/client";
-import { TickContext } from "@/contexts/useTick";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import "dayjs/locale/pt";
+import { type Draft } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
+import TemplateComposer from "./chat-footer/TemplateComposer";
+import {
+  buildTemplateMessage,
+  templateParts,
+  templateSections,
+  templateVarCounts,
+} from "./chat-footer/template";
+import { useCustomerServiceWindow } from "./chat-footer/useCustomerServiceWindow";
 
-function TemplateVarInput({
-  placeholder,
-  value,
-  onChange,
-  onEnter,
-  autoFocus,
-}: {
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-  onEnter: () => void;
-  autoFocus?: boolean;
-}) {
-  const measureRef = useRef<HTMLSpanElement>(null);
-  const [width, setWidth] = useState<number | undefined>();
-
-  useEffect(() => {
-    if (measureRef.current) {
-      setWidth(measureRef.current.offsetWidth);
-    }
-  }, [value, placeholder]);
-
-  return (
-    <>
-      <span
-        ref={measureRef}
-        className="absolute invisible whitespace-pre text-[14px] px-[12px]"
-        aria-hidden
-      >
-        {value || placeholder}
-      </span>
-      <input
-        type="text"
-        className="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary"
-        style={{ width: width ? `${width + 4}px` : undefined }}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            onEnter();
-          }
-        }}
-        autoFocus={autoFocus}
-      />
-    </>
-  );
-}
+// F29: the template logic (chat-footer/template.ts), the template composer
+// and its inputs, and the 24-hour window (useCustomerServiceWindow) live in
+// chat-footer/. This component keeps the text composer, attachments and the
+// send paths.
 
 export default function ChatFooter() {
   const activeConvId = useBoundStore((store) => store.ui.activeConvId);
@@ -115,65 +68,23 @@ export default function ChatFooter() {
   const editableDiv = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const { translate: t, currentLanguage } = useTranslation();
+  const { translate: t } = useTranslation();
 
-  const tick = useContext(TickContext); // one-minute ticks
-
-  const mostRecentIncoming: MessageRow | undefined = useBoundStore((store) => {
-    const msgs = store.chat.messages.get(store.ui.activeConvId || "")?.values();
-
-    if (!msgs) {
-      return;
-    }
-
-    for (const msg of msgs) {
-      if (
-        isIncoming(
-          msg,
-          store.chat.ownAgentId,
-          isTeamChat(store.chat.conversations.get(msg.conversation_id)),
-        )
-      ) {
-        return msg;
-      }
-    }
-  });
-
-  // Wether or not the user is allowed to send messages to the client.
-  // WhatsApp (Cloud API) and Instagram both enforce a 24h customer-service
-  // window since the contact's last message; `local` (internal testing) and
-  // `whatsapp-web` (unofficial bridge) have no window.
-  const inCSWindow =
-    (conv?.service !== "whatsapp" && conv?.service !== "instagram") ||
-    tick.isBefore(dayjs(mostRecentIncoming?.timestamp || 0).add(1, "day"));
-
-  // WhatsApp customer service window lasts 24 hours since the last contact's message
-  const remaining = tick
-    .locale(currentLanguage)
-    .to(dayjs(mostRecentIncoming?.timestamp || 0).add(1, "day"), true);
+  const { inCSWindow, remaining } = useCustomerServiceWindow(conv);
 
   // Template mode: derive from per-conv store
   const templateDraft = templateDraftEntry?.template;
   const bodyVarValues = templateDraftEntry?.bodyVarValues || [];
   const headVarValues = templateDraftEntry?.headVarValues || [];
 
-  const templateBody = templateDraft?.components.find((c) => c.type === "BODY");
-  const templateHead = templateDraft?.components.find(
-    (c) => c.type === "HEADER",
-  );
-  const templateFoot = templateDraft?.components.find(
-    (c) => c.type === "FOOTER",
-  );
-  const templateButtons = templateDraft?.components.find(
-    (c) => c.type === "BUTTONS",
-  );
+  const sections = templateSections(templateDraft);
+  const { templateBody, templateHead } = sections;
 
   const bodyExamples = templateBody?.example?.body_text[0] || [];
   const headExamples = templateHead?.example?.header_text || [];
 
   // Count how many variables are in the template body/header
-  const bodyVarCount = (templateBody?.text.match(/\{\{\d+\}\}/g) || []).length;
-  const headVarCount = (templateHead?.text?.match(/\{\{\d+\}\}/g) || []).length;
+  const { bodyVarCount, headVarCount } = templateVarCounts(sections);
 
   const allVarsFilled =
     templateDraft &&
@@ -278,77 +189,12 @@ export default function ChatFooter() {
     // If the conv has the `updated_at` unset, it means it has not been pushed to the DB yet.
     !conv.updated_at && (await pushConversationToDb(conv));
 
-    // Build rendered text
-    let bodyContent = templateBody.text;
-    let headContent = templateHead?.text;
-    const components: TemplateMessage["template"]["components"] = [];
-
-    if (headVarValues.length && headVarCount > 0) {
-      let idx = 1;
-      for (const value of headVarValues.slice(0, headVarCount)) {
-        headContent = headContent?.replaceAll(`{{${idx}}}`, value);
-        idx++;
-      }
-      components.push({
-        type: "header",
-        parameters: headVarValues.slice(0, headVarCount).map((text) => ({
-          type: "text" as const,
-          text,
-        })),
-      });
-    }
-
-    if (bodyVarValues.length && bodyVarCount > 0) {
-      let idx = 1;
-      for (const value of bodyVarValues.slice(0, bodyVarCount)) {
-        bodyContent = bodyContent.replaceAll(`{{${idx}}}`, value);
-        idx++;
-      }
-      components.push({
-        type: "body",
-        parameters: bodyVarValues.slice(0, bodyVarCount).map((text) => ({
-          type: "text" as const,
-          text,
-        })),
-      });
-    }
-
-    if (templateButtons?.buttons) {
-      let idx = 0;
-      for (const button of templateButtons.buttons) {
-        components.push({
-          type: "button",
-          sub_type: "quick_reply",
-          index: idx.toString(),
-          parameters: [
-            {
-              type: "payload",
-              payload: button.text.toLowerCase().replaceAll(" ", "_"),
-            },
-          ],
-        });
-        idx++;
-      }
-    }
-
-    const template: TemplateMessage["template"] = {
-      name: templateDraft.name,
-      language: {
-        code: templateDraft.language,
-        policy: "deterministic" as const,
-      },
-    };
-
-    if (components.length) {
-      template.components = components;
-    }
-
-    // Build rendered text for display
-    const renderedParts: string[] = [];
-    if (headContent) renderedParts.push(`*${headContent}*`);
-    renderedParts.push(bodyContent);
-    if (templateFoot?.text) renderedParts.push(`_${templateFoot.text}_`);
-    const renderedBody = renderedParts.join("\n\n");
+    const { template, renderedBody } = buildTemplateMessage(
+      templateDraft,
+      sections,
+      bodyVarValues,
+      headVarValues,
+    );
 
     const record = newMessage(
       conv,
@@ -371,93 +217,6 @@ export default function ChatFooter() {
   function debounce(fn: () => void, ms: number) {
     clearTimeout(timer);
     setTimer(setTimeout(fn, ms));
-  }
-
-  // Render template body with inline inputs for variables
-  function renderTemplateBody() {
-    if (!templateBody) return null;
-
-    const parts: (string | { varIndex: number; isHeader: boolean })[] = [];
-
-    // Render header if present
-    if (templateHead?.text && headVarCount > 0) {
-      const headerSegments = templateHead.text.split(/(\{\{\d+\}\})/);
-      let headerIdx = 0;
-      for (const seg of headerSegments) {
-        const match = seg.match(/^\{\{(\d+)\}\}$/);
-        if (match) {
-          parts.push({ varIndex: headerIdx, isHeader: true });
-          headerIdx++;
-        } else if (seg) {
-          parts.push(seg);
-        }
-      }
-      parts.push("\n");
-    } else if (templateHead?.text) {
-      parts.push(templateHead.text + "\n");
-    }
-
-    // Render body
-    const segments = templateBody.text.split(/(\{\{\d+\}\})/);
-    let bodyIdx = 0;
-    for (const seg of segments) {
-      const match = seg.match(/^\{\{(\d+)\}\}$/);
-      if (match) {
-        parts.push({ varIndex: bodyIdx, isHeader: false });
-        bodyIdx++;
-      } else if (seg) {
-        parts.push(seg);
-      }
-    }
-
-    // Render footer if present
-    if (templateFoot?.text) {
-      parts.push("\n" + templateFoot.text);
-    }
-
-    return (
-      <div className="mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words">
-        {parts.map((part, i) =>
-          typeof part === "string" ? (
-            <span key={i}>{part}</span>
-          ) : (
-            <TemplateVarInput
-              key={i}
-              placeholder={
-                part.isHeader
-                  ? headExamples[part.varIndex] || `{{${part.varIndex + 1}}}`
-                  : bodyExamples[part.varIndex] || `{{${part.varIndex + 1}}}`
-              }
-              value={
-                part.isHeader
-                  ? headVarValues[part.varIndex] || ""
-                  : bodyVarValues[part.varIndex] || ""
-              }
-              onChange={(value) => {
-                if (part.isHeader) {
-                  const next = [...headVarValues];
-                  next[part.varIndex] = value;
-                  updateVarValues(bodyVarValues, next);
-                } else {
-                  const next = [...bodyVarValues];
-                  next[part.varIndex] = value;
-                  updateVarValues(next, headVarValues);
-                }
-              }}
-              onEnter={() => {
-                if (
-                  allVarsFilled &&
-                  window.matchMedia("(min-width: 768px)").matches
-                ) {
-                  sendTemplateMessage().catch(console.error);
-                }
-              }}
-              autoFocus={i === parts.findIndex((p) => typeof p !== "string")}
-            />
-          ),
-        )}
-      </div>
-    );
   }
 
   return (
@@ -526,7 +285,20 @@ export default function ChatFooter() {
           {/* Text input or template mode */}
           <div className="relative grow">
             {templateDraft ? (
-              renderTemplateBody()
+              templateBody && (
+                <TemplateComposer
+                  parts={templateParts(sections, headVarCount)}
+                  headExamples={headExamples}
+                  bodyExamples={bodyExamples}
+                  headVarValues={headVarValues}
+                  bodyVarValues={bodyVarValues}
+                  updateVarValues={updateVarValues}
+                  allVarsFilled={!!allVarsFilled}
+                  onSend={() => {
+                    sendTemplateMessage().catch(console.error);
+                  }}
+                />
+              )
             ) : (
               <>
                 <div
