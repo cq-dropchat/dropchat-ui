@@ -81,6 +81,24 @@ Type-safety gaps (`any`, floating promises) are reported as **warnings** —
 tracked debt that does not fail the build. Keep `npm run lint` at **zero
 errors**, and avoid adding new warnings where you reasonably can.
 
+## Tests
+
+```bash
+npm run test            # Vitest (stores, utils, components)
+npm run test:coverage   # with the coverage thresholds CI enforces
+npm run e2e             # Playwright, against a local Supabase (see playwright.config.ts)
+```
+
+`npm run check` runs the coverage suite too. A change to a store, a hook or a
+component that renders untrusted content (`Message`) ships with a test.
+
+## Branches and deployment
+
+`develop` is the staging branch and `main` is production. `main` only ever
+receives `develop`: a pull request from any other branch into `main` fails the
+`promotion` job in `check.yml`. Open pull requests against `develop`; promote
+with a `develop → main` pull request once staging has been checked.
+
 ## Submitting Changes
 
 1. Fork the repo and create a branch from `develop`
