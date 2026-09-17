@@ -80,6 +80,7 @@ useBoundStore.setState((state) => ({
       ],
     ]),
     messages: new Map([[CONV, new Map(rows.map((m) => [m.id, m]))]]),
+    convOrder: [CONV],
   },
 }));
 

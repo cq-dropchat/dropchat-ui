@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import ChatList from "./ChatList";
 import useBoundStore from "@/stores/useBoundStore";
 import { Filters } from "@/stores/uiSlice";
+import { orderConversations } from "@/stores/chatSlice";
 import { conversationRow, messageRow, ORG_A } from "@/test/factories";
 
 // The item's own data hooks are not what is under test here.
@@ -65,7 +66,12 @@ beforeEach(() => {
       filter: Filters.ALL,
       searchPattern: "",
     },
-    chat: { ...state.chat, conversations, messages },
+    chat: {
+      ...state.chat,
+      conversations,
+      messages,
+      convOrder: orderConversations(messages),
+    },
   }));
 });
 

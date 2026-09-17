@@ -1,7 +1,6 @@
 import useBoundStore from "@/stores/useBoundStore";
 import ChatListItem from "./ChatListItem";
 import { type ConversationRow, type MessageRow } from "@/supabase/client";
-import { timestampDescending } from "@/stores/chatSlice";
 import { filters, Filters } from "@/stores/uiSlice";
 import Fuse from "fuse.js";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -41,6 +40,7 @@ const ChatList = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const conversations = useBoundStore((state) => state.chat.conversations);
   const messages = useBoundStore((state) => state.chat.messages);
+  const convOrder = useBoundStore((state) => state.chat.convOrder);
   const membershipExtras = useBoundStore(
     (state) => state.chat.membershipExtras,
   );
@@ -54,18 +54,18 @@ const ChatList = () => {
     return messages.get(convId)?.values().next().value;
   }
 
-  let items: ConvMetadata[] = [...conversations]
-    /*.filter(
-      ([, conv]) =>
-        role === "admin" || conv.service !== "local",
-    )*/
-    .map(([convId, conv]) => ({
+  // F10: the store keeps conversations ordered by their newest message
+  // (convOrder); filters, search and pins work on that order instead of
+  // sorting every conversation on every render.
+  let items: ConvMetadata[] = convOrder
+    .map((convId) => ({
       convId,
-      conv,
+      conv: conversations.get(convId)!,
       mostRecentMsg: getMostRecentMsg(convId),
     }))
     .filter(
       (a) =>
+        !!a.conv &&
         a.conv.organization_id === activeOrgId &&
         filters[filterName](
           a.conv,
@@ -83,13 +83,22 @@ const ChatList = () => {
     });
     items = fuse.search(searchPattern).map((r) => r.item);
   } else {
-    items.sort(
-      (a, b) =>
+    // Pinned first (oldest pin first); a stable sort of the few pinned rows
+    // keeps convOrder among equal pins, and the rest stay as they are.
+    const pinned = items
+      .filter((a) => membershipExtras.get(a.convId)?.pinned)
+      .sort((a, b) =>
         pinnedAscending(
           membershipExtras.get(a.convId)?.pinned,
           membershipExtras.get(b.convId)?.pinned,
-        ) || timestampDescending(a.mostRecentMsg, b.mostRecentMsg),
-    );
+        ),
+      );
+    if (pinned.length) {
+      items = [
+        ...pinned,
+        ...items.filter((a) => !membershipExtras.get(a.convId)?.pinned),
+      ];
+    }
   }
 
   const itemIds = items.map((a) => a.convId);

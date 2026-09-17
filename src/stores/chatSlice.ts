@@ -124,6 +124,57 @@ export function mergeSortedMessages(
   return new Map(rows.map((m) => [m.id, m]));
 }
 
+/** The newest row of a conversation (rows are kept newest-first). */
+function newestOf(rows: Map<string, MessageRow> | undefined) {
+  return rows?.values().next().value as MessageRow | undefined;
+}
+
+/**
+ * F10. Conversation ids with messages, newest message first — what ChatList
+ * used to derive (and sort) on every render.
+ */
+export function orderConversations(
+  messages: Map<string, Map<string, MessageRow>>,
+): string[] {
+  return [...messages]
+    .map(([convId, rows]) => ({ convId, newest: newestOf(rows) }))
+    .filter((c) => !!c.newest)
+    .sort((a, b) => timestampDescending(a.newest, b.newest))
+    .map((c) => c.convId);
+}
+
+/**
+ * F10. Moves the conversations whose newest message changed to their place
+ * in `order`, by binary search on the newest message; past INSERTION_LIMIT
+ * it rebuilds. Returns `order` itself when nothing moved.
+ */
+function reorderConversations(
+  order: string[],
+  messages: Map<string, Map<string, MessageRow>>,
+  changed: Set<string>,
+): string[] {
+  if (changed.size === 0) return order;
+  if (changed.size > INSERTION_LIMIT) return orderConversations(messages);
+
+  const next = order.filter((id) => !changed.has(id));
+  for (const convId of changed) {
+    const newest = newestOf(messages.get(convId));
+    if (!newest) continue;
+    let lo = 0;
+    let hi = next.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (timestampDescending(newestOf(messages.get(next[mid])), newest) <= 0) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    next.splice(lo, 0, convId);
+  }
+  return next;
+}
+
 export type FileDraft = {
   file: File;
   caption?: string;
@@ -143,6 +194,8 @@ export type ChatState = {
   // state (conversations_agents.extra rows): archived/pinned/draft.
   ownAgentId: string | null;
   membershipExtras: Map<string, ConversationAgentExtra>;
+  /** F10: conversation ids with messages, newest message first. */
+  convOrder: string[];
   messages: Map<string, Map<string, MessageRow>>; // TODO: replace the nested maps with a data structure capable of prefix search (a Trie) - cabra 2024/07/26
   textDrafts: Map<string, string>;
   fileDrafts: Map<string, FileDraft[]>;
@@ -182,6 +235,7 @@ export function emptyChatState(): ChatState {
     ownAgentId: null,
     membershipExtras: new Map(),
     messages: new Map(),
+    convOrder: [],
     textDrafts: new Map(),
     fileDrafts: new Map(),
     mediaLoads: new Map(),
@@ -315,17 +369,35 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         (msg: MessageRow) => msg.conversation_id,
       );
 
+      // F10: conversations whose newest message moved, for convOrder.
+      const changed = new Set<string>();
+
       for (const [convId, convMsgs] of Object.entries(msgsByConv)) {
+        const before = newestOf(messages.get(convId));
         messages.set(
           convId,
           mergeSortedMessages(messages.get(convId), convMsgs!),
         );
+        const after = newestOf(messages.get(convId));
+        if (
+          !before ||
+          !after ||
+          before.id !== after.id ||
+          !sameOrderingKey(before, after)
+        ) {
+          changed.add(convId);
+        }
       }
 
       return {
         chat: {
           ...state.chat,
           messages,
+          convOrder: reorderConversations(
+            state.chat.convOrder,
+            messages,
+            changed,
+          ),
         },
       };
     }),

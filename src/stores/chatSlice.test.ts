@@ -12,6 +12,7 @@ function resetStore() {
       ...state.chat,
       conversations: new Map(),
       messages: new Map(),
+      convOrder: [],
       membershipExtras: new Map(),
       mediaLoads: new Map(),
     },
@@ -268,5 +269,173 @@ describe("F10: realtime events do not re-sort the conversation", () => {
     } finally {
       sort.mockRestore();
     }
+  });
+});
+
+// F10 — ChatList rebuilt its order on every render: every conversation of the
+// organization mapped to its newest message and sorted, O(n log n) with two
+// Date parses per comparison. Measured in a production build at 50,000
+// conversations and 50 events/s: 32 ms per commit on average (p95 72 ms).
+// The store now keeps `convOrder` (conversation ids by newest message) and
+// moves only the conversations a push touched.
+describe("F10: convOrder", () => {
+  /** What ChatList derived before convOrder existed. */
+  function derivedOrder() {
+    const { messages } = useBoundStore.getState().chat;
+    return [...messages]
+      .map(([convId, rows]) => ({
+        convId,
+        latest: rows.values().next().value as ReturnType<typeof messageRow>,
+      }))
+      .filter((c) => !!c.latest)
+      .sort((a, b) => timestampDescending(a.latest, b.latest))
+      .map((c) => c.convId);
+  }
+
+  beforeEach(resetStore);
+
+  it("orders conversations by their newest message and moves one that gets a new message", () => {
+    const push = useBoundStore.getState().chat.pushMessages;
+    const convs = ["c-a", "c-b", "c-c"].map((id) => `${id}`);
+    push([
+      messageRow({
+        conversation_id: convs[0],
+        timestamp: "2026-09-01T10:00:00.000Z",
+      }),
+      messageRow({
+        conversation_id: convs[1],
+        timestamp: "2026-09-01T11:00:00.000Z",
+      }),
+      messageRow({
+        conversation_id: convs[2],
+        timestamp: "2026-09-01T12:00:00.000Z",
+      }),
+    ]);
+    expect(useBoundStore.getState().chat.convOrder).toEqual([
+      "c-c",
+      "c-b",
+      "c-a",
+    ]);
+
+    push([
+      messageRow({
+        conversation_id: "c-a",
+        timestamp: "2026-09-01T13:00:00.000Z",
+      }),
+    ]);
+    expect(useBoundStore.getState().chat.convOrder).toEqual([
+      "c-a",
+      "c-c",
+      "c-b",
+    ]);
+  });
+
+  it("a status update keeps the order (same array when nothing moved)", () => {
+    const push = useBoundStore.getState().chat.pushMessages;
+    const latest = messageRow({
+      conversation_id: "c-x",
+      timestamp: "2026-09-01T10:00:00.000Z",
+    });
+    push([
+      latest,
+      messageRow({
+        conversation_id: "c-y",
+        timestamp: "2026-09-01T09:00:00.000Z",
+      }),
+    ]);
+    const before = useBoundStore.getState().chat.convOrder;
+
+    push([
+      {
+        ...latest,
+        status: { read: "2026-09-01T10:05:00.000Z" },
+        updated_at: "2026-09-01T10:05:00.000Z",
+      },
+    ]);
+    expect(useBoundStore.getState().chat.convOrder).toBe(before);
+  });
+
+  it("matches the previous derivation for 5,000 random conversations under interleaved events", () => {
+    const push = useBoundStore.getState().chat.pushMessages;
+    let seed = 42;
+    const random = () =>
+      (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+    const base = Date.parse("2026-09-01T00:00:00.000Z");
+    const at = (ms: number) => new Date(base + ms).toISOString();
+    const conv = (i: number) =>
+      `c1000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
+    const all: ReturnType<typeof messageRow>[] = [];
+
+    // A first load in one big batch (the init_data path: a full sort).
+    push(
+      Array.from({ length: 5000 }, (_, i) => {
+        // Whole seconds: ties between conversations happen.
+        const ts = at(Math.floor(random() * 86_400) * 1000);
+        const row = messageRow({
+          conversation_id: conv(i),
+          timestamp: ts,
+          created_at: ts,
+          updated_at: ts,
+        });
+        all.push(row);
+        return row;
+      }),
+    );
+    expect(useBoundStore.getState().chat.convOrder).toEqual(derivedOrder());
+
+    // Then realtime: small batches mixing new messages (some older than the
+    // conversation's newest), status updates and repeats.
+    for (let round = 0; round < 300; round++) {
+      const batch: ReturnType<typeof messageRow>[] = [];
+      const size = 1 + Math.floor(random() * 5);
+      for (let k = 0; k < size; k++) {
+        const kind = random();
+        if (kind < 0.5) {
+          const ts = at(Math.floor(random() * 100_000) * 1000);
+          const row = messageRow({
+            conversation_id: conv(Math.floor(random() * 5000)),
+            timestamp: ts,
+            created_at: ts,
+            updated_at: ts,
+          });
+          all.push(row);
+          batch.push(row);
+        } else {
+          const row = all[Math.floor(random() * all.length)];
+          const later = at(200_000_000 + round * 1000);
+          batch.push({ ...row, status: { read: later }, updated_at: later });
+        }
+      }
+      push(batch);
+      if (round % 50 === 0) {
+        expect(useBoundStore.getState().chat.convOrder).toEqual(derivedOrder());
+      }
+    }
+    expect(useBoundStore.getState().chat.convOrder).toEqual(derivedOrder());
+
+    // A burst larger than the insertion limit rebuilds and still agrees.
+    push(
+      Array.from({ length: 500 }, (_, i) => {
+        const ts = at(300_000_000 + i * 1000);
+        return messageRow({
+          conversation_id: conv(i * 7),
+          timestamp: ts,
+          created_at: ts,
+          updated_at: ts,
+        });
+      }),
+    );
+    expect(useBoundStore.getState().chat.convOrder).toEqual(derivedOrder());
+  });
+
+  it("starts empty for a new organization or user (F20)", () => {
+    useBoundStore
+      .getState()
+      .chat.pushMessages([messageRow({ conversation_id: "c-z" })]);
+    expect(useBoundStore.getState().chat.convOrder.length).toBe(1);
+    useBoundStore
+      .getState()
+      .ui.setActiveOrg("bbbbbbbb-0000-4000-8000-000000000001");
+    expect(useBoundStore.getState().chat.convOrder).toEqual([]);
   });
 });
