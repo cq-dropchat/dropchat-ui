@@ -20,6 +20,9 @@ jobs:
       - run: npx tsc -b
       # Vitest with the coverage thresholds in vitest.config.ts as the gate.
       - run: npm run test:coverage
+      # F22: initial and first-screen JS budgets, and no recharts/turndown/he
+      # in the first screen (scripts/check-bundle.mjs).
+      - run: npm run bundle:check
       - uses: actions/upload-artifact@v4
         if: always()
         with:

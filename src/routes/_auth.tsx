@@ -1,20 +1,25 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
 import Menu from "@/components/Menu";
-import Chat from "@/components/Chat";
-import ChatHeader from "@/components/ChatHeader";
-import ChatFooter from "@/components/ChatFooter";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import FilePicker from "@/components/FileUploader/FilePicker";
-import FilePreviewer from "@/components/FilePreviewer";
 import ActionCard from "@/components/ActionCard";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Bot, Building2, MessageSquarePlus, Settings } from "lucide-react";
 import { useResizable } from "@/hooks/useResizable";
 import { useCurrentAgents } from "@/queries/useAgents";
-import StatsCenter from "@/components/stats/StatsCenter";
 import RouteError from "@/components/RouteError";
+
+// F22: this layout is on every signed-in screen, but the conversation panel
+// renders only once a conversation is open and the stats only on /stats.
+// Loaded lazily, recharts (stats) and turndown/he, remarkable, autolinker
+// (composer and message rendering) leave the first screen.
+const Chat = lazy(() => import("@/components/Chat"));
+const ChatHeader = lazy(() => import("@/components/ChatHeader"));
+const ChatFooter = lazy(() => import("@/components/ChatFooter"));
+const FilePicker = lazy(() => import("@/components/FileUploader/FilePicker"));
+const FilePreviewer = lazy(() => import("@/components/FilePreviewer"));
+const StatsCenter = lazy(() => import("@/components/stats/StatsCenter"));
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -109,16 +114,18 @@ function AppLayout() {
       >
         {isStatsRoute ? (
           <div className="overflow-y-auto h-full">
-            <StatsCenter />
+            <Suspense fallback={null}>
+              <StatsCenter />
+            </Suspense>
           </div>
         ) : activeConvId ? (
-          <>
+          <Suspense fallback={null}>
             {isHoveringFiles && <FilePicker setHovering={setIsHoveringFiles} />}
             <FilePreviewer />
             <ChatHeader />
             <Chat />
             <ChatFooter />
-          </>
+          </Suspense>
         ) : (
           <div className="flex gap-[32px] items-center justify-center h-full">
             {!activeOrgId && (

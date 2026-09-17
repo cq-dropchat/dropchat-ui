@@ -1,4 +1,6 @@
-import { parsePhoneNumberWithError } from "libphonenumber-js";
+// F22: /min metadata — parsing, formatting and length validation are what
+// the UI uses; the full build added ~30 KB gzip to the first screen.
+import { parsePhoneNumberWithError } from "libphonenumber-js/min";
 
 export function removeAccents(str: string): string {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");

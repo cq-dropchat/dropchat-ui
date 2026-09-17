@@ -52,6 +52,39 @@
       name="twitter:image"
       content="https://web.openbsp.dev/logo-512x512.png"
     />
+    <!--
+      F22: start the locale request now, in parallel with the scripts, instead
+      of after the entry bundle has run (main.tsx awaits it before mounting).
+      Mirrors detectLanguage in main.tsx; translations.ts reuses the request
+      only when the languages match.
+    -->
+    <script>
+      (function () {
+        var supported = ["es", "en", "pt", "sw", "fr"];
+        var lang;
+        try {
+          var stored = JSON.parse(localStorage.getItem("app-state") || "{}");
+          lang = stored.state && stored.state.ui && stored.state.ui.language;
+        } catch (e) {}
+        if (!lang) {
+          var tags = (navigator.languages || []).concat(
+            navigator.language || [],
+          );
+          for (var i = 0; i < tags.length && !lang; i++) {
+            var base = String(tags[i]).toLowerCase().split("-")[0];
+            if (supported.indexOf(base) !== -1) lang = base;
+          }
+        }
+        lang = lang || "en";
+        if (lang !== "es") {
+          var response = fetch("/locales/" + lang + ".json");
+          // Handled by translations.ts; this only keeps an unused failed
+          // request from surfacing as an unhandled rejection.
+          response.catch(function () {});
+          window.__earlyLocale = { lang: lang, response: response };
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
