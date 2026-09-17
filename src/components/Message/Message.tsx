@@ -15,6 +15,8 @@ import { mediaCategory } from "./media";
 import StatusIcon from "./StatusIcon";
 import dayjs from "dayjs";
 import { Remarkable } from "remarkable";
+import { linkify } from "remarkable/linkify";
+import DOMPurify from "isomorphic-dompurify";
 import { type FormEventHandler, type PropsWithChildren, useState } from "react";
 import { prettyPrintJson } from "pretty-print-json";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -26,19 +28,33 @@ import { formatPhoneNumber } from "@/utils/FormatUtils";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
 
+// F01: everything a contact types ends up in `dangerouslySetInnerHTML`, so
+// the pipeline is Remarkable (html: false, default link renderer — the one
+// that escapes href/title) → DOMPurify. No custom renderer rules: the
+// previous `link_open` override interpolated the link title unescaped, and
+// `[oferta](https://x.com 'a" onmouseover="…')` executed in every agent's
+// browser. `linkify` is a plugin in Remarkable 2, not an option.
 const md = new Remarkable({
   breaks: true,
   html: false, // Security: Disabled to prevent XSS from untrusted WhatsApp messages
-  linkify: true,
   typographer: true,
+}).use(linkify);
+
+// Links open in a new tab without handing the opener to the target. Set
+// after sanitization so the attributes cannot be forged by the input.
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.tagName === "A") {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
 });
 
-md.renderer.rules.link_open = function (tokens, idx) {
-  const title = tokens[idx].title ? ` title="${tokens[idx].title}"` : "";
-  return `<a href="${
-    tokens[idx].href
-  }"${title} target="_blank" rel="noopener noreferrer">`;
-};
+/** Untrusted Markdown → sanitized HTML. The only way HTML enters this file. */
+export function renderMarkdown(markdown: string): string {
+  return DOMPurify.sanitize(md.render(markdown), {
+    USE_PROFILES: { html: true },
+  });
+}
 
 // Convert WhatsApp formatting to standard markdown for Remarkable rendering
 // Mirrors whatsappToMarkdown from open-bsp-api/_shared/markdown.ts
@@ -90,7 +106,7 @@ export function Markdown({
     }
   }
 
-  const renderedHTML = md.render(whatsappToMarkdown(content));
+  const renderedHTML = renderMarkdown(whatsappToMarkdown(content));
 
   return (
     <div
@@ -145,12 +161,11 @@ export function TextMessage({
           }
         >
           {/* Header */}
+          {/* Text, never HTML: a tool name comes from a remote MCP server. */}
           {header && (
-            <div
-              className="text-[15px] mb-3 font-semibold"
-              dangerouslySetInnerHTML={{ __html: header }}
-              onInput={onInput}
-            />
+            <div className="text-[15px] mb-3 font-semibold" onInput={onInput}>
+              {header}
+            </div>
           )}
 
           {/* Body */}
@@ -166,9 +181,12 @@ export function TextMessage({
               >
                 <pre
                   dangerouslySetInnerHTML={{
-                    __html: prettyPrintJson.toHtml(body as Json, {
-                      indent: 2,
-                    }),
+                    // pretty-print-json escapes values; DOMPurify is the
+                    // second barrier, same as for Markdown.
+                    __html: DOMPurify.sanitize(
+                      prettyPrintJson.toHtml(body as Json, { indent: 2 }),
+                      { USE_PROFILES: { html: true } },
+                    ),
                   }}
                 />
               </div>
