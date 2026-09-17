@@ -133,7 +133,11 @@ describe("chatSlice.pushConversations", () => {
 describe("chatSlice.pushMessages — legacy and updates (F10 safety net)", () => {
   beforeEach(resetStore);
 
-  it("converts v0 rows to v1 on the way in", () => {
+  // P3 (§5.2): the store used to carry a converter for contents that predate
+  // the v1 schema. `messages_content_schema` is validated now, so no such row
+  // can exist — and a content the UI does not understand is dropped rather
+  // than guessed at, which is what happened to a `{}` content all along.
+  it("drops a row whose content is not v1 instead of converting it", () => {
     const conv = conversationRow();
     const v0 = {
       ...messageRow({ conversation_id: conv.id }),
@@ -143,15 +147,21 @@ describe("chatSlice.pushMessages — legacy and updates (F10 safety net)", () =>
 
     useBoundStore.getState().chat.pushMessages([v0]);
 
-    const stored = useBoundStore
-      .getState()
-      .chat.messages.get(conv.id)!
-      .get(v0.id)!;
-    expect(stored.content).toMatchObject({
-      version: "1",
-      type: "text",
-      text: "hola vieja",
-    });
+    expect(useBoundStore.getState().chat.messages.get(conv.id)).toBeUndefined();
+  });
+
+  it("keeps a v1 row pushed alongside one it drops", () => {
+    const conv = conversationRow();
+    const v1 = messageRow({ conversation_id: conv.id });
+    const statusOnly = {
+      ...messageRow({ conversation_id: conv.id }),
+      content: {},
+    } as unknown as ReturnType<typeof messageRow>;
+
+    useBoundStore.getState().chat.pushMessages([statusOnly, v1]);
+
+    const stored = useBoundStore.getState().chat.messages.get(conv.id)!;
+    expect([...stored.keys()]).toEqual([v1.id]);
   });
 
   it("a status update replaces the row in place, keeping the order", () => {

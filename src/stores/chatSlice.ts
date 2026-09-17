@@ -13,7 +13,6 @@ const groupBy = groupByUntyped as <T>(
   items: Iterable<T>,
   keySelector: (item: T, index: number) => string,
 ) => Partial<Record<string, T[]>>;
-import { type MessageRowV0, toV1 } from "@/supabase/messages-v0";
 import {
   MEDIA_MEMORY_BUDGET,
   forgetMedia,
@@ -354,13 +353,16 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         },
       };
     }),
-  pushMessages: (msgsMixedVersions: MessageRow[]) =>
+  pushMessages: (incoming: MessageRow[]) =>
     set((state) => {
-      const msgs = ofActiveOrg(msgsMixedVersions, state.ui.activeOrgId)
-        .map((m) =>
-          m.content.version === "1" ? m : toV1(m as unknown as MessageRowV0),
-        )
-        .filter(Boolean) as MessageRow[];
+      // P3 (§5.2): contents that predate the v1 schema used to be converted
+      // here. `messages_content_schema` is validated now, so the database
+      // holds none — and a shape this build does not know (a `{}` awaiting
+      // its content, a version it predates) is dropped rather than guessed
+      // at, which is what the converter did with those all along.
+      const msgs = ofActiveOrg(incoming, state.ui.activeOrgId).filter(
+        (m) => m.content.version === "1",
+      );
 
       const messages = new Map(state.chat.messages);
 
