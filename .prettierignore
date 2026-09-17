@@ -5,3 +5,8 @@ src/routeTree.gen.ts
 # Build output and excluded/legacy code (also excluded from tsconfig + ESLint)
 dist
 src/deprecated
+
+# Test output
+coverage
+playwright-report
+test-results

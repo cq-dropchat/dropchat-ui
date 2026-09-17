@@ -22,3 +22,7 @@ mise.toml
 
 .tanstack
 dist/
+# Test output
+coverage/
+playwright-report/
+test-results/
