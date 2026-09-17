@@ -64,23 +64,3 @@ const useBoundStore = create<AppState>()(
 );
 
 export default useBoundStore;
-
-// TODO: for real
-export function reset() {
-  useBoundStore.setState((state) => {
-    return {
-      ui: {
-        ...state.ui,
-        activeOrgId: null,
-        activeConvId: null,
-        initialized: false,
-      },
-      chat: {
-        ...state.chat,
-        organizations: new Map(),
-        conversations: new Map(),
-        messages: new Map(),
-      },
-    };
-  });
-}

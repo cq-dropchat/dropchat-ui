@@ -165,6 +165,36 @@ export type ChatActions = {
 
 export type ChatSlice = ChatState & ChatActions;
 
+/**
+ * F20: the chat slice holds one organization's data for one user. Switching
+ * organization or user starts from this (see uiSlice.setActiveOrg/setUser).
+ */
+export function emptyChatState(): ChatState {
+  return {
+    conversations: new Map(),
+    ownAgentId: null,
+    membershipExtras: new Map(),
+    messages: new Map(),
+    textDrafts: new Map(),
+    fileDrafts: new Map(),
+    mediaLoads: new Map(),
+  };
+}
+
+/**
+ * F20: rows reach the store from requests and Realtime events that can
+ * outlive an organization switch or a sign-out. Only the active
+ * organization's rows are kept.
+ */
+function ofActiveOrg<T extends { organization_id: string }>(
+  rows: T[],
+  activeOrgId: string | null,
+): T[] {
+  return activeOrgId
+    ? rows.filter((row) => row.organization_id === activeOrgId)
+    : [];
+}
+
 // @ts-expect-error partializing the slice creator's state type
 export const createChatSlice: StateCreator<Partial<AppState>> = (
   set: (
@@ -175,13 +205,7 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
     replace?: boolean,
   ) => void,
 ) => ({
-  conversations: new Map(),
-  ownAgentId: null,
-  membershipExtras: new Map(),
-  messages: new Map(),
-  textDrafts: new Map(),
-  fileDrafts: new Map(),
-  mediaLoads: new Map(),
+  ...emptyChatState(),
   setOwnAgentId: (agentId: string | null) =>
     set((state) => ({ chat: { ...state.chat, ownAgentId: agentId } })),
   setMembershipExtra: (
@@ -210,7 +234,7 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
     set((state) => {
       const conversations = new Map(state.chat.conversations);
 
-      for (const conv of convs) {
+      for (const conv of ofActiveOrg(convs, state.ui.activeOrgId)) {
         // skip push when the cached conv is more recent than the incoming conv
         const cachedUpdatedAt = conversations.get(conv.id)?.updated_at;
 
@@ -233,7 +257,7 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
     }),
   pushMessages: (msgsMixedVersions: MessageRow[]) =>
     set((state) => {
-      const msgs = msgsMixedVersions
+      const msgs = ofActiveOrg(msgsMixedVersions, state.ui.activeOrgId)
         .map((m) =>
           m.content.version === "1" ? m : toV1(m as unknown as MessageRowV0),
         )

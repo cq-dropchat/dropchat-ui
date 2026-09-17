@@ -1,10 +1,13 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import useBoundStore from "./useBoundStore";
 import { timestampDescending } from "./chatSlice";
-import { conversationRow, messageRow } from "@/test/factories";
+import { conversationRow, messageRow, ORG_A } from "@/test/factories";
 
 function resetStore() {
   useBoundStore.setState((state) => ({
+    // The factories' rows belong to organization A (F20: the store keeps only
+    // the active organization's rows).
+    ui: { ...state.ui, activeOrgId: ORG_A },
     chat: {
       ...state.chat,
       conversations: new Map(),

@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import type { AppState } from "./useBoundStore";
+import { emptyChatState } from "./chatSlice";
 import dayjs from "dayjs";
 import {
   type ConversationAgentExtra,
@@ -125,13 +126,23 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
         [component]: value ?? !state.ui[component],
       },
     })),
+  // F20: another organization, or another user (sign-out included), gets a
+  // fresh chat slice. The same organization or the same user's session
+  // refresh keeps it.
   setActiveOrg: (activeOrgId: string | null) =>
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        activeOrgId,
-      },
-    })),
+    set((state) =>
+      activeOrgId === state.ui.activeOrgId
+        ? {}
+        : {
+            ui: {
+              ...state.ui,
+              activeOrgId,
+              activeConvId: null,
+              templateDrafts: new Map(),
+            },
+            chat: { ...state.chat, ...emptyChatState() },
+          },
+    ),
   setActiveConv: (activeConvId: string | null) =>
     set((state) => ({
       ui: {
@@ -140,12 +151,19 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
       },
     })),
   setUser: (user: User | null) =>
-    set((state) => ({
-      ui: {
-        ...state.ui,
-        user,
-      },
-    })),
+    set((state) =>
+      state.ui.user && state.ui.user.id !== user?.id
+        ? {
+            ui: {
+              ...state.ui,
+              user,
+              activeConvId: null,
+              templateDrafts: new Map(),
+            },
+            chat: { ...state.chat, ...emptyChatState() },
+          }
+        : { ui: { ...state.ui, user } },
+    ),
   setFilter: (filter: keyof typeof filters) =>
     set((state) => ({
       ui: {

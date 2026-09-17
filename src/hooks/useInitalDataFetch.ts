@@ -34,6 +34,14 @@ export const useInitialDataFetch = () => {
   const loadMemberships = async () => {
     if (!activeOrgId || !userId) return;
 
+    // F20: these rows carry no organization_id for the store to check, so a
+    // response that arrives after the user switched organization (or signed
+    // out) is dropped here.
+    const stillActive = () => {
+      const { ui } = useBoundStore.getState();
+      return ui.activeOrgId === activeOrgId && ui.user?.id === userId;
+    };
+
     const { data: agent } = await supabase
       .from("agents")
       .select("id")
@@ -43,6 +51,7 @@ export const useInitialDataFetch = () => {
       .maybeSingle()
       .throwOnError();
 
+    if (!stillActive()) return;
     setOwnAgentId(agent?.id || null);
 
     if (!agent) return;
@@ -54,6 +63,7 @@ export const useInitialDataFetch = () => {
       .eq("agent_id", agent.id)
       .throwOnError();
 
+    if (!stillActive()) return;
     pushMembershipExtras(memberships);
   };
 
