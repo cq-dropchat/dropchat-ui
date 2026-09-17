@@ -30,6 +30,39 @@ jobs:
           path: coverage/lcov.info
           if-no-files-found: ignore
 
+  # F29: the hand-written types and db_types.ts mirror the API repository's.
+  # Fails on drift not recorded in scripts/type-sync.baseline (see the script).
+  types-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: open-bsp-ui
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.API_REPOSITORY || 'openbsp/open-bsp-api' }}
+          # The API branch of the same name when it exists (a paired change),
+          # otherwise the API's develop.
+          ref: ${{ github.head_ref || github.ref_name }}
+          path: open-bsp-api
+        continue-on-error: true
+        id: api-same-branch
+      - uses: actions/checkout@v4
+        if: steps.api-same-branch.outcome == 'failure'
+        with:
+          repository: ${{ vars.API_REPOSITORY || 'openbsp/open-bsp-api' }}
+          ref: develop
+          path: open-bsp-api
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: open-bsp-ui/package-lock.json
+      - run: cd open-bsp-ui && npm ci
+      - run: cd open-bsp-ui && npm run types:sync-check
+        env:
+          API_REPO_DIR: ../open-bsp-api
+
   # One Playwright flow against a local Supabase + `vite preview`. Only on the
   # long-lived branches: it needs the API repo checked out beside this one.
   e2e:

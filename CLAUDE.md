@@ -54,8 +54,12 @@ never ingests, and intentionally diverges on a few fields. So a re-sync is
     which is never overwritten by a paste.
   - `types/database_types.ts` is UI-bespoke (typed `Database` wrapper, strict
     agent rows) — not mirrored.
-- **Run `npm run types:sync-check`** (`scripts/check-type-sync.sh`) to list
-  every `@ui-divergence` tag and show a normalized diff of each mirrored file vs
-  the API source — this is how you find drift and the exact lines to re-apply
-  after a paste.
+- **Run `npm run types:sync-check`** (`scripts/check-type-sync.sh --strict`)
+  to list every `@ui-divergence` tag and show a declarations-only diff of each
+  mirrored file vs the API source. It is a CI gate (`types-sync` job): it fails
+  if `db_types.ts` differs at all, or if the diffs differ from
+  `scripts/type-sync.baseline`, the reviewed record of accepted divergences and
+  subsets. When a divergence is intended, run
+  `bash scripts/check-type-sync.sh --update-baseline` and commit the baseline
+  change with it.
 - After any sync: `npm run build` (tsc) + `npm run lint` must stay green.

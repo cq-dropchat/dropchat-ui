@@ -15,7 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "preview": "vite preview",
-    "types:sync-check": "bash scripts/check-type-sync.sh",
+    "types:sync-check": "bash scripts/check-type-sync.sh --strict",
     "bundle:check": "vite build && node scripts/check-bundle.mjs"
   },
   "dependencies": {

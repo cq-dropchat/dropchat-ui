@@ -1,0 +1,575 @@
+## extra_types
+1c1,12
+< import type { SQLToolConfig } from "../../agent-client/tools/sql";
+---
+> export type SQLToolConfig = {
+>     driver: "libsql";
+>     url: string;
+>     token?: string;
+> } | {
+>     driver: "postgres" | "mysql";
+>     host: string;
+>     port?: number;
+>     user?: string;
+>     password?: string;
+>     database?: string;
+> };
+119c130
+<         product?: "calendar" | "sheets";
+---
+>         product?: "calendar" | "sheets" | "openbsp";
+## instagram_webhook_payload_types
+6,12d5
+< export type InstagramAttachment = {
+<     type: InstagramAttachmentType;
+<     payload: InstagramAttachmentPayload;
+< };
+< export type InstagramQuickReply = {
+<     payload: string;
+< };
+30,89d22
+< };
+< export type InstagramMessage = {
+<     mid: string;
+<     text?: string;
+<     attachments?: InstagramAttachment[];
+<     quick_reply?: InstagramQuickReply;
+<     reply_to?: InstagramReplyTo;
+<     referral?: InstagramReferral;
+<     is_echo?: boolean;
+<     is_self?: boolean;
+<     is_deleted?: boolean;
+<     is_unsupported?: boolean;
+< };
+< export type InstagramPostback = {
+<     mid: string;
+<     title: string;
+<     payload: string;
+< };
+< export type InstagramReaction = {
+<     mid: string;
+<     action: "react" | "unreact";
+<     reaction?: string;
+<     emoji?: string;
+< };
+< export type InstagramRead = {
+<     mid: string;
+< };
+< export type InstagramMessageEdit = {
+<     mid: string;
+<     text: string;
+<     num_edit: string;
+< };
+< export type InstagramEvent = {
+<     sender: {
+<         id: string;
+<     };
+<     recipient: {
+<         id: string;
+<     };
+<     timestamp: number;
+<     message?: InstagramMessage;
+<     postback?: InstagramPostback;
+<     reaction?: InstagramReaction;
+<     read?: InstagramRead;
+<     message_edit?: InstagramMessageEdit;
+<     referral?: InstagramReferral;
+< };
+< export type InstagramChange = {
+<     field: "messages" | "messaging_postbacks" | "messaging_seen" | "message_reactions" | "message_edit" | "messaging_referral";
+<     value: InstagramEvent;
+< };
+< export type InstagramEntry = {
+<     id: string;
+<     time: number;
+<     messaging?: InstagramEvent[];
+<     changes?: InstagramChange[];
+< };
+< export type InstagramWebhookPayload = {
+<     object: "instagram";
+<     entry: InstagramEntry[];
+## status_types
+2,21d1
+< type PricingCategory = "authentication" | "authentication-international" | "marketing" | "marketing_lite" | "referral_conversion" | "service" | "utility";
+< type PricingType = "regular" | "free_customer_service" | "free_entry_point";
+< export type WebhookStatus = {
+<     id: string;
+<     status: "sent" | "delivered" | "read" | "failed";
+<     timestamp: string;
+<     recipient_id?: string;
+<     recipient_user_id?: string;
+<     recipient_parent_user_id?: string;
+<     recipient_type?: "group";
+<     recipient_participant_id?: string;
+<     recipient_identity_key_hash?: string;
+<     biz_opaque_callback_data?: string;
+<     pricing?: {
+<         pricing_model: "PMP";
+<         category: PricingCategory;
+<         type: PricingType;
+<     };
+<     errors?: WebhookError[];
+< };
+45,55d24
+< };
+< export type EndpointStatus = {
+<     messaging_product: "whatsapp";
+<     status: "read";
+<     message_id: string;
+<     typing_indicator?: {
+<         type: "text";
+<     };
+< };
+< export type EndpointStatusResponse = {
+<     success: true;
+## whatsapp_endpoint_types
+1,31d0
+< import type { ContactsMessage, LocationMessage, } from "./whatsapp_webhook_message_types";
+< import type { TemplateMessage } from "./whatsapp_template_types";
+< export type OutgoingContextInfo = {
+<     context?: {
+<         message_id: string;
+<     };
+< };
+< export type OutgoingText = {
+<     type: "text";
+<     text: {
+<         body: string;
+<         preview_url?: boolean;
+<     };
+< };
+< export type OutgoingReaction = {
+<     type: "reaction";
+<     reaction: {
+<         emoji: string;
+<         message_id: string;
+<     };
+< };
+< export type OutgoingAudio = {
+<     type: "audio";
+<     audio: ({
+<         id: string;
+<     } | {
+<         link: string;
+<     }) & {
+<         voice?: boolean;
+<     };
+< };
+62,92d30
+< };
+< export type OutgoingSticker = {
+<     type: "sticker";
+<     sticker: {
+<         id: string;
+<     } | {
+<         link: string;
+<     };
+< };
+< export type EndpointMessage = {
+<     biz_opaque_callback_data?: string;
+<     messaging_product: "whatsapp";
+<     recipient_type?: "individual";
+<     to?: string;
+<     recipient?: string;
+< } & OutgoingContextInfo & (OutgoingAudio | ContactsMessage | OutgoingDocument | OutgoingImage | LocationMessage | OutgoingReaction | OutgoingSticker | TemplateMessage | OutgoingText | OutgoingVideo);
+< export type EndpointMessageResponse = {
+<     messaging_product: "whatsapp";
+<     contacts: [
+<         {
+<             input: string;
+<             wa_id: string;
+<         }
+<     ];
+<     messages: [
+<         {
+<             id: string;
+<             group_id?: string;
+<             message_status?: "accepted" | "held_for_quality_assessment";
+<         }
+<     ];
+## whatsapp_template_types
+6c6
+<     category: "MARKETING";
+---
+>     category: "MARKETING" | "UTILITY";
+## whatsapp_webhook_message_types
+2,10c2,6
+< import type { WebhookStatus } from "./status_types";
+< export type SystemMessage = {
+<     type: "system";
+<     system: {
+<         body: string;
+<         type: "user_changed_number" | "user_changed_user_id";
+<         wa_id?: string;
+<         user_id?: string;
+<         parent_user_id?: string;
+---
+> export type ButtonMessage = {
+>     type: "button";
+>     button: {
+>         text: string;
+>         payload: string;
+12a9,25
+> export type InteractiveMessage = {
+>     type: "interactive";
+>     interactive: {
+>         type: "button_reply";
+>         button_reply: {
+>             id: string;
+>             title: string;
+>         };
+>     } | {
+>         type: "list_reply";
+>         list_reply: {
+>             id: string;
+>             title: string;
+>             description?: string;
+>         };
+>     };
+> };
+20,35d32
+< export type ErrorsMessage = {
+<     errors: Omit<WebhookError, "href">[];
+<     type: "errors";
+< };
+< export type IncomingContextInfo = {
+<     context?: {
+<         forwarded?: boolean;
+<         frequently_forwarded?: boolean;
+<         from?: string;
+<         id?: string;
+<         referred_product?: {
+<             catalog_id: string;
+<             product_retailer_id: string;
+<         };
+<     };
+< };
+54,142d50
+< export type ReferralInfo = {
+<     referral?: WhatsAppReferral;
+< };
+< export type TextMessage = {
+<     type: "text";
+<     text: {
+<         body: string;
+<     };
+< } & ReferralInfo;
+< export type ReactionMessage = {
+<     type: "reaction";
+<     reaction: {
+<         message_id: string;
+<         emoji?: string;
+<     };
+< };
+< export type AudioMessage = {
+<     type: "audio";
+<     audio: {
+<         id: string;
+<         mime_type: "audio/aac" | "audio/amr" | "audio/mpeg" | "audio/mp4" | "audio/ogg; codecs=opus";
+<         voice: boolean;
+<     };
+< } & ReferralInfo;
+< export type ImageMessage = {
+<     type: "image";
+<     image: {
+<         id: string;
+<         mime_type: "image/jpeg" | "image/png" | "image/webp";
+<         sha256: string;
+<         caption?: string;
+<     };
+< } & ReferralInfo;
+< export type VideoMessage = {
+<     type: "video";
+<     video: {
+<         id: string;
+<         mime_type: "video/3gp" | "video/mp4";
+<         sha256: string;
+<         caption?: string;
+<         filename: string;
+<     };
+< } & ReferralInfo;
+< export type DocumentMessage = {
+<     type: "document";
+<     document: {
+<         caption?: string;
+<         filename: string;
+<         id: string;
+<         sha256: string;
+<         mime_type: "text/plain" | "application/vnd.ms-excel" | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" | "application/msword" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document" | "application/vnd.ms-powerpoint" | "application/vnd.openxmlformats-officedocument.presentationml.presentation" | "application/pdf";
+<     };
+< } & ReferralInfo;
+< export type StickerMessage = {
+<     type: "sticker";
+<     sticker: {
+<         id: string;
+<         mime_type: "image/webp";
+<         sha256: string;
+<         animated: boolean;
+<     };
+< } & ReferralInfo;
+< export type MediaPlaceholder = {
+<     type: "media_placeholder";
+< };
+< export type ButtonMessage = {
+<     type: "button";
+<     button: {
+<         text: string;
+<         payload: string;
+<     };
+< };
+< export type InteractiveMessage = {
+<     type: "interactive";
+<     interactive: {
+<         type: "button_reply";
+<         button_reply: {
+<             id: string;
+<             title: string;
+<         };
+<     } | {
+<         type: "list_reply";
+<         list_reply: {
+<             id: string;
+<             title: string;
+<             description?: string;
+<         };
+<     };
+< };
+172,175d79
+< export type ContactsMessage = {
+<     type: "contacts";
+<     contacts: Contact[];
+< } & ReferralInfo;
+183,211d86
+< export type LocationMessage = {
+<     type: "location";
+<     location: Location;
+< } & ReferralInfo;
+< export type HistoryContext = {
+<     status: WebhookStatus["status"];
+< };
+< export type EditedMessage = IncomingContextInfo & (TextMessage | ImageMessage | VideoMessage | DocumentMessage);
+< export type EditMessage = {
+<     type: "edit";
+<     edit: {
+<         original_message_id: string;
+<         message: EditedMessage;
+<     };
+< };
+< export type RevokeMessage = {
+<     type: "revoke";
+<     revoke: {
+<         original_message_id: string;
+<     };
+< };
+< export type WebhookMessageBase = {
+<     from?: string;
+<     from_user_id: string;
+<     from_parent_user_id?: string;
+<     group_id?: string;
+<     id: string;
+<     timestamp: number;
+< } & (AudioMessage | ButtonMessage | ContactsMessage | DocumentMessage | EditMessage | ErrorsMessage | ImageMessage | InteractiveMessage | LocationMessage | OrderMessage | ReactionMessage | RevokeMessage | StickerMessage | SystemMessage | TextMessage | UnsupportedMessage | VideoMessage | MediaPlaceholder);
+## whatsapp_webhook_payload_types
+1,11d0
+< import type { WebhookStatus } from "./status_types";
+< import type { IncomingContextInfo, WebhookMessageBase, } from "./whatsapp_webhook_message_types";
+< export type WebhookError = {
+<     code: number;
+<     title: string;
+<     message: string;
+<     error_data: {
+<         details: string;
+<     };
+<     href: string;
+< };
+19,26c8,13
+< export type WebhookMetadata = {
+<     display_phone_number: string;
+<     phone_number_id: string;
+< };
+< export type WebhookContact = {
+<     profile: {
+<         name: string;
+<         username?: string;
+---
+> export type WebhookError = {
+>     code: number;
+>     title: string;
+>     message: string;
+>     error_data: {
+>         details: string;
+28,199c15
+<     wa_id?: string;
+<     user_id: string;
+<     parent_user_id?: string;
+<     identity_key_hash?: string;
+< };
+< export type WebhookIncomingMessage = WebhookMessageBase & IncomingContextInfo;
+< export type WebhookValueMessages = {
+<     messaging_product: "whatsapp";
+<     metadata?: WebhookMetadata;
+<     contacts: WebhookContact[];
+<     messages: WebhookIncomingMessage[];
+< };
+< export type WebhookValueMessagesError = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     errors: WebhookError[];
+< };
+< export type WebhookValueStatuses = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     contacts?: WebhookContact[];
+<     statuses: WebhookStatus[];
+< };
+< export type WebhookEchoMessage = WebhookMessageBase & {
+<     to?: string;
+<     to_user_id: string;
+<     to_parent_user_id?: string;
+< };
+< export type WebhookValueMessageEchoes = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     contacts?: WebhookContact[];
+<     message_echoes: WebhookEchoMessage[];
+< };
+< export type WebhookHistoryMetadata = {
+<     phase: 0 | 1 | 2;
+<     chunk_order: number;
+<     progress: number;
+< };
+< export type WebhookHistoryMessage = WebhookMessageBase & {
+<     to?: string;
+<     to_user_id?: string;
+<     to_parent_user_id?: string;
+<     history_context: {
+<         status: "DELIVERED" | "ERROR" | "PENDING" | "PLAYED" | "READ" | "SENT";
+<     };
+< };
+< export type WebhookHistoryThread = {
+<     id?: string;
+<     context: {
+<         wa_id?: string;
+<         user_id: string;
+<         parent_user_id?: string;
+<         username?: string;
+<     };
+<     messages: WebhookHistoryMessage[];
+< };
+< export type WebhookValueHistory = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     history: Array<{
+<         metadata: WebhookHistoryMetadata;
+<         threads: WebhookHistoryThread[];
+<     }>;
+< };
+< export type WebhookValueHistoryError = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     history: Array<{
+<         errors: Omit<WebhookError, "href">[];
+<     }>;
+< };
+< export type WebhookValueHistoryMedia = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     contacts?: WebhookContact[];
+<     messages?: WebhookIncomingMessage[];
+<     message_echoes?: WebhookEchoMessage[];
+< };
+< export type WebhookStateSyncContact = {
+<     full_name: string;
+<     first_name: string;
+<     phone_number?: string;
+<     user_id: string;
+<     parent_user_id?: string;
+<     username?: string;
+< };
+< export type WebhookStateSyncItem = {
+<     type: "contact";
+<     contact: WebhookStateSyncContact;
+<     action: "add" | "remove";
+<     metadata: {
+<         timestamp: string;
+<     };
+< };
+< export type WebhookValueStateSync = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     state_sync: WebhookStateSyncItem[];
+< };
+< export type WebhookAccountUpdate_Account = {
+<     event: "ACCOUNT_DELETED";
+<     waba_info: {
+<         waba_id: string;
+<         owner_business_id: string;
+<     };
+< };
+< export type WebhookAccountUpdate_PartnerApp = {
+<     event: "PARTNER_APP_INSTALLED" | "PARTNER_APP_UNINSTALLED";
+<     waba_info: {
+<         waba_id: string;
+<         owner_business_id: string;
+<         partner_app_id: string;
+<     };
+< };
+< export type WebhookAccountUpdate_Partner = {
+<     event: "PARTNER_ADDED" | "PARTNER_REMOVED";
+<     waba_info: {
+<         waba_id: string;
+<         owner_business_id: string;
+<     };
+< };
+< export type WebhookAccountUpdate_Coexistence = {
+<     event: "ACCOUNT_OFFBOARDED" | "ACCOUNT_RECONNECTED";
+< };
+< export type WebhookAccountUpdateValue = WebhookAccountUpdate_Account | WebhookAccountUpdate_PartnerApp | WebhookAccountUpdate_Partner | WebhookAccountUpdate_Coexistence;
+< export type WebhookUserIdUpdate = {
+<     wa_id?: string;
+<     detail: string;
+<     user_id: {
+<         previous: string;
+<         current: string;
+<     };
+<     parent_user_id?: {
+<         previous: string;
+<         current: string;
+<     };
+<     timestamp: string;
+< };
+< export type WebhookValueUserIdUpdate = {
+<     messaging_product: "whatsapp";
+<     metadata: WebhookMetadata;
+<     contacts?: WebhookContact[];
+<     user_id_update: WebhookUserIdUpdate[];
+< };
+< export type WebhookChange = {
+<     field: "messages";
+<     value: WebhookValueMessages | WebhookValueStatuses | WebhookValueMessagesError;
+< } | {
+<     field: "smb_message_echoes";
+<     value: WebhookValueMessageEchoes;
+< } | {
+<     field: "history";
+<     value: WebhookValueHistory | WebhookValueHistoryError | WebhookValueHistoryMedia;
+< } | {
+<     field: "smb_app_state_sync";
+<     value: WebhookValueStateSync;
+< } | {
+<     field: "account_update";
+<     value: WebhookAccountUpdateValue;
+< } | {
+<     field: "user_id_update";
+<     value: WebhookValueUserIdUpdate;
+< };
+< export type WebhookEntry = {
+<     id: string;
+<     time: number;
+<     changes: WebhookChange[];
+< };
+< export type MetaWebhookPayload = {
+<     object: "whatsapp_business_account";
+<     entry: WebhookEntry[];
+---
+>     href: string;

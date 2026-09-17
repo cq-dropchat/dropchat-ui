@@ -188,10 +188,15 @@ type ButtonPart = DataPart<"button", ButtonMessage["button"]>;
 
 type TemplatePart = DataPart<"template", Template>;
 
+/**
+ * A media message whose file is not in our store (a history import, a failed
+ * download, a storage cap). `data` stays empty, as the Cloud API leaves it;
+ * whatever IS known about the medium goes in `file`, minus the `uri`.
+ */
 type MediaPlaceholderPart = DataPart<
   "media_placeholder",
   Record<PropertyKey, never>
->;
+> & { file?: Omit<FilePart["file"], "uri"> };
 
 type UnsupportedPart = DataPart<
   "unsupported",

@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mjs"],
     env: {
       // The Supabase client is built at import time; these are obviously
       // fake and only satisfy the constructor. Tests never hit the network:
