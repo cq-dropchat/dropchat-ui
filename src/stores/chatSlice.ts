@@ -39,7 +39,7 @@ export type FileDraft = {
   caption?: string;
 };
 
-type MediaLoad = {
+export type MediaLoad = {
   blob?: Blob;
   type: "upload" | "download";
   status: "pending" | "loading" | "done" | "error";

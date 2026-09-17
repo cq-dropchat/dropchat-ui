@@ -14,9 +14,11 @@ import { Bot, Building2, MessageSquarePlus, Settings } from "lucide-react";
 import { useResizable } from "@/hooks/useResizable";
 import { useCurrentAgents } from "@/queries/useAgents";
 import StatsCenter from "@/components/stats/StatsCenter";
+import RouteError from "@/components/RouteError";
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
+  errorComponent: RouteError,
 });
 
 const MIN_PANEL_WIDTH = 300;

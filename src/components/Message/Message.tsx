@@ -27,6 +27,7 @@ import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
 import type { Json } from "@/supabase/db_types";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // F01: everything a contact types ends up in `dangerouslySetInnerHTML`, so
 // the pipeline is Remarkable (html: false, default link renderer — the one
@@ -577,11 +578,30 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
     }
   }
 
+  // F04: a renderer that throws on a malformed part (a media reference with
+  // nothing behind it, a file part in a record-only row) takes down this
+  // bubble only, never the conversation.
+  const guarded = (
+    <ErrorBoundary
+      label={`Message ${props.message.id}`}
+      fallback={
+        <TextMessage
+          body={`_${t("Mensaje no soportado")}_`}
+          type="markdown"
+          direction={direction}
+          timestamp={props.message.timestamp}
+        />
+      }
+    >
+      {content}
+    </ErrorBoundary>
+  );
+
   return (
     <>
       {direction === "incoming" && (
         <InMessage {...{ ...props, text, fixedWidth, senderName }}>
-          {content}
+          {guarded}
         </InMessage>
       )}
       {(direction === "outgoing" || direction === "internal") && (
@@ -593,7 +613,7 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
             fixedWidth,
           }}
         >
-          {content}
+          {guarded}
         </OutMessage>
       )}
     </>

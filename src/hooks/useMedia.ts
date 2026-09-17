@@ -7,42 +7,62 @@ import {
   supabase,
   messageDirection,
 } from "@/supabase/client";
+import type { MediaLoad } from "@/stores/chatSlice";
 
-export function useMedia(message: MessageRow) {
-  if (
-    !(
-      messageDirection(message) === "incoming" ||
-      messageDirection(message) === "outgoing"
-    )
-  ) {
-    throw new Error(
-      `Message with id ${message.id} is not an incoming or outgoing message.`,
-    );
+/**
+ * Why a message cannot be loaded as media, or null when it can. Computed
+ * before any hook runs so the hook order never depends on the input, and
+ * returned as an error state rather than thrown: a throw here unmounted the
+ * whole app for every member opening the conversation (F04).
+ */
+function invalidMediaReason(message: MessageRow): string | null {
+  const direction = messageDirection(message);
+
+  if (direction !== "incoming" && direction !== "outgoing") {
+    return `Message with id ${message.id} is not an incoming or outgoing message.`;
   }
 
   if (message.content.type !== "file") {
-    throw new Error(`Message with id ${message.id} is not a file message.`);
+    return `Message with id ${message.id} is not a file message.`;
   }
 
-  const content = message.content;
-  const mediaId = content.file.uri.replace("internal://media/", ""); // Extract path from URI
+  const mediaId = (message.content.file?.uri ?? "").replace(
+    "internal://media/",
+    "",
+  );
 
   if (!mediaId) {
-    throw new Error(`Message with id ${message.id} has no valid media URI.`);
+    return `Message with id ${message.id} has no valid media URI.`;
   }
 
-  const load = useBoundStore((store) =>
+  return null;
+}
+
+export function useMedia(message: MessageRow) {
+  const invalid = invalidMediaReason(message);
+
+  // Extract the storage path from the URI; "" when invalid (guarded below).
+  const mediaId =
+    message.content.type === "file"
+      ? (message.content.file?.uri ?? "").replace("internal://media/", "")
+      : "";
+
+  const stored = useBoundStore((store) =>
     store.chat.mediaLoads.get(message.id),
-  ) || {
-    type: "download",
-    status: "pending",
-    handledOnce: false,
-  };
+  );
+  const load: MediaLoad = invalid
+    ? { type: "download", status: "error", error: invalid, handledOnce: false }
+    : stored || {
+        type: "download",
+        status: "pending",
+        handledOnce: false,
+      };
   const setLoad = useBoundStore((store) => store.chat.setMediaLoad);
   const [cancel, setCancel] = useState(false);
 
   const uploadTask = async () => {
     if (
+      invalid ||
       !load.blob ||
       load.type === "download" ||
       load.status === "done" ||
@@ -78,7 +98,7 @@ export function useMedia(message: MessageRow) {
   };
 
   const downloadTask = async () => {
-    if (load.status === "done" || load.status === "loading") {
+    if (invalid || load.status === "done" || load.status === "loading") {
       return;
     }
 

@@ -6,6 +6,7 @@ import useBoundStore from "@/stores/useBoundStore";
 import { redirect } from "@tanstack/react-router";
 import { supabase } from "@/supabase/client";
 import { useSetActiveOrg } from "@/hooks/useSetActiveOrg";
+import RouteError from "@/components/RouteError";
 
 function RootLayout() {
   useAuth();
@@ -48,4 +49,6 @@ export const Route = createRootRoute({
     }
   },
   component: RootLayout,
+  // F04: a throw anywhere below lands here instead of unmounting the root.
+  errorComponent: RouteError,
 });
