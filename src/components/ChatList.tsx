@@ -40,6 +40,11 @@ const ChatList = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const conversations = useBoundStore((state) => state.chat.conversations);
   const messages = useBoundStore((state) => state.chat.messages);
+  // P6: the root Map is updated in place now, so it is no longer what tells
+  // this list that a message arrived. The filters read every conversation's
+  // newest row, so the list follows every push, exactly as it did when the
+  // copy of the root Map was what re-rendered it.
+  useBoundStore((state) => state.chat.messagesVersion);
   const convOrder = useBoundStore((state) => state.chat.convOrder);
   const membershipExtras = useBoundStore(
     (state) => state.chat.membershipExtras,
@@ -50,58 +55,63 @@ const ChatList = () => {
   const searchPattern = useBoundStore((state) => state.ui.searchPattern);
   const setSearchPattern = useBoundStore((state) => state.ui.setSearchPattern);
 
-  function getMostRecentMsg(convId: string): MessageRow | undefined {
-    return messages.get(convId)?.values().next().value;
-  }
-
   // F10: the store keeps conversations ordered by their newest message
   // (convOrder); filters, search and pins work on that order instead of
   // sorting every conversation on every render.
-  let items: ConvMetadata[] = convOrder
-    .map((convId) => ({
-      convId,
-      conv: conversations.get(convId)!,
-      mostRecentMsg: getMostRecentMsg(convId),
-    }))
-    .filter(
-      (a) =>
-        !!a.conv &&
-        a.conv.organization_id === activeOrgId &&
-        filters[filterName](
-          a.conv,
-          a.mostRecentMsg,
-          membershipExtras.get(a.convId),
-          ownAgentId,
-        ) &&
-        !!a.mostRecentMsg,
-    );
+  //
+  // P6: one pass over that order, collecting ids. The list only needs ids —
+  // each ChatListItem reads its own row — and building a ConvMetadata for
+  // every conversation, then filtering it, then mapping it to ids, then
+  // walking it again for the pins, cost four passes and 50,000 objects on
+  // every render (measured: 5.7 ms of the commit, allocation alone).
+  const pinnedIds: string[] = [];
+  const restIds: string[] = [];
+  const matches = filters[filterName];
+
+  for (const convId of convOrder) {
+    const conv = conversations.get(convId);
+    if (!conv || conv.organization_id !== activeOrgId) continue;
+
+    const mostRecentMsg: MessageRow | undefined = messages
+      .get(convId)
+      ?.values()
+      .next().value;
+    if (!mostRecentMsg) continue;
+
+    const extra = membershipExtras.get(convId);
+    if (!matches(conv, mostRecentMsg, extra, ownAgentId)) continue;
+
+    // A search ranks every match the same way, pins included.
+    if (extra?.pinned && !searchPattern) pinnedIds.push(convId);
+    else restIds.push(convId);
+  }
+
+  let itemIds: string[];
 
   if (searchPattern) {
+    // Only a search needs the conversation rows themselves, and only for the
+    // matches it is about to rank.
+    const items: ConvMetadata[] = restIds.map((convId) => ({
+      convId,
+      conv: conversations.get(convId)!,
+      mostRecentMsg: messages.get(convId)?.values().next().value,
+    }));
     const fuse = new Fuse(items, {
       threshold: 0.4,
       keys: ["conv.name", "conv.address"],
     });
-    items = fuse.search(searchPattern).map((r) => r.item);
+    itemIds = fuse.search(searchPattern).map((r) => r.item.convId);
   } else {
     // Pinned first (oldest pin first); a stable sort of the few pinned rows
     // keeps convOrder among equal pins, and the rest stay as they are.
-    const pinned = items
-      .filter((a) => membershipExtras.get(a.convId)?.pinned)
-      .sort((a, b) =>
-        pinnedAscending(
-          membershipExtras.get(a.convId)?.pinned,
-          membershipExtras.get(b.convId)?.pinned,
-        ),
-      );
-    if (pinned.length) {
-      items = [
-        ...pinned,
-        ...items.filter((a) => !membershipExtras.get(a.convId)?.pinned),
-      ];
-    }
+    pinnedIds.sort((a, b) =>
+      pinnedAscending(
+        membershipExtras.get(a)?.pinned,
+        membershipExtras.get(b)?.pinned,
+      ),
+    );
+    itemIds = pinnedIds.length ? [...pinnedIds, ...restIds] : restIds;
   }
-
-  const itemIds = items.map((a) => a.convId);
 
   // F10: mount only the rows in view. An organization with thousands of
   // conversations used to mount a ChatListItem — store subscriptions, queries
