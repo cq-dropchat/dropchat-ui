@@ -5,6 +5,8 @@ import { timestampDescending } from "@/stores/chatSlice";
 import { filters, Filters } from "@/stores/uiSlice";
 import Fuse from "fuse.js";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export type ConvMetadata = {
   convId: string;
@@ -27,8 +29,15 @@ function pinnedAscending(
   return aPin && !bPin ? -1 : 1;
 }
 
+/** A list row's height before it is measured (item + 4 px gap). */
+const ESTIMATED_ITEM_HEIGHT = 76;
+
 const ChatList = () => {
+  // TanStack Virtual keeps its state in a mutable instance; the React
+  // Compiler would memoize reads of it and freeze the list.
+  "use no memo";
   const { translate: t } = useTranslation();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const conversations = useBoundStore((state) => state.chat.conversations);
   const messages = useBoundStore((state) => state.chat.messages);
@@ -85,12 +94,39 @@ const ChatList = () => {
 
   const itemIds = items.map((a) => a.convId);
 
+  // F10: mount only the rows in view. An organization with thousands of
+  // conversations used to mount a ChatListItem — store subscriptions, queries
+  // and all — for every one of them.
+  const virtualizer = useVirtualizer({
+    count: itemIds.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ESTIMATED_ITEM_HEIGHT,
+    getItemKey: (index) => itemIds[index],
+    overscan: 8,
+    // First paint (and jsdom) has no layout yet: assume a screenful.
+    initialRect: { width: 0, height: 800 },
+  });
+
   return (
-    <div className="overflow-y-auto [scrollbar-gutter:stable] w-full h-full pt-[10px] px-[10px]">
+    <div
+      ref={scrollRef}
+      className="overflow-y-auto [scrollbar-gutter:stable] w-full h-full pt-[10px] px-[10px]"
+    >
       {itemIds.length ? (
-        <div className="flex flex-col gap-[4px]">
-          {itemIds.map((key) => (
-            <ChatListItem key={key} itemId={key} />
+        <div
+          className="relative w-full"
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualizer.getVirtualItems().map((row) => (
+            <div
+              key={row.key}
+              data-index={row.index}
+              ref={virtualizer.measureElement}
+              className="absolute top-0 left-0 w-full pb-[4px]"
+              style={{ transform: `translateY(${row.start}px)` }}
+            >
+              <ChatListItem itemId={itemIds[row.index]} />
+            </div>
           ))}
         </div>
       ) : (
