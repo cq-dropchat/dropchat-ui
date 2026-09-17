@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./global.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "./queryClient";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { TickProvider } from "./contexts/useTick";
 import { WhatsAppIntegrationProvider } from "./contexts/WhatsAppIntegrationContext";
@@ -21,7 +22,7 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const queryClient = new QueryClient();
+const queryClient = createQueryClient();
 
 // After a deploy, an open tab may still reference hashed chunks that no longer
 // exist ("Failed to fetch dynamically imported module"). Vite surfaces this as
