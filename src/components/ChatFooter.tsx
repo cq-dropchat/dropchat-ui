@@ -16,6 +16,7 @@ import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
 import TemplateComposer from "./chat-footer/TemplateComposer";
 import {
+  allVariablesFilled,
   buildTemplateMessage,
   templateParts,
   templateSections,
@@ -87,9 +88,12 @@ export default function ChatFooter() {
   const { bodyVarCount, headVarCount } = templateVarCounts(sections);
 
   const allVarsFilled =
-    templateDraft &&
-    bodyVarValues.slice(0, bodyVarCount).every((v) => v.trim() !== "") &&
-    headVarValues.slice(0, headVarCount).every((v) => v.trim() !== "");
+    !!templateDraft &&
+    allVariablesFilled(
+      { bodyVarCount, headVarCount },
+      bodyVarValues,
+      headVarValues,
+    );
 
   function updateVarValues(bodyVars: string[], headVars: string[]) {
     if (!activeConvId || !templateDraftEntry) return;

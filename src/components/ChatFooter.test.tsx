@@ -176,11 +176,11 @@ describe("F29: ChatFooter (characterization)", () => {
     });
     await settle();
     expect(document.body.innerHTML).toMatchSnapshot("empty template");
-    // Recorded as the code stands: with no variable typed yet the send button
-    // is ENABLED (`every` over an empty slice is true). Fixed after the split.
+    // With no variable typed yet the send button is disabled (it was enabled
+    // until the fix after the split: `every` over an empty slice is true).
     expect(
       (screen.getByTitle("Enviar plantilla") as HTMLButtonElement).disabled,
-    ).toBe(false);
+    ).toBe(true);
 
     const inputs = [...document.querySelectorAll("input[type=text]")];
     const values = ["#987", "Beto", "martes"];

@@ -164,3 +164,23 @@ export function buildTemplateMessage(
 
   return { template, renderedBody };
 }
+
+/**
+ * Whether every variable of the header and body has a non-blank value. Counts
+ * the variables, not the values typed: nothing typed yet is not "all filled".
+ */
+export function allVariablesFilled(
+  counts: { bodyVarCount: number; headVarCount: number },
+  bodyVarValues: string[],
+  headVarValues: string[],
+): boolean {
+  const filled = (values: string[], count: number) =>
+    Array.from({ length: count }, (_, i) => values[i] ?? "").every(
+      (v) => v.trim() !== "",
+    );
+
+  return (
+    filled(bodyVarValues, counts.bodyVarCount) &&
+    filled(headVarValues, counts.headVarCount)
+  );
+}
