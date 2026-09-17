@@ -2,6 +2,12 @@ import { supabase } from "@/supabase/client";
 import type { ConversationRow, MessageRow } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { useEffect, useRef } from "react";
+import {
+  afterCursorFilter,
+  collectChangesSince,
+  RECOVERY_PAGE_SIZE,
+  shouldReloadInsteadOfCatchUp,
+} from "@/utils/recovery";
 
 type InitDataResponse = {
   conversations: ConversationRow[];
@@ -89,33 +95,46 @@ export const useInitialDataFetch = () => {
     }
   };
 
-  // Tab-visibility recovery: flat queries (updated_at-based)
+  // Tab-visibility recovery (F13): every change since the tab was hidden,
+  // paged by (updated_at, id) — see utils/recovery.ts.
   const loadConvs = async (since: Date) => {
     if (!activeOrgId) return;
-    const { data: conversations } = await supabase
-      .from("conversations")
-      .select()
-      .eq("organization_id", activeOrgId)
-      .gt("updated_at", since.toISOString())
-      .order("updated_at", { ascending: false })
-      .limit(999)
-      .throwOnError();
-
-    pushConversations(conversations);
+    await collectChangesSince(
+      since.toISOString(),
+      async (cursor) =>
+        (
+          await supabase
+            .from("conversations")
+            .select()
+            .eq("organization_id", activeOrgId)
+            .or(afterCursorFilter(cursor))
+            .order("updated_at", { ascending: true })
+            .order("id", { ascending: true })
+            .limit(RECOVERY_PAGE_SIZE)
+            .throwOnError()
+        ).data,
+      pushConversations,
+    );
   };
 
   const loadMsgs = async (since: Date) => {
     if (!activeOrgId) return;
-    const { data: messages } = await supabase
-      .from("messages")
-      .select()
-      .eq("organization_id", activeOrgId)
-      .gt("updated_at", since.toISOString())
-      .order("updated_at", { ascending: false })
-      .limit(999)
-      .throwOnError();
-
-    pushMessages(messages);
+    await collectChangesSince(
+      since.toISOString(),
+      async (cursor) =>
+        (
+          await supabase
+            .from("messages")
+            .select()
+            .eq("organization_id", activeOrgId)
+            .or(afterCursorFilter(cursor))
+            .order("updated_at", { ascending: true })
+            .order("id", { ascending: true })
+            .limit(RECOVERY_PAGE_SIZE)
+            .throwOnError()
+        ).data,
+      pushMessages,
+    );
   };
 
   useEffect(() => {
@@ -134,8 +153,13 @@ export const useInitialDataFetch = () => {
         document.visibilityState === "visible" &&
         lastVisibleAt.current
       ) {
-        loadConvs(lastVisibleAt.current).catch(console.error);
-        loadMsgs(lastVisibleAt.current).catch(console.error);
+        if (shouldReloadInsteadOfCatchUp(lastVisibleAt.current)) {
+          // A long absence: the init_data window is what the screen shows.
+          initData().catch(console.error);
+        } else {
+          loadConvs(lastVisibleAt.current).catch(console.error);
+          loadMsgs(lastVisibleAt.current).catch(console.error);
+        }
       }
     };
 
