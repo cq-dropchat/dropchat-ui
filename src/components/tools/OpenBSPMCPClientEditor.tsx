@@ -10,7 +10,7 @@ import {
 import SectionBody from "@/components/SectionBody";
 import SelectField from "@/components/SelectField";
 import { useCurrentAgent } from "@/queries/useAgents";
-import { useApiKeys, useCreateApiKey } from "@/queries/useApiKeys";
+import { useCreateApiKey } from "@/queries/useApiKeys";
 import type { ToolsForm } from "./types";
 
 // OpenBSP MCP Client Editor
@@ -34,7 +34,6 @@ export default function OpenBSPMCPClientEditor({
   const { data: currentAgent } = useCurrentAgent();
   const isOwner = currentAgent?.role === "owner";
 
-  const { data: apiKeys } = useApiKeys();
   const { mutateAsync: createApiKey } = useCreateApiKey();
   const [autoAuthDone, setAutoAuthDone] = useState(false);
 
@@ -49,35 +48,31 @@ export default function OpenBSPMCPClientEditor({
       name: `extra.tools.${index}.config.headers.authorization`,
     }) as string) || "";
 
-  // Auto-auth for owners: find or create an "OpenBSP MCP" API key
+  // Auto-auth for owners: mint an "OpenBSP MCP" API key for this tool.
+  //
+  // P8: it used to look for an existing key by that name and reuse it. Since
+  // F14 a stored key has no secret to reuse — `key` read back null, and the
+  // header was filled with "Bearer null" — and P8 removed the column
+  // altogether. A key exists in the clear exactly once, in the reply to
+  // create_api_key, so the only way to fill this header is to mint one.
   const hasToken = token.trim() !== "";
   useEffect(() => {
-    if (!isOwner || autoAuthDone || hasToken || !apiKeys) return;
+    if (!isOwner || autoAuthDone || hasToken) return;
 
-    const existing = apiKeys.find((k) => k.name === "OpenBSP MCP");
-    if (existing) {
-      setValue(
-        `extra.tools.${index}.config.headers.authorization`,
-        `Bearer ${existing.key}`,
-        { shouldDirty: true },
-      );
-      setAutoAuthDone(true);
-    } else {
-      void createApiKey({ name: "OpenBSP MCP", role: "member" }).then(
-        (newKey) => {
-          if (newKey) {
-            setValue(
-              `extra.tools.${index}.config.headers.authorization`,
-              `Bearer ${newKey.key}`,
-              { shouldDirty: true },
-            );
-          }
-          setAutoAuthDone(true);
-        },
-      );
-    }
+    void createApiKey({ name: "OpenBSP MCP", role: "member" }).then(
+      (newKey) => {
+        if (newKey) {
+          setValue(
+            `extra.tools.${index}.config.headers.authorization`,
+            `Bearer ${newKey.key}`,
+            { shouldDirty: true },
+          );
+        }
+        setAutoAuthDone(true);
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwner, apiKeys, autoAuthDone, hasToken]);
+  }, [isOwner, autoAuthDone, hasToken]);
 
   const isValid = label.trim() !== "" && hasToken;
   const isEmpty = label.trim() === "" && !hasToken;

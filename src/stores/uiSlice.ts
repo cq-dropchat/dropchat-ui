@@ -2,7 +2,11 @@ import type { StateCreator } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import type { AppState } from "./useBoundStore";
 import { emptyChatState } from "./chatSlice";
-import { claimMediaCache, clearMediaCache } from "@/utils/mediaCache";
+import {
+  claimMediaCache,
+  clearMediaCache,
+  dropOrganizationMedia,
+} from "@/utils/mediaCache";
 import dayjs from "dayjs";
 import {
   type ConversationAgentExtra,
@@ -131,19 +135,27 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
   // fresh chat slice. The same organization or the same user's session
   // refresh keeps it.
   setActiveOrg: (activeOrgId: string | null) =>
-    set((state) =>
-      activeOrgId === state.ui.activeOrgId
-        ? {}
-        : {
-            ui: {
-              ...state.ui,
-              activeOrgId,
-              activeConvId: null,
-              templateDrafts: new Map(),
-            },
-            chat: { ...state.chat, ...emptyChatState() },
-          },
-    ),
+    set((state) => {
+      if (activeOrgId === state.ui.activeOrgId) return {};
+
+      // P8: the attachments of the organization being left go with it,
+      // rather than waiting for the LRU or for sign-out. They were readable
+      // in the browser profile after the membership ended.
+      const { user, activeOrgId: leaving } = state.ui;
+      if (user && leaving) {
+        dropOrganizationMedia(user.id, leaving).catch(console.error);
+      }
+
+      return {
+        ui: {
+          ...state.ui,
+          activeOrgId,
+          activeConvId: null,
+          templateDrafts: new Map(),
+        },
+        chat: { ...state.chat, ...emptyChatState() },
+      };
+    }),
   setActiveConv: (activeConvId: string | null) =>
     set((state) => ({
       ui: {

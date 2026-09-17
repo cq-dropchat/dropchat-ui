@@ -10,6 +10,7 @@ import {
 import type { MediaLoad } from "@/stores/chatSlice";
 import {
   cacheBlob,
+  forgetCachedBlob,
   readCachedBlob,
   releaseMedia,
   retainMedia,
@@ -147,6 +148,16 @@ export function useMedia(message: MessageRow) {
     }
 
     if (error) {
+      // P8: gone (F18 deleted it) or refused (access ended). Whatever is
+      // cached for it is no longer ours to keep.
+      const status = Number(
+        (error as { statusCode?: string; status?: number }).statusCode ??
+          (error as { status?: number }).status,
+      );
+      if (userId && (status === 404 || status === 403)) {
+        forgetCachedBlob(userId, mediaId).catch(console.error);
+      }
+
       setLoad(message.id, { ...load, status: "error", error: error.message });
       return;
     }

@@ -14,11 +14,15 @@ vi.mock("@/queries/useAgents", () => ({
   useCurrentAgent: () => ({ data: { role: "owner" } }),
 }));
 vi.mock("@/queries/useApiKeys", () => ({
-  // An existing key, so the OpenBSP editor's auto-auth creates nothing.
-  useApiKeys: () => ({
-    data: [{ name: "OpenBSP MCP", key: "test-api-key-not-real" }],
+  // P8: the OpenBSP editor's auto-auth can only mint — a stored key has no
+  // secret to reuse — so the mint is what the mock answers. Obviously fake.
+  useCreateApiKey: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({
+      id: "key-1",
+      key: "test-api-key-not-real",
+      key_prefix: "test-api",
+    }),
   }),
-  useCreateApiKey: () => ({ mutateAsync: vi.fn() }),
 }));
 
 const TOOLS: ToolConfig[] = [

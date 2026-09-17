@@ -19,8 +19,10 @@ import {
   cacheBlob,
   clearMediaCache,
   diskUsage,
+  forgetCachedBlob,
   readCachedBlob,
 } from "@/utils/mediaCache";
+import { ORG_B } from "@/test/factories";
 
 // F21 — `idb-keyval` was installed and unused for media: a blob evicted from
 // memory, or any attachment after a reload, went back to the network. Now a
@@ -134,5 +136,61 @@ describe("F21: media cache in IndexedDB", () => {
     await cacheBlob("user-a", "huge", new Blob(["12345678901"]), 10);
 
     expect(await readCachedBlob("user-a", "huge")).toBeUndefined();
+  });
+});
+
+// P8 — a cached attachment outlived the access that fetched it: it survived
+// losing the organization and it survived F18 deleting the file, until the LRU
+// evicted it or the user signed out. Media keys carry the organization
+// (`organizations/<id>/attachments/<sha>`), so leaving one is enough to know
+// what to drop.
+describe("P8: a cached attachment does not outlive the access to it", () => {
+  const inA = `organizations/${ORG_A}/attachments/file-1`;
+  const inB = `organizations/${ORG_B}/attachments/file-9`;
+
+  it("switching organization drops the previous one's blobs, and only those", async () => {
+    await cacheBlob("user-a", inA, new Blob(["1234"]));
+    await cacheBlob("user-a", inB, new Blob(["1234"]));
+
+    useBoundStore.getState().ui.setActiveOrg(ORG_B);
+
+    await waitFor(async () =>
+      expect(await readCachedBlob("user-a", inA)).toBeUndefined(),
+    );
+    expect(await readCachedBlob("user-a", inB)).toBeDefined();
+  });
+
+  // A cached blob is served without asking the server, so the download that
+  // learns the object is gone is by definition one the cache missed. What the
+  // 404/403 path is for is the entry left behind when that happens — and not
+  // writing a new one.
+  it("a download that is gone or refused caches nothing", async () => {
+    server.use(
+      http.get("*/storage/v1/object/media/*", () =>
+        HttpResponse.json({ message: "Object not found" }, { status: 404 }),
+      ),
+    );
+
+    // One row, made once: rendering with a fresh id each time would key the
+    // load in the store to a message the next render no longer asks about.
+    const message = fileMessageRow();
+    const { result, unmount } = renderHook(() => useMedia(message));
+    act(() => result.current.startLoad());
+    await waitFor(() => expect(result.current.load.status).toBe("error"));
+    unmount();
+
+    expect((await diskUsage()).entries).toBe(0);
+    expect(await readCachedBlob("user-a", inA)).toBeUndefined();
+  });
+
+  it("forgetting one blob leaves the rest of the cache alone", async () => {
+    await cacheBlob("user-a", inA, new Blob(["1234"]));
+    await cacheBlob("user-a", inB, new Blob(["1234"]));
+
+    await forgetCachedBlob("user-a", inA);
+
+    expect(await readCachedBlob("user-a", inA)).toBeUndefined();
+    expect(await readCachedBlob("user-a", inB)).toBeDefined();
+    expect((await diskUsage()).entries).toBe(1);
   });
 });
