@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import "dayjs/locale/pt";
@@ -19,7 +20,12 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { AVATAR_COLORS } from "@/utils/colors";
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
-type SeparatorType = { text: string; first: true; last: true };
+type SeparatorType = { text: string; first: true; last: true; key: string };
+
+/** A row's height before it is measured. */
+const ESTIMATED_ROW_HEIGHT = 64;
+/** Within this distance of the bottom, the view follows new content. */
+const STICK_THRESHOLD = 80;
 
 function Separator({ text }: { text: string }) {
   // TODO: just a placeholder
@@ -46,6 +52,9 @@ function Separator({ text }: { text: string }) {
 }
 
 export default function Chat() {
+  // TanStack Virtual keeps its state in a mutable instance; the React
+  // Compiler would memoize reads of it and freeze the list.
+  "use no memo";
   const activeConvId = useBoundStore((store) => store.ui.activeConvId);
   const messages = Array.from(
     useBoundStore((store) =>
@@ -185,6 +194,8 @@ export default function Chat() {
           text: formatDate(env.message.timestamp),
           first: true,
           last: true,
+          // Keyed by the day's first message: stable while messages arrive.
+          key: `separator:${env.message.id}`,
         } as SeparatorType);
 
         if (prevMsg) {
@@ -228,45 +239,6 @@ export default function Chat() {
    *   Re-activating the conv -> goes to bottom
    */
 
-  useEffect(() => {
-    const scrollerRef = scroller.current;
-
-    if (!scrollerRef || !scroller.current) {
-      return;
-    }
-  }, [messages.length, activeConvId]);
-
-  useEffect(() => {
-    scrollToBottom(false);
-  }, [activeConvId]);
-
-  // Keep the scroll at the bottom when new messages are added
-  // prevent the scroll from jumping when the user is reading old messages
-  useEffect(() => {
-    const scrollRef = scroller.current;
-    if (!scrollRef) {
-      return;
-    }
-    scrollToBottom();
-  }, [messages.length]);
-
-  // Adjust scroll when visual viewport resizes (e.g. mobile keyboard opens)
-  useEffect(() => {
-    const handleResize = () => {
-      scrollToBottom(false);
-    };
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", handleResize);
-    }
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", handleResize);
-      }
-    };
-  }, []);
-
   // If the role is not admin, then do not show internal messages (tool calls, etc).
   const envelopesAndSeparators = insertDateSeparators(
     messages
@@ -281,39 +253,147 @@ export default function Chat() {
       .reverse(),
   );
 
-  const scrollToBottom = (isSmooth: boolean = true) => {
-    if (scroller.current) {
-      scroller.current.scrollTo({
-        top: scroller.current.scrollHeight,
-        behavior: isSmooth ? "smooth" : "instant",
-      });
+  const rows = envelopesAndSeparators;
+  const newest = rows.at(-1);
+  const newestMessage = newest && "message" in newest ? newest.message : null;
+
+  // F10: mount only the rows in view. A long thread used to mount a Message —
+  // markdown, media hooks, store subscriptions — for every message in it.
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scroller.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    getItemKey: (index) => {
+      const row = rows[index];
+      return "message" in row ? row.message.id : row.key;
+    },
+    overscan: 10,
+    paddingStart: 12,
+    paddingEnd: 8,
+    // First paint (and jsdom) has no layout yet: assume a screenful, already
+    // scrolled to the bottom, where a conversation opens.
+    initialRect: { width: 0, height: 800 },
+    initialOffset: () => rows.length * ESTIMATED_ROW_HEIGHT,
+  });
+
+  // Scroll anchoring works from geometry, not from scroll events (which a
+  // background tab does not dispatch): the view "is at the bottom" when it was
+  // within STICK_THRESHOLD of the content height from BEFORE the latest
+  // change. Every effect below runs after new content has already grown
+  // scrollHeight, so the current height would say "not at the bottom" for a
+  // reader who was.
+  const heightBefore = useRef(0);
+  const wasAtBottom = () => {
+    const el = scroller.current;
+    return (
+      !!el &&
+      heightBefore.current - el.scrollTop - el.clientHeight < STICK_THRESHOLD
+    );
+  };
+
+  // The effects run on their own triggers (conversation, newest message,
+  // content size, viewport); this ref hands them this render's rows.
+  const scrollToBottom = useRef(() => {});
+  scrollToBottom.current = () => {
+    if (rows.length) {
+      virtualizer.scrollToIndex(rows.length - 1, { align: "end" });
     }
   };
+
+  // Opening a conversation: its newest message.
+  useLayoutEffect(() => {
+    scrollToBottom.current();
+    heightBefore.current = scroller.current?.scrollHeight ?? 0;
+  }, [activeConvId]);
+
+  // Scrolling behavior (see above): if at the bottom, it sticks; a new
+  // outgoing message of mine goes to the bottom; a new incoming one leaves
+  // the reader where they are.
+  const lastNewestId = useRef(newestMessage?.id);
+  const onNewestMessage = useRef(() => {});
+  onNewestMessage.current = () => {
+    if (!newestMessage || newestMessage.id === lastNewestId.current) return;
+    lastNewestId.current = newestMessage.id;
+
+    const mine = !!activeAgentId && newestMessage.agent_id === activeAgentId;
+    if (mine || wasAtBottom()) {
+      scrollToBottom.current();
+    }
+  };
+  useLayoutEffect(() => {
+    onNewestMessage.current();
+  }, [newestMessage?.id]);
+
+  // Rows grow after they mount (measurement, images and media, fonts): a view
+  // that was at the bottom stays there. Declared after the effect above, so
+  // both judge against the same previous height.
+  const totalSize = virtualizer.getTotalSize();
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    if (wasAtBottom()) {
+      el.scrollTop = el.scrollHeight;
+    }
+    heightBefore.current = el.scrollHeight;
+  }, [totalSize]);
+
+  // Adjust scroll when visual viewport resizes (e.g. mobile keyboard opens)
+  useEffect(() => {
+    const handleResize = () => {
+      const el = scroller.current;
+      if (
+        el &&
+        el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD * 4
+      ) {
+        scrollToBottom.current();
+      }
+    };
+
+    window.visualViewport?.addEventListener("resize", handleResize);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
     activeConvId && (
       <div
         ref={scroller}
-        className="grow pb-[8px] overflow-y-auto [scrollbar-gutter:stable]"
+        className="grow overflow-y-auto [scrollbar-gutter:stable]"
       >
-        <div className="min-h-[12px]" />
-        <div className="flex flex-col">
-          {envelopesAndSeparators.map((envOrSep, index) =>
-            "message" in envOrSep ? (
-              <Message
-                key={envOrSep.message.id}
-                message={envOrSep.message}
-                first={envOrSep.first}
-                last={envOrSep.last}
-                orgName={orgName}
-                convName={convName}
-                multiParty={multiParty}
-                avatar={getAgentAvatar(envOrSep.message)}
-              />
-            ) : (
-              <Separator key={index} text={envOrSep.text} />
-            ),
-          )}
+        <div
+          className="relative w-full"
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualizer.getVirtualItems().map((item) => {
+            const row = rows[item.index];
+            return (
+              <div
+                key={item.key}
+                data-index={item.index}
+                ref={virtualizer.measureElement}
+                // flex: a flex container holds its children's margins, so the
+                // measured height includes a bubble's bottom margin.
+                className="absolute top-0 left-0 w-full flex flex-col"
+                style={{ transform: `translateY(${item.start}px)` }}
+              >
+                {"message" in row ? (
+                  <Message
+                    message={row.message}
+                    first={row.first}
+                    last={row.last}
+                    orgName={orgName}
+                    convName={convName}
+                    multiParty={multiParty}
+                    avatar={getAgentAvatar(row.message)}
+                  />
+                ) : (
+                  <Separator text={row.text} />
+                )}
+              </div>
+            );
+          })}
         </div>
         {/* (
           <button
