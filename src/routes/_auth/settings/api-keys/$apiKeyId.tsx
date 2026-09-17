@@ -6,8 +6,6 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { useForm } from "react-hook-form";
 import SectionBody from "@/components/SectionBody";
 import type { ApiKeyUpdate } from "@/supabase/client";
-import { useState } from "react";
-import { Copy, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/settings/api-keys/$apiKeyId")({
   component: ApiKeyDetail,
@@ -25,19 +23,6 @@ function ApiKeyDetail() {
   const { register } = useForm<ApiKeyUpdate>({
     values: apiKey,
   });
-  const [copied, setCopied] = useState(false);
-
-  function copyKey() {
-    if (apiKey?.key) {
-      navigator.clipboard
-        .writeText(apiKey.key)
-        .then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        })
-        .catch(console.error);
-    }
-  }
 
   return (
     apiKey && (
@@ -72,7 +57,7 @@ function ApiKeyDetail() {
                 </li>
                 <li>
                   <code className="font-mono">api-key:</code>{" "}
-                  {t("el valor de la clave generada abajo")}
+                  {t("la clave que se mostró al generarla")}
                 </li>
               </ul>
             </div>
@@ -98,27 +83,24 @@ function ApiKeyDetail() {
 
             <label>
               <div className="label">{t("Clave")}</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  className="text"
-                  readOnly
-                  {...register("key")}
-                />
-                <button
-                  type="button"
-                  className="p-[8px] hover:bg-muted rounded-full shrink-0"
-                  title={t("Copiar clave")}
-                  onClick={copyKey}
-                >
-                  {copied ? (
-                    <Check className="w-[20px] h-[20px] text-primary" />
-                  ) : (
-                    <Copy className="w-[20px] h-[20px] text-muted-foreground" />
-                  )}
-                </button>
+              <div className="text-[16px] text-foreground font-mono">
+                {apiKey.key_prefix}…
               </div>
+              <p className="text-muted-foreground text-[13px] mt-1">
+                {t(
+                  "Solo se guarda el prefijo. Si perdiste la clave, generá una nueva y eliminá esta.",
+                )}
+              </p>
             </label>
+
+            {apiKey.last_used_at && (
+              <label>
+                <div className="label">{t("Último uso")}</div>
+                <div className="text-[16px] text-foreground">
+                  {new Date(apiKey.last_used_at).toLocaleString()}
+                </div>
+              </label>
+            )}
           </form>
         </SectionBody>
       </>

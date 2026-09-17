@@ -9,6 +9,9 @@ import SectionBody from "@/components/SectionBody";
 import Button from "@/components/Button";
 import type { ApiKeyInsert } from "@/supabase/client";
 import SelectField from "@/components/SelectField";
+import { type MintedApiKey } from "@/queries/useApiKeys";
+import { useState } from "react";
+import { Check, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/settings/api-keys/new")({
   component: AddApiKey,
@@ -20,6 +23,20 @@ function AddApiKey() {
   const createApiKey = useCreateApiKey();
   const { data: currentAgent } = useCurrentAgent();
   const isOwner = currentAgent?.role === "owner";
+  // F14: the secret is shown exactly once, here, right after minting.
+  const [minted, setMinted] = useState<MintedApiKey | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  function copyKey() {
+    if (!minted) return;
+    navigator.clipboard
+      .writeText(minted.key)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(console.error);
+  }
 
   const {
     register,
@@ -46,16 +63,40 @@ function AddApiKey() {
         <form
           id="create-apikey-form"
           onSubmit={handleSubmit((data) =>
-            createApiKey.mutate(data, {
-              onSuccess: (apiKey) =>
-                navigate({
-                  to: `/settings/api-keys/${apiKey.id}`,
-                  hash: (prevHash) => prevHash!,
-                }),
-            }),
+            createApiKey.mutate(data, { onSuccess: setMinted }),
           )}
         >
-          <fieldset disabled={!isOwner} className="contents">
+          {minted && (
+            <div className="instructions">
+              <p>
+                {t(
+                  "Copiá la clave ahora: no se vuelve a mostrar. Solo se guarda su prefijo.",
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="text font-mono"
+                  readOnly
+                  value={minted.key}
+                />
+                <button
+                  type="button"
+                  className="p-[8px] hover:bg-muted rounded-full shrink-0"
+                  title={t("Copiar clave")}
+                  onClick={copyKey}
+                >
+                  {copied ? (
+                    <Check className="w-[20px] h-[20px] text-primary" />
+                  ) : (
+                    <Copy className="w-[20px] h-[20px] text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <fieldset disabled={!isOwner || !!minted} className="contents">
             <p className="text-muted-foreground text-[14px]">
               {t(
                 "Esto generará una nueva clave API que podrás usar para autenticarte.",
@@ -87,17 +128,32 @@ function AddApiKey() {
       </SectionBody>
 
       <SectionFooter>
-        <Button
-          form="create-apikey-form"
-          type="submit"
-          disabled={!isOwner}
-          invalid={!isValid || !isDirty}
-          loading={createApiKey.isPending}
-          disabledReason={t("Requiere permisos de propietario")}
-          className="primary"
-        >
-          {t("Generar")}
-        </Button>
+        {minted ? (
+          <Button
+            type="button"
+            className="primary"
+            onClick={() =>
+              navigate({
+                to: `/settings/api-keys/${minted.id}`,
+                hash: (prevHash) => prevHash!,
+              })
+            }
+          >
+            {t("Listo")}
+          </Button>
+        ) : (
+          <Button
+            form="create-apikey-form"
+            type="submit"
+            disabled={!isOwner}
+            invalid={!isValid || !isDirty}
+            loading={createApiKey.isPending}
+            disabledReason={t("Requiere permisos de propietario")}
+            className="primary"
+          >
+            {t("Generar")}
+          </Button>
+        )}
       </SectionFooter>
     </>
   );

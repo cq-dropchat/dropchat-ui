@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ApiKeyInsert, type ApiKeyRow, supabase } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
-import { type CachedResponse, queryKeys } from "./queryKeys";
+import { queryKeys } from "./queryKeys";
 
 export function useApiKeys() {
   const userId = useBoundStore((state) => state.ui.user?.id);
@@ -41,34 +41,37 @@ export function useApiKey(id: string) {
   });
 }
 
+/** What create_api_key hands back: the row id and the secret, ONCE. */
+export type MintedApiKey = { id: string; key: string; key_prefix: string };
+
 export function useCreateApiKey() {
   const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
 
   return useMutation({
-    mutationFn: async (data: Omit<ApiKeyInsert, "key" | "organization_id">) => {
+    mutationFn: async (
+      data: Pick<ApiKeyInsert, "name" | "role" | "expires_at">,
+    ): Promise<MintedApiKey> => {
       if (!orgId) throw new Error("No active organization");
 
-      // Simple key generation logic
-      const key = `sk_${crypto.randomUUID().replace(/-/g, "")}`;
-
-      const { data: apiKey } = await supabase
-        .from("api_keys")
-        .insert({ ...data, organization_id: orgId, key })
-        .select()
+      // F14: the key is minted server-side and stored as sha256 + prefix;
+      // this is the only time the plain secret exists outside the caller.
+      const { data: minted } = await supabase
+        .rpc("create_api_key", {
+          p_organization_id: orgId,
+          p_name: data.name,
+          p_role: data.role ?? "member",
+          p_expires_at: data.expires_at ?? undefined,
+        })
         .single()
         .throwOnError();
 
-      return apiKey;
+      return minted;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.apiKeys.all(orgId),
       });
-      queryClient.setQueryData<CachedResponse<ApiKeyRow>>(
-        queryKeys.apiKeys.detail(orgId, data.id),
-        (old) => (old ? { ...old, data } : { data, error: null }),
-      );
     },
   });
 }
