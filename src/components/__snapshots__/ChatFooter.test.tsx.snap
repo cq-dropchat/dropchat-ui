@@ -1,0 +1,177 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`F29: ChatFooter (characterization) > Instagram after the window: closed, no picker 1`] = `"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-background"><div class="shrink-0"><button disabled="" class="p-[8px] rounded-full" title="Adjuntar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-[24px] h-[24px]" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div><input disabled="" multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div contenteditable="false" class="cursor-pointer outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words" title="La conversación se cerró 24 horas después del último mensaje del contacto. Esperá a que te escriba de nuevo para responder."></div><div class="absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground cursor-pointer"><span>Conversación cerrada</span></div></div><button disabled="" class="p-[8px] rounded-full bg-primary disabled:opacity-50" title="Enviar mensaje"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"`;
+
+exports[`F29: ChatFooter (characterization) > Instagram inside the window 1`] = `"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-incoming-chat-bubble"><div class="shrink-0"><button class="p-[8px] rounded-full cursor-pointer hover:bg-accent" title="Adjuntar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-[24px] h-[24px]" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div><input multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div contenteditable="true" class=" outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words"></div><div class="absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground"><span class="lg:hidden">Cerrará en</span><span class="hidden lg:inline">La conversación cerrará en</span> <span>una hora</span></div></div><button class="p-[8px] rounded-full bg-primary disabled:opacity-50 cursor-pointer" title="Enviar mensaje"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"`;
+
+exports[`F29: ChatFooter (characterization) > WhatsApp after the window: closed, and a click opens the template picker > closed 1`] = `"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-background"><div class="shrink-0"><button disabled="" class="p-[8px] rounded-full" title="Adjuntar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-[24px] h-[24px]" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div><input disabled="" multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div contenteditable="false" class="cursor-pointer outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words" title="WhatsApp cierra la conversación a las 24 horas del último mensaje recibido. Para abrir la conversación debes utilizar una plantilla."></div><div class="absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground cursor-pointer"><span class="lg:hidden">Conversación cerrada</span><span class="hidden lg:inline">Conversación cerrada, abre la conversación con una plantilla</span></div></div><button disabled="" class="p-[8px] rounded-full bg-primary disabled:opacity-50" title="Enviar mensaje"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"`;
+
+exports[`F29: ChatFooter (characterization) > WhatsApp inside the window: composer and countdown 1`] = `"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-incoming-chat-bubble"><div class="shrink-0"><button class="p-[8px] rounded-full cursor-pointer hover:bg-accent" title="Adjuntar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-[24px] h-[24px]" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div><input multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div contenteditable="true" class=" outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words"></div><div class="absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground"><span class="lg:hidden">Cerrará en</span><span class="hidden lg:inline">La conversación cerrará en</span> <span>un día</span></div></div><button class="p-[8px] rounded-full bg-primary disabled:opacity-50 cursor-pointer" title="Enviar mensaje"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"`;
+
+exports[`F29: ChatFooter (characterization) > composes and sends a template with header and body variables > empty template 1`] = `
+"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-incoming-chat-bubble"><div class="shrink-0"><button class="p-[8px] rounded-full cursor-pointer hover:bg-accent" title="Descartar plantilla"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x w-[24px] h-[24px]" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></div><input disabled="" multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div class="mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words"><span>Pedido </span><span class="absolute invisible whitespace-pre text-[14px] px-[12px]" aria-hidden="true">#123</span><input class="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary" placeholder="#123" type="text" value=""><span>
+</span><span>Hola </span><span class="absolute invisible whitespace-pre text-[14px] px-[12px]" aria-hidden="true">Ana</span><input class="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary" placeholder="Ana" type="text" value=""><span>, tu pedido llega el </span><span class="absolute invisible whitespace-pre text-[14px] px-[12px]" aria-hidden="true">lunes</span><input class="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary" placeholder="lunes" type="text" value=""><span>.</span><span>
+Gracias</span></div></div><button class="p-[8px] rounded-full bg-primary disabled:opacity-50 cursor-pointer" title="Enviar plantilla"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"
+`;
+
+exports[`F29: ChatFooter (characterization) > composes and sends a template with header and body variables > filled template 1`] = `
+"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-incoming-chat-bubble"><div class="shrink-0"><button class="p-[8px] rounded-full cursor-pointer hover:bg-accent" title="Descartar plantilla"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x w-[24px] h-[24px]" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></div><input disabled="" multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div class="mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words"><span>Pedido </span><span class="absolute invisible whitespace-pre text-[14px] px-[12px]" aria-hidden="true">#987</span><input class="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary" placeholder="#123" type="text" value="#987"><span>
+</span><span>Hola </span><span class="absolute invisible whitespace-pre text-[14px] px-[12px]" aria-hidden="true">Beto</span><input class="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary" placeholder="Ana" type="text" value="Beto"><span>, tu pedido llega el </span><span class="absolute invisible whitespace-pre text-[14px] px-[12px]" aria-hidden="true">martes</span><input class="inline-block bg-primary/10 border border-primary/30 rounded-full px-[12px] py-[1px] mx-[2px] text-[14px] leading-[18px] outline-none focus:border-primary" placeholder="lunes" type="text" value="martes"><span>.</span><span>
+Gracias</span></div></div><button class="p-[8px] rounded-full bg-primary disabled:opacity-50 cursor-pointer" title="Enviar plantilla"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"
+`;
+
+exports[`F29: ChatFooter (characterization) > composes and sends a template with header and body variables > sent template 1`] = `
+[
+  [
+    "store",
+    {
+      "agent_id": "agent-alice",
+      "content": {
+        "data": {
+          "components": [
+            {
+              "parameters": [
+                {
+                  "text": "#987",
+                  "type": "text",
+                },
+              ],
+              "type": "header",
+            },
+            {
+              "parameters": [
+                {
+                  "text": "Beto",
+                  "type": "text",
+                },
+                {
+                  "text": "martes",
+                  "type": "text",
+                },
+              ],
+              "type": "body",
+            },
+            {
+              "index": "0",
+              "parameters": [
+                {
+                  "payload": "ver_pedido",
+                  "type": "payload",
+                },
+              ],
+              "sub_type": "quick_reply",
+              "type": "button",
+            },
+          ],
+          "language": {
+            "code": "es",
+            "policy": "deterministic",
+          },
+          "name": "order_update",
+        },
+        "kind": "template",
+        "text": "*Pedido #987*
+
+Hola Beto, tu pedido llega el martes.
+
+_Gracias_",
+        "type": "data",
+        "version": "1",
+      },
+      "conversation_id": "c0000000-0000-4000-8000-000000000013",
+    },
+  ],
+  [
+    "db",
+    {
+      "agent_id": "agent-alice",
+      "content": {
+        "data": {
+          "components": [
+            {
+              "parameters": [
+                {
+                  "text": "#987",
+                  "type": "text",
+                },
+              ],
+              "type": "header",
+            },
+            {
+              "parameters": [
+                {
+                  "text": "Beto",
+                  "type": "text",
+                },
+                {
+                  "text": "martes",
+                  "type": "text",
+                },
+              ],
+              "type": "body",
+            },
+            {
+              "index": "0",
+              "parameters": [
+                {
+                  "payload": "ver_pedido",
+                  "type": "payload",
+                },
+              ],
+              "sub_type": "quick_reply",
+              "type": "button",
+            },
+          ],
+          "language": {
+            "code": "es",
+            "policy": "deterministic",
+          },
+          "name": "order_update",
+        },
+        "kind": "template",
+        "text": "*Pedido #987*
+
+Hola Beto, tu pedido llega el martes.
+
+_Gracias_",
+        "type": "data",
+        "version": "1",
+      },
+      "conversation_id": "c0000000-0000-4000-8000-000000000013",
+    },
+  ],
+]
+`;
+
+exports[`F29: ChatFooter (characterization) > local: no window 1`] = `"<div><div class="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10"><div class="flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)] bg-incoming-chat-bubble"><div class="shrink-0"><button class="p-[8px] rounded-full cursor-pointer hover:bg-accent" title="Adjuntar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-[24px] h-[24px]" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div><input multiple="" class="hidden" accept="*/*" type="file"><div class="relative grow"><div contenteditable="true" class=" outline-none mx-[5px] py-[10px] min-h-[40px] max-h-40 overflow-y-auto text-[15px] leading-[20px] break-words"></div><div class="absolute bottom-[1px] py-[10px] mx-[5px] max-h-[40px] text-[15px] text-muted-foreground"><span>Escribe un mensaje</span></div></div><button class="p-[8px] rounded-full bg-primary disabled:opacity-50 cursor-pointer" title="Enviar mensaje"><svg class="w-[24px] h-[24px] transition text-primary-foreground"><use href="/icons.svg#send"></use></svg></button></div></div></div>"`;
+
+exports[`F29: ChatFooter (characterization) > sends a typed text 1`] = `
+[
+  [
+    "store",
+    {
+      "agent_id": "agent-alice",
+      "content": {
+        "kind": "text",
+        "text": "hola **mundo**",
+        "type": "text",
+        "version": "1",
+      },
+      "conversation_id": "c0000000-0000-4000-8000-000000000011",
+    },
+  ],
+  [
+    "db",
+    {
+      "agent_id": "agent-alice",
+      "content": {
+        "kind": "text",
+        "text": "hola **mundo**",
+        "type": "text",
+        "version": "1",
+      },
+      "conversation_id": "c0000000-0000-4000-8000-000000000011",
+    },
+  ],
+]
+`;
