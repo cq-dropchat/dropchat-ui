@@ -35,14 +35,16 @@ export default defineConfig({
         "src/supabase/types/**", // type-only modules
         "src/deprecated/**",
         "src/main.tsx",
+        "src/dev/**", // dev-only harnesses, never in the build
       ],
       // CI gate. Ratcheted at the end of each phase to (reached − 2), never
       // lowered. See IMPLEMENTATION_STATUS.md.
       thresholds: {
-        // Ratchet (end of phase 1): reached − 2. Never lowered.
-        lines: 3,
-        branches: 3,
-        "src/stores/**/*.ts": { lines: 48, branches: 42 },
+        // Ratchet (end of phase 3): reached − 2, rounded down. Reached:
+        // lines 12.4 %, branches 9.5 %; stores 60.7 % / 61.0 %. Never lowered.
+        lines: 10,
+        branches: 7,
+        "src/stores/**/*.ts": { lines: 58, branches: 58 },
       },
     },
   },
