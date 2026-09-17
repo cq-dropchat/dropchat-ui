@@ -1,3 +1,4 @@
+import { isPublicHttpsUrl } from "@/utils/webhookUrl";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import SectionHeader from "@/components/SectionHeader";
 import SectionFooter from "@/components/SectionFooter";
@@ -62,7 +63,11 @@ function AddWebhook() {
                 type="url"
                 className="text"
                 placeholder={t("https://ejemplo.com/webhook")}
-                {...register("url", { required: true })}
+                {...register("url", {
+                  required: true,
+                  // F06: the API refuses anything else.
+                  validate: isPublicHttpsUrl,
+                })}
               />
             </label>
 
