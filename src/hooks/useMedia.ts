@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { pushMessageToDb } from "@/utils/MessageUtils";
 import useBoundStore from "@/stores/useBoundStore";
 import {
@@ -8,6 +8,12 @@ import {
   messageDirection,
 } from "@/supabase/client";
 import type { MediaLoad } from "@/stores/chatSlice";
+import {
+  cacheBlob,
+  readCachedBlob,
+  releaseMedia,
+  retainMedia,
+} from "@/utils/mediaCache";
 
 /**
  * Why a message cannot be loaded as media, or null when it can. Computed
@@ -58,7 +64,21 @@ export function useMedia(message: MessageRow) {
         handledOnce: false,
       };
   const setLoad = useBoundStore((store) => store.chat.setMediaLoad);
+  const userId = useBoundStore((store) => store.ui.user?.id);
   const [cancel, setCancel] = useState(false);
+
+  // F21: while the message is mounted its blob is in use — recent, and kept
+  // in memory past the budget.
+  useEffect(() => {
+    retainMedia(message.id);
+    return () => {
+      releaseMedia(message.id);
+    };
+  }, [message.id]);
+
+  const keepOnDisk = (blob: Blob) => {
+    if (userId) cacheBlob(userId, mediaId, blob).catch(console.error);
+  };
 
   const uploadTask = async () => {
     if (
@@ -93,6 +113,7 @@ export function useMedia(message: MessageRow) {
     }
 
     setLoad(message.id, { ...load, status: "done" });
+    if (!error) keepOnDisk(load.blob);
 
     !error && (await pushMessageToDb(message as MessageInsert));
   };
@@ -103,6 +124,18 @@ export function useMedia(message: MessageRow) {
     }
 
     setLoad(message.id, { ...load, status: "loading", error: undefined });
+
+    // F21: downloaded before, then evicted from memory or lost to a reload.
+    const cached =
+      userId &&
+      (await readCachedBlob(userId, mediaId).catch((error: unknown) => {
+        console.error(error);
+        return undefined;
+      }));
+    if (cached) {
+      setLoad(message.id, { ...load, status: "done", blob: cached });
+      return;
+    }
 
     const { data, error } = await supabase.storage
       .from("media")
@@ -119,6 +152,7 @@ export function useMedia(message: MessageRow) {
     }
 
     setLoad(message.id, { ...load, status: "done", blob: data });
+    keepOnDisk(data);
   };
 
   const startLoad = () => {

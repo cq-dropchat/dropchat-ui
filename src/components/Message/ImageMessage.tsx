@@ -1,6 +1,8 @@
-import { type ReactEventHandler, useEffect, useState } from "react";
+import { type ReactEventHandler, useEffect, useRef, useState } from "react";
 import StatusIcon from "./StatusIcon";
 import { useMedia } from "@/hooks/useMedia";
+import { useInView } from "@/hooks/useInView";
+import { useObjectUrl } from "@/hooks/useObjectUrl";
 import { fileSize } from "./DocumentMessage";
 import dayjs from "dayjs";
 import { Image, Space } from "antd";
@@ -64,21 +66,27 @@ export default function ImageMessage(message: MessageRow) {
 
   const { translate: t } = useTranslation();
 
+  const frame = useRef<HTMLDivElement>(null);
+  const inView = useInView(frame);
+  const src = useObjectUrl(load.blob);
+
   useEffect(() => {
     // Start the upload right away.
     if (load.type === "upload" && load.status === "pending") {
       startLoad();
     }
 
-    // Auto download if the message is recent.
+    // Auto download if the message is recent, once it is (nearly) on screen
+    // (F21: on mount, a conversation downloaded every recent image in it).
     if (
+      inView &&
       load.type === "download" &&
       load.status === "pending" &&
       dayjs(message.timestamp).isAfter(dayjs().subtract(1, "day"))
     ) {
       startLoad();
     }
-  }, [load.blob]);
+  }, [load.blob, inView]);
 
   const imageDimensions: ReactEventHandler<HTMLImageElement> = (event) => {
     if (!(event.target instanceof HTMLImageElement)) {
@@ -102,6 +110,7 @@ export default function ImageMessage(message: MessageRow) {
   return (
     <>
       <div
+        ref={frame}
         className={
           "rounded-md flex items-center justify-center cursor-pointer relative"
         }
@@ -115,13 +124,13 @@ export default function ImageMessage(message: MessageRow) {
         }}
       >
         {/* Image */}
-        {load.blob && (
+        {src && (
           <>
             <div className="absolute top-0">
               {" "}
               {/* antd.Image does not absolute, hence, absolute it in a parent div */}
               <Image
-                src={URL.createObjectURL(load.blob)}
+                src={src}
                 onLoad={imageDimensions}
                 className="rounded-md object-cover"
                 preview={{

@@ -14,6 +14,13 @@ const groupBy = groupByUntyped as <T>(
   keySelector: (item: T, index: number) => string,
 ) => Partial<Record<string, T[]>>;
 import { type MessageRowV0, toV1 } from "@/supabase/messages-v0";
+import {
+  MEDIA_MEMORY_BUDGET,
+  forgetMedia,
+  isMediaRetained,
+  mediaLastUsed,
+  touchMedia,
+} from "@/utils/mediaCache";
 
 export function timestampDescending(a?: MessageRow, b?: MessageRow) {
   // Valid comparator: returns a signed number and 0 on ties. The previous
@@ -195,6 +202,44 @@ function ofActiveOrg<T extends { organization_id: string }>(
     : [];
 }
 
+/**
+ * F21: an upload keeps its file until it is done (it is the only copy); a
+ * blob a mounted message shows stays. Anything else can be downloaded again,
+ * or read back from the disk cache.
+ */
+function evictable(messageId: string, load: MediaLoad) {
+  return (
+    !!load.blob &&
+    !(load.type === "upload" && load.status !== "done") &&
+    !isMediaRetained(messageId)
+  );
+}
+
+/**
+ * F21: drops the least recently used blobs until the rest fit the budget.
+ * The entry goes with its blob, so the message is back to "pending".
+ * Mutates the Map it is given (a copy made by the caller).
+ */
+export function evictMediaLoads(
+  mediaLoads: Map<string, MediaLoad>,
+  budget: number,
+) {
+  let total = 0;
+  for (const load of mediaLoads.values()) total += load.blob?.size ?? 0;
+  if (total <= budget) return;
+
+  const candidates = [...mediaLoads]
+    .filter(([id, load]) => evictable(id, load))
+    .sort(([a], [b]) => mediaLastUsed(a) - mediaLastUsed(b));
+
+  for (const [id, load] of candidates) {
+    if (total <= budget) break;
+    mediaLoads.delete(id);
+    forgetMedia(id);
+    total -= load.blob!.size;
+  }
+}
+
 // @ts-expect-error partializing the slice creator's state type
 export const createChatSlice: StateCreator<Partial<AppState>> = (
   set: (
@@ -288,7 +333,11 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
     set((state) => {
       const mediaLoads = new Map(state.chat.mediaLoads);
 
+      if (mediaLoad.blob !== mediaLoads.get(messageId)?.blob) {
+        touchMedia(messageId);
+      }
       mediaLoads.set(messageId, { ...mediaLoad });
+      evictMediaLoads(mediaLoads, MEDIA_MEMORY_BUDGET);
 
       return {
         chat: {

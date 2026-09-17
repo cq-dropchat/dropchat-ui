@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import type { AppState } from "./useBoundStore";
 import { emptyChatState } from "./chatSlice";
+import { claimMediaCache, clearMediaCache } from "@/utils/mediaCache";
 import dayjs from "dayjs";
 import {
   type ConversationAgentExtra,
@@ -150,7 +151,10 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
         activeConvId,
       },
     })),
-  setUser: (user: User | null) =>
+  setUser: (user: User | null) => {
+    // F21: the disk media cache belongs to the signed-in user.
+    (user ? claimMediaCache(user.id) : clearMediaCache()).catch(console.error);
+
     set((state) =>
       state.ui.user && state.ui.user.id !== user?.id
         ? {
@@ -163,7 +167,8 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
             chat: { ...state.chat, ...emptyChatState() },
           }
         : { ui: { ...state.ui, user } },
-    ),
+    );
+  },
   setFilter: (filter: keyof typeof filters) =>
     set((state) => ({
       ui: {

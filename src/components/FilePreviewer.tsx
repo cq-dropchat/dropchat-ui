@@ -16,6 +16,13 @@ import { pushConversationToDb } from "@/utils/ConversationUtils";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
+import { useObjectUrl } from "@/hooks/useObjectUrl";
+
+/** F21: a draft's image with one object URL, revoked on unmount. */
+function DraftImage({ file, className }: { file: File; className: string }) {
+  const src = useObjectUrl(file);
+  return src ? <img src={src} className={className} /> : null;
+}
 
 const FilePreviewer = () => {
   const { translate: t } = useTranslation();
@@ -222,10 +229,10 @@ const FilePreviewer = () => {
         {/* Preview area */}
         <div className="grow flex flex-col items-center justify-center m-[16px]">
           {isImage(previewDraft.file.type) ? (
-            <img
-              src={URL.createObjectURL(previewDraft.file)}
+            <DraftImage
+              file={previewDraft.file}
               className="max-h-[25vw] max-w-[25hw] shadow"
-            /> // TODO: not to memoize URL.createObjectURL could be potentially *stupid* - cabra 30/05/2024
+            />
           ) : (
             <>
               <img
@@ -311,8 +318,8 @@ const FilePreviewer = () => {
                     </button>
 
                     {isImage(draft.file.type) ? (
-                      <img
-                        src={URL.createObjectURL(draft.file)} // TODO: this is potentially *stupid* - cabra 30/05/2024
+                      <DraftImage
+                        file={draft.file}
                         className="object-cover w-[50px] h-[50px] rounded-sm"
                       />
                     ) : (

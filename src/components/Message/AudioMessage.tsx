@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import StatusIcon from "./StatusIcon";
 import { useMedia } from "@/hooks/useMedia";
+import { useObjectUrl } from "@/hooks/useObjectUrl";
 import Avatar from "../Avatar";
 // COMMENTED OUT: react-audio-visualize is not compatible with React 19
 // import { AudioVisualizer } from "react-audio-visualize";
@@ -53,15 +54,20 @@ export default function AudioMessage({
   const [duration, setDuration] = useState(0);
   const [seekTime, setSeekTime] = useState(0);
 
+  const src = useObjectUrl(load.blob);
+
   useEffect(() => {
     // Start the upload right away.
     if (load.type === "upload" && load.status === "pending") {
       startLoad();
     }
+  }, [load.blob]);
 
-    if (load.blob) {
+  // F21: the player follows the blob's URL, which useObjectUrl revokes.
+  useEffect(() => {
+    if (src) {
       // TODO: initialize a zeroed audio blob as a placeholder - cabra 05/06/2024
-      const audio = new Audio(URL.createObjectURL(load.blob));
+      const audio = new Audio(src);
 
       audio.ondurationchange = () => setDuration(audio.duration);
       audio.ontimeupdate = () => setTime(audio.currentTime);
@@ -73,8 +79,13 @@ export default function AudioMessage({
       };
 
       setAudio(audio);
+
+      return () => {
+        audio.pause();
+        setAudio(null);
+      };
     }
-  }, [load.blob]);
+  }, [src]);
 
   return (
     <div className={"w-[320px]"}>
