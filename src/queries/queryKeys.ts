@@ -35,6 +35,7 @@ export const queryKeys = {
       [orgId, "organizations_addresses"] as const,
     addressDetail: (orgId: NullableId, address: NullableId) =>
       [orgId, "organizations_addresses", address] as const,
+    exports: (orgId: NullableId) => [orgId, "organization_exports"] as const,
   },
   webhooks: {
     all: (orgId: NullableId) => [orgId, "webhooks"] as const,

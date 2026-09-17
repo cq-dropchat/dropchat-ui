@@ -15,6 +15,12 @@ import useBoundStore from "@/stores/useBoundStore";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import { type OrganizationUpdate } from "@/supabase/client";
+import {
+  isExportInProgress,
+  useOrganizationExport,
+  useRequestOrganizationExport,
+  useSignOrganizationExport,
+} from "@/queries/useOrganizationExports";
 
 export const Route = createFileRoute("/_auth/settings/organization/")({
   beforeLoad: () => {
@@ -103,6 +109,8 @@ function EditOrganization() {
             disabled={!isAdmin}
           />
         </form>
+
+        {isOwner && <OrganizationExport />}
       </SectionBody>
 
       <SectionFooter>
@@ -119,5 +127,82 @@ function EditOrganization() {
         </Button>
       </SectionFooter>
     </>
+  );
+}
+
+/**
+ * F18: a copy of the organization's data, as a ZIP of one NDJSON per table.
+ * The owner's alone — `request_organization_export` answers 42501 to anyone
+ * else, so the whole block is theirs to see. Building it is a cron worker's
+ * job, so the row is polled while it runs and left alone once it is not.
+ */
+function OrganizationExport() {
+  const { translate: t } = useTranslation();
+  const { data: exportRow } = useOrganizationExport();
+  const request = useRequestOrganizationExport();
+  const sign = useSignOrganizationExport();
+
+  const working = isExportInProgress(exportRow?.status) || request.isPending;
+  const expiresAt = exportRow?.expires_at
+    ? new Date(exportRow.expires_at)
+    : null;
+
+  return (
+    <div className="flex flex-col gap-[8px] pt-[10px]">
+      <div className="label">{t("Exportar datos")}</div>
+
+      <p className="text-sm opacity-70">
+        {t(
+          "Un ZIP con los mensajes, conversaciones, contactos y cuentas de la organización. No incluye credenciales ni archivos adjuntos.",
+        )}
+      </p>
+
+      {working && <p className="text-sm">{t("Preparando…")}</p>}
+
+      {exportRow?.status === "ready" && expiresAt && (
+        <p className="text-sm">
+          {t("Disponible hasta")} {expiresAt.toLocaleDateString()}
+        </p>
+      )}
+
+      {exportRow?.status === "expired" && (
+        <p className="text-sm opacity-70">{t("El archivo ya venció")}</p>
+      )}
+
+      {exportRow?.status === "failed" && (
+        <p role="alert" className="text-sm text-red-600">
+          {t("No se pudo preparar la exportación")}
+          {exportRow.error ? `: ${exportRow.error}` : null}
+        </p>
+      )}
+
+      <div className="flex gap-[8px]">
+        <Button
+          type="button"
+          className="primary"
+          loading={request.isPending}
+          disabled={working}
+          onClick={() => request.mutate()}
+        >
+          {t("Exportar datos")}
+        </Button>
+
+        {exportRow?.status === "ready" && exportRow.object_name && (
+          <Button
+            type="button"
+            loading={sign.isPending}
+            onClick={() =>
+              sign.mutate(exportRow.object_name!, {
+                // A signed URL is good for an hour and names the file; opening
+                // it is the download. Nothing is stored on this side.
+                onSuccess: (url) => window.open(url, "_blank", "noopener"),
+              })
+            }
+          >
+            {t("Descargar")}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
