@@ -107,6 +107,10 @@ useBoundStore.setState((state) => ({
   },
 }));
 
+// Lets a measurement session reach the real store and the real list
+// computation from the console (this file is dev-only and never built).
+(window as unknown as { __store: unknown }).__store = useBoundStore;
+
 const renders: number[] = [];
 let handlerMs = 0;
 let wireBytes = 0;
