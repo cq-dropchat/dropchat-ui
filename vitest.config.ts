@@ -40,12 +40,12 @@ export default defineConfig({
       // CI gate. Ratcheted at the end of each phase to (reached − 2), never
       // lowered. See IMPLEMENTATION_STATUS.md.
       thresholds: {
-        // Ratchet (end of phase 4): reached − 2, rounded down. Reached:
-        // lines 28.1 %, branches 24.8 %; stores 78.0 % / 72.8 %. Never
-        // lowered. (Phase 3: 10 / 7; stores 58 / 58.)
-        lines: 26,
-        branches: 22,
-        "src/stores/**/*.ts": { lines: 75, branches: 70 },
+        // Ratchet (end of phase 5): reached − 2, rounded down. Reached:
+        // lines 31.07 %, branches 27.41 %; stores 81.62 % / 75.21 %. Never
+        // lowered. (Phase 4: 26 / 22; stores 75 / 70. Phase 3: 10 / 7.)
+        lines: 29,
+        branches: 25,
+        "src/stores/**/*.ts": { lines: 79, branches: 73 },
       },
     },
   },
