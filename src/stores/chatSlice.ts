@@ -34,6 +34,89 @@ export function timestampDescending(a?: MessageRow, b?: MessageRow) {
   return (b?.id || "").localeCompare(a?.id || "");
 }
 
+/** Past this many moved rows a full sort beats repeated insertion. */
+const INSERTION_LIMIT = 64;
+
+function sameOrderingKey(a: MessageRow, b: MessageRow) {
+  return a.timestamp === b.timestamp && a.created_at === b.created_at;
+}
+
+/** First index whose row sorts after `row` (newest-first order). */
+function insertionIndex(sorted: MessageRow[], row: MessageRow) {
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (timestampDescending(sorted[mid], row) <= 0) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * F10. Merges incoming rows into a conversation kept newest-first, without
+ * re-sorting it on every realtime event.
+ *
+ * Four events in five are status updates (sent, delivered, read) on a row the
+ * store already has: its ordering key did not change, so the value is swapped
+ * in place (Map.set keeps the position). A new message is placed by binary
+ * search. Only a first load, or a batch that moves many rows, sorts.
+ *
+ * Returns a new Map (zustand needs a new reference); the conversation's
+ * rows are copied once, O(m), instead of sorted, O(m log m).
+ */
+export function mergeSortedMessages(
+  current: Map<string, MessageRow> | undefined,
+  incoming: MessageRow[],
+): Map<string, MessageRow> {
+  const accepted: MessageRow[] = [];
+
+  for (const msg of incoming) {
+    // skip push when the cached msg is more recent than the incoming msg
+    const cachedUpdatedAt = current?.get(msg.id)?.updated_at;
+    if (
+      cachedUpdatedAt &&
+      +new Date(cachedUpdatedAt) > +new Date(msg.updated_at)
+    ) {
+      continue;
+    }
+    accepted.push(msg);
+  }
+
+  if (!current || current.size === 0) {
+    const rows = [...new Map(accepted.map((m) => [m.id, m])).values()];
+    if (rows.length > 1) rows.sort(timestampDescending);
+    return new Map(rows.map((m) => [m.id, m]));
+  }
+
+  const moved = new Map<string, MessageRow>();
+  const next = new Map(current);
+
+  for (const msg of accepted) {
+    const cached = current.get(msg.id);
+    if (cached && sameOrderingKey(cached, msg) && !moved.has(msg.id)) {
+      next.set(msg.id, msg); // in place
+    } else {
+      moved.set(msg.id, msg);
+    }
+  }
+
+  if (moved.size === 0) return next;
+
+  const rows = Array.from(next.values()).filter((m) => !moved.has(m.id));
+
+  if (moved.size > INSERTION_LIMIT) {
+    rows.push(...moved.values());
+    rows.sort(timestampDescending);
+  } else {
+    for (const msg of moved.values()) {
+      rows.splice(insertionIndex(rows, msg), 0, msg);
+    }
+  }
+
+  return new Map(rows.map((m) => [m.id, m]));
+}
+
 export type FileDraft = {
   file: File;
   caption?: string;
@@ -164,31 +247,10 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
       );
 
       for (const [convId, convMsgs] of Object.entries(msgsByConv)) {
-        /* PART A: Conciliation */
-        const messagesByConv = new Map(messages.get(convId));
-
-        for (const msg of convMsgs!) {
-          // skip push when the cached msg is more recent than the incoming msg
-          const cachedUpdatedAt = messagesByConv.get(msg.id)?.updated_at;
-
-          if (
-            cachedUpdatedAt &&
-            +new Date(cachedUpdatedAt) > +new Date(msg.updated_at)
-          ) {
-            continue;
-          }
-
-          messagesByConv.set(msg.id, msg);
-        }
-
-        /* PART B: Sorting (most recent first) */
-        const sortedMessagesByConv = new Map(
-          Array.from(messagesByConv.values())
-            .sort(timestampDescending)
-            .map((msg) => [msg.id, msg]),
+        messages.set(
+          convId,
+          mergeSortedMessages(messages.get(convId), convMsgs!),
         );
-
-        messages.set(convId, sortedMessagesByConv);
       }
 
       return {

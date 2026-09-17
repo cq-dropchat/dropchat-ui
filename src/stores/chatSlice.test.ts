@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import useBoundStore from "./useBoundStore";
 import { timestampDescending } from "./chatSlice";
 import { conversationRow, messageRow } from "@/test/factories";
@@ -123,5 +123,147 @@ describe("chatSlice.pushConversations", () => {
     expect(
       useBoundStore.getState().chat.conversations.get(newer.id)!.name,
     ).toBe("renamed");
+  });
+});
+
+describe("chatSlice.pushMessages — legacy and updates (F10 safety net)", () => {
+  beforeEach(resetStore);
+
+  it("converts v0 rows to v1 on the way in", () => {
+    const conv = conversationRow();
+    const v0 = {
+      ...messageRow({ conversation_id: conv.id }),
+      direction: "incoming",
+      content: { type: "text", content: "hola vieja" },
+    } as unknown as ReturnType<typeof messageRow>;
+
+    useBoundStore.getState().chat.pushMessages([v0]);
+
+    const stored = useBoundStore
+      .getState()
+      .chat.messages.get(conv.id)!
+      .get(v0.id)!;
+    expect(stored.content).toMatchObject({
+      version: "1",
+      type: "text",
+      text: "hola vieja",
+    });
+  });
+
+  it("a status update replaces the row in place, keeping the order", () => {
+    const conv = conversationRow();
+    const older = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:00:00.000Z",
+    });
+    const newer = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:05:00.000Z",
+    });
+    useBoundStore.getState().chat.pushMessages([older, newer]);
+
+    const read = {
+      ...older,
+      status: { delivered: "x", read: "2026-09-01T10:06:00.000Z" },
+      updated_at: "2026-09-01T10:06:00.000Z",
+    };
+    useBoundStore.getState().chat.pushMessages([read]);
+
+    const byConv = useBoundStore.getState().chat.messages.get(conv.id)!;
+    expect([...byConv.keys()]).toEqual([newer.id, older.id]);
+    expect(byConv.get(older.id)!.status).toMatchObject({
+      read: read.status.read,
+    });
+  });
+
+  it("a new newest message goes first", () => {
+    const conv = conversationRow();
+    const first = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:00:00.000Z",
+    });
+    useBoundStore.getState().chat.pushMessages([first]);
+    const next = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:01:00.000Z",
+    });
+    useBoundStore.getState().chat.pushMessages([next]);
+
+    expect([
+      ...useBoundStore.getState().chat.messages.get(conv.id)!.keys(),
+    ]).toEqual([next.id, first.id]);
+  });
+
+  it("an out-of-order older message is placed by timestamp", () => {
+    const conv = conversationRow();
+    const a = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:00:00.000Z",
+    });
+    const c = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:10:00.000Z",
+    });
+    useBoundStore.getState().chat.pushMessages([a, c]);
+    const b = messageRow({
+      conversation_id: conv.id,
+      timestamp: "2026-09-01T10:05:00.000Z",
+    });
+    useBoundStore.getState().chat.pushMessages([b]);
+
+    expect([
+      ...useBoundStore.getState().chat.messages.get(conv.id)!.keys(),
+    ]).toEqual([c.id, b.id, a.id]);
+  });
+});
+
+describe("F10: realtime events do not re-sort the conversation", () => {
+  beforeEach(resetStore);
+
+  function bigConversation(n: number) {
+    const conv = conversationRow();
+    const base = Date.parse("2026-09-01T00:00:00.000Z");
+    const rows = Array.from({ length: n }, (_, i) =>
+      messageRow({
+        conversation_id: conv.id,
+        timestamp: new Date(base + i * 1000).toISOString(),
+      }),
+    );
+    useBoundStore.getState().chat.pushMessages(rows);
+    return { conv, rows };
+  }
+
+  it("a status update on a 5,000-message conversation does not sort", () => {
+    const { rows } = bigConversation(5000);
+    const sort = vi.spyOn(Array.prototype, "sort");
+    try {
+      const target = rows[10];
+      useBoundStore.getState().chat.pushMessages([
+        {
+          ...target,
+          status: { read: "r" },
+          updated_at: "2026-09-02T00:00:00.000Z",
+        },
+      ]);
+      expect(sort).not.toHaveBeenCalled();
+    } finally {
+      sort.mockRestore();
+    }
+  });
+
+  it("a new newest message on a 5,000-message conversation does not sort", () => {
+    const { conv } = bigConversation(5000);
+    const sort = vi.spyOn(Array.prototype, "sort");
+    try {
+      useBoundStore.getState().chat.pushMessages([
+        messageRow({
+          conversation_id: conv.id,
+          timestamp: "2026-09-03T00:00:00.000Z",
+        }),
+      ]);
+      expect(sort).not.toHaveBeenCalled();
+    } finally {
+      sort.mockRestore();
+    }
   });
 });
