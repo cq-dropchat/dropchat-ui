@@ -912,6 +912,27 @@ export type Database = {
           },
         ]
       }
+      deletion_media: {
+        Row: {
+          created_at: string
+          object_name: string
+          organization_id: string
+          request_id: string
+        }
+        Insert: {
+          created_at?: string
+          object_name: string
+          organization_id: string
+          request_id: string
+        }
+        Update: {
+          created_at?: string
+          object_name?: string
+          organization_id?: string
+          request_id?: string
+        }
+        Relationships: []
+      }
       deletion_requests: {
         Row: {
           address: string | null
@@ -1178,6 +1199,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organization_exports: {
+        Row: {
+          completed_at: string | null
+          error: string | null
+          expires_at: string | null
+          id: string
+          object_name: string | null
+          organization_id: string
+          requested_at: string
+          requested_by: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error?: string | null
+          expires_at?: string | null
+          id?: string
+          object_name?: string | null
+          organization_id: string
+          requested_at?: string
+          requested_by?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          error?: string | null
+          expires_at?: string | null
+          id?: string
+          object_name?: string | null
+          organization_id?: string
+          requested_at?: string
+          requested_by?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       organizations: {
         Row: {
@@ -1489,6 +1549,27 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: boolean
       }
+      claim_organization_export: {
+        Args: never
+        Returns: {
+          completed_at: string | null
+          error: string | null
+          expires_at: string | null
+          id: string
+          object_name: string | null
+          organization_id: string
+          requested_at: string
+          requested_by: string | null
+          started_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "organization_exports"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       create_api_key: {
         Args: {
           p_expires_at?: string
@@ -1511,6 +1592,35 @@ export type Database = {
         Returns: number
       }
       edge_functions_config: { Args: never; Returns: Record<string, unknown> }
+      expired_organization_exports: {
+        Args: { _limit?: number }
+        Returns: {
+          completed_at: string | null
+          error: string | null
+          expires_at: string | null
+          id: string
+          object_name: string | null
+          organization_id: string
+          requested_at: string
+          requested_by: string | null
+          started_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "organization_exports"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      finish_organization_export: {
+        Args: { _error: string; _id: string; _object_name: string }
+        Returns: undefined
+      }
+      forget_deletion_media: {
+        Args: { _object_names: string[]; _organization_id: string }
+        Returns: number
+      }
       get_authorized_orgs: {
         Args: { role?: Database["public"]["Enums"]["role"] }
         Returns: string[]
@@ -1551,11 +1661,24 @@ export type Database = {
         Args: { path: string[]; target: Json; value: Json }
         Returns: Json
       }
+      mark_organization_export_expired: {
+        Args: { _id: string }
+        Returns: undefined
+      }
       merge_update_jsonb: {
         Args: { object: Json; path: string[]; target: Json }
         Returns: Json
       }
       message_rate_limit_per_minute: { Args: never; Returns: number }
+      organization_export_ttl: { Args: never; Returns: string }
+      pending_deletion_media: {
+        Args: { _limit?: number }
+        Returns: {
+          object_name: string
+          organization_id: string
+          referenced: boolean
+        }[]
+      }
       pending_dispatch_candidates: {
         Args: never
         Returns: {
@@ -1614,6 +1737,10 @@ export type Database = {
         Returns: string
       }
       request_id_header: { Args: never; Returns: Json }
+      request_organization_export: {
+        Args: { _organization_id: string }
+        Returns: string
+      }
       settle_webhook_deliveries: { Args: never; Returns: number }
       sweep_deletions: { Args: { _budget?: number }; Returns: Json }
       webhook_max_attempts: { Args: never; Returns: number }
