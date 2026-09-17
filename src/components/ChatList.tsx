@@ -40,11 +40,6 @@ const ChatList = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const conversations = useBoundStore((state) => state.chat.conversations);
   const messages = useBoundStore((state) => state.chat.messages);
-  // P6: the root Map is updated in place now, so it is no longer what tells
-  // this list that a message arrived. The filters read every conversation's
-  // newest row, so the list follows every push, exactly as it did when the
-  // copy of the root Map was what re-rendered it.
-  useBoundStore((state) => state.chat.messagesVersion);
   const convOrder = useBoundStore((state) => state.chat.convOrder);
   const membershipExtras = useBoundStore(
     (state) => state.chat.membershipExtras,
