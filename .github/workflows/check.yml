@@ -62,6 +62,10 @@ jobs:
       - run: cd open-bsp-ui && npm run types:sync-check
         env:
           API_REPO_DIR: ../open-bsp-api
+      # §5.2: the UI's toV1 against the fixture the API's backfill is checked with.
+      - run: cd open-bsp-ui && npx vitest run scripts/messages-v0.fixtures.test.mjs
+        env:
+          API_REPO_DIR: ../open-bsp-api
 
   # One Playwright flow against a local Supabase + `vite preview`. Only on the
   # long-lived branches: it needs the API repo checked out beside this one.
