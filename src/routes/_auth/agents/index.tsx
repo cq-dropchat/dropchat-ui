@@ -51,7 +51,7 @@ function ListAgents() {
             <SectionItem
               key={agent.id}
               title={agent.name}
-              description={modeLabels[agent.extra?.mode || ""]}
+              description={modeLabels[agent.mode || ""]}
               aside={
                 <Avatar
                   src={agent.picture}

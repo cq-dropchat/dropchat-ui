@@ -30,6 +30,28 @@ export function useAgent<T = AgentRow>(id: string) {
   });
 }
 
+/**
+ * F23: a message author's name and picture. One small row per distinct
+ * author, under the agents key so agent mutations refresh it.
+ */
+export function useAgentProfile(id: string) {
+  const userId = useBoundStore((state) => state.ui.user?.id);
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
+
+  return useQuery({
+    queryKey: queryKeys.agents.profile(orgId, id),
+    queryFn: async () =>
+      await supabase
+        .from("agents")
+        .select("id,name,picture")
+        .eq("id", id)
+        .throwOnError()
+        .single(),
+    enabled: !!userId && !!orgId && !!id,
+    select: (data) => data.data,
+  });
+}
+
 // The signed-in user's own pending invitations, across organizations —
 // invitations are their own table now, keyed by email. RLS lets members also
 // see their orgs' invitations, so filter to the caller's email explicitly.
@@ -169,6 +191,14 @@ export function useCurrentAgent() {
   });
 }
 
+/**
+ * F23: what an agent list shows. An AI agent's `extra` carries its
+ * instructions and tool configurations; lists read only its mode. Editing
+ * an agent loads the whole row with useAgent.
+ */
+const AGENT_LIST_COLUMNS =
+  "id, organization_id, user_id, name, picture, role, created_at, mode:extra->>mode";
+
 export function useCurrentAgents() {
   const userId = useBoundStore((state) => state.ui.user?.id);
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -178,7 +208,7 @@ export function useCurrentAgents() {
     queryFn: async () =>
       await supabase
         .from("agents")
-        .select()
+        .select(AGENT_LIST_COLUMNS)
         .eq("organization_id", orgId!)
         .is("deleted_at", null)
         .throwOnError(),

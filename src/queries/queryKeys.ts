@@ -13,6 +13,8 @@ export const queryKeys = {
     detail: (orgId: NullableId, id: NullableId) =>
       [orgId, "agents", id] as const,
     current: (orgId: NullableId) => [orgId, "agents", "current"] as const,
+    profile: (orgId: NullableId, id: NullableId) =>
+      [orgId, "agents", "profile", id] as const,
   },
   invitations: {
     mine: () => ["invitations", "mine"] as const,

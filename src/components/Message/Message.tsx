@@ -21,7 +21,7 @@ import { type FormEventHandler, type PropsWithChildren, useState } from "react";
 import { prettyPrintJson } from "pretty-print-json";
 import { useTranslation } from "@/hooks/useTranslation";
 import AvatarComponent from "@/components/Avatar";
-import { useAgent } from "@/queries/useAgents";
+import { useAgentProfile } from "@/queries/useAgents";
 import useBoundStore from "@/stores/useBoundStore";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
@@ -272,7 +272,7 @@ function Avatar({
   color: string;
   display: "name" | "picture-left" | "picture-right";
 }) {
-  const { data: agent } = useAgent(agentId);
+  const { data: agent } = useAgentProfile(agentId);
 
   if (display === "picture-left" || display === "picture-right") {
     return (
