@@ -11,6 +11,8 @@ import { useState } from "react";
 import Button from "@/components/Button";
 import SectionItem from "@/components/SectionItem";
 import { LayoutTemplate } from "lucide-react";
+import AccountAuthNotice from "@/components/AccountAuthNotice";
+import { accountAuthFailure } from "@/utils/accountAuthFailure";
 
 export const Route = createFileRoute(
   "/_auth/integrations/whatsapp/$orgAddressId/",
@@ -40,6 +42,7 @@ function WhatsAppDetails() {
     | undefined;
   const flowType = extra?.flow_type;
   const isCoexistence = flowType === "existing_phone_number";
+  const authFailure = accountAuthFailure(integration);
 
   const flowTypeLabels: Record<string, string> = {
     new_phone_number: t("Nuevo número de WhatsApp"),
@@ -147,6 +150,28 @@ function WhatsAppDetails() {
               readOnly
             />
           </label>
+
+          {authFailure && (
+            <AccountAuthNotice
+              failure={authFailure}
+              action={
+                <Button
+                  type="button"
+                  className="primary px-4 py-2 rounded-full font-medium w-fit text-[14px]"
+                  onClick={() =>
+                    navigate({
+                      to: "/integrations/whatsapp/new",
+                      hash: (prevHash) => prevHash!,
+                    })
+                  }
+                  disabled={!canManage}
+                  disabledReason={t("Requiere permisos de administrador")}
+                >
+                  {t("Reconectar")}
+                </Button>
+              }
+            />
+          )}
 
           {extra?.access_token && (
             <label>

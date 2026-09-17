@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import ChatFooter from "./ChatFooter";
 import useBoundStore from "@/stores/useBoundStore";
 import { TickContext } from "@/contexts/useTick";
-import { conversationRow, messageRow, ORG_A } from "@/test/factories";
+import { conversationRow, messageRow, ORG_A, WA_A } from "@/test/factories";
 import type { TemplateData } from "@/supabase/client";
 
 // F29 (step 3) — characterization of ChatFooter (659 lines: the text
@@ -34,6 +34,11 @@ vi.mock("@/utils/ConversationUtils", () => ({
 }));
 vi.mock("@/queries/useAgents", () => ({
   useCurrentAgent: () => ({ data: { id: "agent-alice" } }),
+}));
+// F28: the account rows the footer reads the token mark from.
+let orgAddresses: Record<string, unknown>[] = [];
+vi.mock("@/queries/useOrganizationsAddresses", () => ({
+  useOrganizationsAddresses: () => ({ data: orgAddresses }),
 }));
 vi.mock("./TemplatePicker", () => ({
   default: () => <div data-testid="template-picker" />,
@@ -119,6 +124,7 @@ const settle = () => act(() => new Promise((r) => setTimeout(r, 0)));
 
 beforeEach(() => {
   sent.length = 0;
+  orgAddresses = [];
 });
 
 describe("F29: ChatFooter (characterization)", () => {
@@ -206,5 +212,55 @@ describe("F29: ChatFooter (characterization)", () => {
     await settle();
     await act(() => fireEvent.click(screen.getByTitle("Descartar plantilla")));
     expect(useBoundStore.getState().ui.templateDrafts.has(conv.id)).toBe(false);
+  });
+});
+
+// F28 — a member writing in a conversation whose account's token was
+// rejected got no hint: the composer looked normal and every send failed.
+describe("F28: ChatFooter warns when the account's token was rejected", () => {
+  const AT = "2026-09-15T08:30:00.000Z";
+
+  it("WhatsApp account marked: a compact warning above the composer", async () => {
+    orgAddresses = [
+      {
+        service: "whatsapp",
+        address: WA_A,
+        organization_id: ORG_A,
+        extra: { dispatch_auth_failure: { code: 190, message: "x", at: AT } },
+      },
+    ];
+    setup({ service: "whatsapp", lastIncomingHoursAgo: 2 });
+    await settle();
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(new Date(AT).toLocaleString());
+    expect(alert).toHaveTextContent("reconectarla");
+  });
+
+  it("Instagram account flagged needs_reauth: the same warning", async () => {
+    orgAddresses = [
+      {
+        service: "instagram",
+        address: WA_A,
+        organization_id: ORG_A,
+        extra: { needs_reauth: AT },
+      },
+    ];
+    setup({ service: "instagram", lastIncomingHoursAgo: 2 });
+    await settle();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("another account's mark does not warn this conversation", async () => {
+    orgAddresses = [
+      {
+        service: "whatsapp",
+        address: "999999999999999",
+        organization_id: ORG_A,
+        extra: { dispatch_auth_failure: { code: 190, message: "x", at: AT } },
+      },
+    ];
+    setup({ service: "whatsapp", lastIncomingHoursAgo: 2 });
+    await settle();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

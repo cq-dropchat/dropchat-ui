@@ -23,6 +23,9 @@ import {
   templateVarCounts,
 } from "./chat-footer/template";
 import { useCustomerServiceWindow } from "./chat-footer/useCustomerServiceWindow";
+import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
+import { accountAuthFailure } from "@/utils/accountAuthFailure";
+import AccountAuthNotice from "./AccountAuthNotice";
 
 // F29: the template logic (chat-footer/template.ts), the template composer
 // and its inputs, and the 24-hour window (useCustomerServiceWindow) live in
@@ -72,6 +75,17 @@ export default function ChatFooter() {
   const { translate: t } = useTranslation();
 
   const { inCSWindow, remaining } = useCustomerServiceWindow(conv);
+
+  // F28: the account's token was rejected; sends from it will fail.
+  const { data: orgAddresses } = useOrganizationsAddresses();
+  const authFailure = accountAuthFailure(
+    conv &&
+      orgAddresses?.find(
+        (address) =>
+          address.service === conv.service &&
+          address.address === conv.organization_address,
+      ),
+  );
 
   // Template mode: derive from per-conv store
   const templateDraft = templateDraftEntry?.template;
@@ -228,6 +242,7 @@ export default function ChatFooter() {
     conv && (
       <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10">
         {templatePicker && <TemplatePicker />}
+        {authFailure && <AccountAuthNotice failure={authFailure} compact />}
         <div
           className={
             "flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)]" +
