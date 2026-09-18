@@ -40,7 +40,7 @@ jobs:
           path: open-bsp-ui
       - uses: actions/checkout@v4
         with:
-          repository: ${{ vars.API_REPOSITORY || 'openbsp/open-bsp-api' }}
+          repository: ${{ vars.API_REPOSITORY || 'cquezada-m11/whasapi-api' }}
           # The API branch of the same name when it exists (a paired change),
           # otherwise the API's develop.
           ref: ${{ github.head_ref || github.ref_name }}
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.api-same-branch.outcome == 'failure'
         with:
-          repository: ${{ vars.API_REPOSITORY || 'openbsp/open-bsp-api' }}
+          repository: ${{ vars.API_REPOSITORY || 'cquezada-m11/whasapi-api' }}
           ref: develop
           path: open-bsp-api
       - uses: actions/setup-node@v4
@@ -74,7 +74,7 @@ jobs:
           path: open-bsp-ui
       - uses: actions/checkout@v4
         with:
-          repository: ${{ vars.API_REPOSITORY || 'openbsp/open-bsp-api' }}
+          repository: ${{ vars.API_REPOSITORY || 'cquezada-m11/whasapi-api' }}
           ref: ${{ github.ref_name }}
           path: open-bsp-api
       - uses: actions/setup-node@v4
