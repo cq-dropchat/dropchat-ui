@@ -65,10 +65,10 @@ if [ ! -d "$API_DIR" ]; then
 fi
 
 # Declarations only: comments, formatting (deno fmt vs prettier) and `.ts`
-# import extensions do not count (scripts/normalize-types.mjs).
-normalize() {
-  node scripts/normalize-types.mjs "$1"
-}
+# import extensions do not count (scripts/normalize-types.mjs). The diff
+# itself is computed in node too (scripts/diff-normalized.mjs): the system's
+# diff is not the same program everywhere, and this text is compared against
+# the baseline byte for byte.
 
 # The normalized diffs, in a stable form: one section per differing file.
 current_diffs() {
@@ -80,7 +80,7 @@ current_diffs() {
       echo "## $base: no API counterpart"
       continue
     fi
-    if ! out="$(diff <(normalize "$api") <(normalize "$ui"))"; then
+    if ! out="$(node scripts/diff-normalized.mjs "$api" "$ui")"; then
       echo "## $base"
       echo "$out"
     fi

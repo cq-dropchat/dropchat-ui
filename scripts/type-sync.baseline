@@ -27,8 +27,7 @@
 < export type InstagramQuickReply = {
 <     payload: string;
 < };
-30,89d22
-< };
+31,90d23
 < export type InstagramMessage = {
 <     mid: string;
 <     text?: string;
@@ -88,6 +87,7 @@
 < export type InstagramWebhookPayload = {
 <     object: "instagram";
 <     entry: InstagramEntry[];
+< };
 ## status_types
 2,21d1
 < type PricingCategory = "authentication" | "authentication-international" | "marketing" | "marketing_lite" | "referral_conversion" | "service" | "utility";
@@ -110,8 +110,7 @@
 <     };
 <     errors?: WebhookError[];
 < };
-45,55d24
-< };
+46,56d25
 < export type EndpointStatus = {
 <     messaging_product: "whatsapp";
 <     status: "read";
@@ -122,6 +121,7 @@
 < };
 < export type EndpointStatusResponse = {
 <     success: true;
+< };
 ## whatsapp_endpoint_types
 1,31d0
 < import type { ContactsMessage, LocationMessage, } from "./whatsapp_webhook_message_types";
@@ -155,8 +155,7 @@
 <         voice?: boolean;
 <     };
 < };
-62,92d30
-< };
+63,93d31
 < export type OutgoingSticker = {
 <     type: "sticker";
 <     sticker: {
@@ -187,6 +186,7 @@
 <             message_status?: "accepted" | "held_for_quality_assessment";
 <         }
 <     ];
+< };
 ## whatsapp_template_types
 6c6
 <     category: "MARKETING";
@@ -382,7 +382,7 @@
 <     };
 <     href: string;
 < };
-19,26c8,13
+19,163c8,13
 < export type WebhookMetadata = {
 <     display_phone_number: string;
 <     phone_number_id: string;
@@ -391,14 +391,7 @@
 <     profile: {
 <         name: string;
 <         username?: string;
----
-> export type WebhookError = {
->     code: number;
->     title: string;
->     message: string;
->     error_data: {
->         details: string;
-28,199c15
+<     };
 <     wa_id?: string;
 <     user_id: string;
 <     parent_user_id?: string;
@@ -535,7 +528,14 @@
 <     parent_user_id?: {
 <         previous: string;
 <         current: string;
-<     };
+---
+> export type WebhookError = {
+>     code: number;
+>     title: string;
+>     message: string;
+>     error_data: {
+>         details: string;
+165,199c15
 <     timestamp: string;
 < };
 < export type WebhookValueUserIdUpdate = {
