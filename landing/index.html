@@ -10,51 +10,79 @@
     />
     <meta
       property="og:title"
-      content="DropChat · Deja de pagar despachos por pedidos que nadie iba a recibir"
+      content="DropChat · Que ningún pedido quede en visto"
     />
     <meta
       property="og:description"
-      content="Confirmación y seguimiento de pedidos COD por WhatsApp, hecho para tiendas que venden con Dropi."
+      content="Confirmación y seguimiento de pedidos contra entrega por WhatsApp, hecho para tiendas en Chile que venden con Dropi."
     />
     <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#0E1A13" />
+    <meta name="theme-color" content="#F6F5F1" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E1A13'/%3E%3Cpath d='M18 33l9 9 19-20' stroke='%2338D97A' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%231D4ED8' fill-rule='evenodd' d='M16 6H40a5 5 0 0 1 5 5V37a5 5 0 0 1-5 5H16a5 5 0 0 1-3.6-1.5L3.9 27.5a5 5 0 0 1 0-7L12.4 7.5A5 5 0 0 1 16 6Z M13.5 24a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0Z'/%3E%3Cpath d='M24.5 24.5l5.2 5.2L39.5 18.5' fill='none' stroke='%23fff' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..900&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400..700&display=swap"
       rel="stylesheet"
     />
     <style>
+      /* Tokens: DropChat brandbook (tema claro; las secciones oscuras usan los valores "sobre-oscuro"). */
       :root {
-        --ink: #0e1a13;
-        --ink-2: #1b2a21;
-        --ink-soft: #3e4d44;
-        --muted: #6a776f;
-        --paper: #f5f2ea;
-        --paper-2: #ece7db;
-        --card: #ffffff;
-        --line: #dcd5c5;
-        --green: #1e9e52;
-        --green-bright: #38d97a;
-        --green-tint: #e3f5e9;
-        --coral: #e8492a;
-        --coral-tint: #fce6e0;
-        --amber: #f2b33d;
-        --chat-bg: #e9e3d5;
-        --bubble-in: #ffffff;
-        --bubble-out: #d9f7c8;
-        --radius: 18px;
-        --shadow:
-          0 1px 2px rgba(14, 26, 19, 0.06),
-          0 12px 32px -12px rgba(14, 26, 19, 0.18);
-        --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-        --body:
+        --papel: #f6f5f1;
+        --superficie: #ffffff;
+        --arena: #eceae3;
+        --tinta: #12151a;
+        --tinta-2: #1b2029;
+        --tinta-3: #2a313b;
+        --grafito: #3b414a;
+        --niebla: #5f6670;
+        --linea: #dedbd2;
+        --linea-control: #767e89;
+        --sobre-oscuro: #f3f2ee;
+        --sobre-oscuro-2: #c9ced6;
+        --sobre-oscuro-3: #a3abb6;
+
+        --azul: #1d4ed8;
+        --azul-hover: #1a43bd;
+        --azul-noche: #3a66ee;
+        --azul-noche-hover: #2f58dd;
+        --azul-claro: #8fb0ff;
+        --azul-velo: #e8eeff;
+
+        --kraft: #d8b98a;
+        --kraft-velo: #f1e6d3;
+        --kraft-tinta: #7a5a2e;
+
+        --entregado: #16794a;
+        --entregado-claro: #5fd39a;
+        --entregado-velo: #e3f3ea;
+        --pendiente: #8a5800;
+        --pendiente-relleno: #f5b53d;
+        --pendiente-velo: #fcf0d6;
+        --devolucion: #c23325;
+        --devolucion-claro: #ff8a7a;
+        --devolucion-velo: #fbe5e1;
+
+        --chat-fondo: #eae6dd;
+        --chat-entrante: #ffffff;
+        --chat-saliente: #dcf4c9;
+
+        --foco: #1d4ed8;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 18px;
+        --shadow-flota:
+          0 1px 2px rgba(18, 21, 26, 0.06),
+          0 16px 36px -14px rgba(18, 21, 26, 0.28);
+
+        --display: "Archivo", "Arial Black", system-ui, sans-serif;
+        --sans:
           "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
           "Segoe UI", sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
       }
       * {
         box-sizing: border-box;
@@ -70,9 +98,9 @@
       }
       body {
         margin: 0;
-        background: var(--paper);
-        color: var(--ink);
-        font-family: var(--body);
+        background: var(--papel);
+        color: var(--grafito);
+        font-family: var(--sans);
         font-size: 17px;
         line-height: 1.55;
         -webkit-font-smoothing: antialiased;
@@ -87,9 +115,12 @@
         color: inherit;
       }
       :focus-visible {
-        outline: 3px solid var(--green-bright);
-        outline-offset: 3px;
+        outline: 2px solid var(--foco);
+        outline-offset: 2px;
         border-radius: 6px;
+      }
+      .dark {
+        --foco: #8fb0ff;
       }
       .wrap {
         width: 100%;
@@ -101,39 +132,64 @@
       h2,
       h3 {
         font-family: var(--display);
+        font-stretch: 112%;
         line-height: 1.05;
         letter-spacing: -0.02em;
         margin: 0;
+        color: var(--tinta);
+        text-wrap: balance;
+      }
+      .dark h1,
+      .dark h2,
+      .dark h3 {
+        color: var(--sobre-oscuro);
       }
       h2 {
-        font-size: clamp(32px, 5vw, 52px);
+        font-size: clamp(32px, 4.6vw, 48px);
         font-weight: 800;
       }
       h3 {
-        font-size: 21px;
+        font-size: 20px;
         font-weight: 700;
+        line-height: 1.25;
         letter-spacing: -0.01em;
       }
       p {
         margin: 0;
       }
-      .eyebrow {
+      .etiqueta {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        font-size: 13px;
-        font-weight: 700;
+        font: 600 12px/1.2 var(--mono);
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--green);
+        color: var(--azul);
       }
-      .eyebrow.coral {
-        color: var(--coral);
+      .etiqueta::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .etiqueta.roja {
+        color: var(--devolucion);
+      }
+      .dark .etiqueta {
+        color: var(--azul-claro);
       }
       .lead {
-        font-size: clamp(18px, 2.2vw, 21px);
-        color: var(--ink-soft);
+        font-size: clamp(18px, 2vw, 20px);
+        color: var(--grafito);
         max-width: 60ch;
+      }
+      .dark .lead {
+        color: var(--sobre-oscuro-2);
+      }
+      .num {
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
       }
 
       /* Buttons */
@@ -142,46 +198,69 @@
         align-items: center;
         justify-content: center;
         gap: 10px;
-        min-height: 54px;
-        padding: 0 26px;
+        min-height: 56px;
+        padding: 0 28px;
         border-radius: 999px;
-        border: 0;
+        border: 2px solid transparent;
         cursor: pointer;
-        font: 700 17px/1 var(--body);
+        font: 600 17px/1 var(--sans);
         text-decoration: none;
         transition:
-          transform 0.15s ease,
-          box-shadow 0.15s ease,
-          background 0.15s ease;
-      }
-      .btn-primary {
-        background: var(--green-bright);
-        color: var(--ink);
-        box-shadow: 0 8px 24px -8px rgba(56, 217, 122, 0.7);
-      }
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 30px -10px rgba(56, 217, 122, 0.8);
-      }
-      .btn-ghost {
-        background: transparent;
-        color: inherit;
-        border: 2px solid currentColor;
-      }
-      .btn-ghost:hover {
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .btn-dark {
-        background: var(--ink);
-        color: var(--paper);
-      }
-      .btn-dark:hover {
-        transform: translateY(-2px);
+          background-color 0.15s ease,
+          transform 0.15s ease;
       }
       .btn svg {
         width: 18px;
         height: 18px;
         flex: none;
+      }
+      .btn-primario {
+        background: var(--azul);
+        color: #fff;
+      }
+      .btn-primario:hover {
+        background: var(--azul-hover);
+        transform: translateY(-1px);
+      }
+      .dark .btn-primario {
+        background: var(--azul-noche);
+      }
+      .dark .btn-primario:hover {
+        background: var(--azul-noche-hover);
+      }
+      .btn-borde {
+        background: transparent;
+        color: var(--tinta);
+        border-color: var(--tinta);
+      }
+      .btn-borde:hover {
+        background: var(--arena);
+      }
+      .btn-sm {
+        min-height: 42px;
+        padding: 0 18px;
+        font-size: 15px;
+      }
+
+      /* Logo */
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--tinta);
+      }
+      .logo svg {
+        width: 30px;
+        height: 30px;
+      }
+      .logo span {
+        font: 800 22px/1 var(--display);
+        font-stretch: 112%;
+        letter-spacing: -0.02em;
+      }
+      .dark .logo {
+        color: var(--sobre-oscuro);
       }
 
       /* Nav */
@@ -189,36 +268,16 @@
         position: sticky;
         top: 0;
         z-index: 50;
-        background: rgba(14, 26, 19, 0.92);
-        backdrop-filter: saturate(1.4) blur(10px);
-        color: var(--paper);
+        background: rgba(246, 245, 241, 0.9);
+        backdrop-filter: saturate(1.3) blur(10px);
+        border-bottom: 1px solid var(--linea);
       }
       .nav .wrap {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 64px;
+        height: 66px;
         gap: 16px;
-      }
-      .logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font: 800 21px/1 var(--display);
-        text-decoration: none;
-        letter-spacing: -0.02em;
-      }
-      .logo-mark {
-        width: 30px;
-        height: 30px;
-        border-radius: 9px;
-        background: var(--green-bright);
-        display: grid;
-        place-items: center;
-      }
-      .logo-mark svg {
-        width: 18px;
-        height: 18px;
       }
       .nav-links {
         display: flex;
@@ -226,18 +285,13 @@
         gap: 28px;
         font-size: 15px;
         font-weight: 600;
+        color: var(--grafito);
       }
       .nav-links a {
         text-decoration: none;
-        opacity: 0.8;
       }
-      .nav-links a:hover {
-        opacity: 1;
-      }
-      .nav .btn {
-        min-height: 42px;
-        padding: 0 18px;
-        font-size: 15px;
+      .nav-links a:not(.btn):hover {
+        color: var(--azul);
       }
       @media (max-width: 820px) {
         .nav-links a:not(.btn) {
@@ -247,47 +301,19 @@
 
       /* Hero */
       .hero {
-        background: var(--ink);
-        color: var(--paper);
-        position: relative;
-        overflow: hidden;
-        padding: 64px 0 88px;
-      }
-      .hero::before {
-        content: "";
-        position: absolute;
-        inset: auto -20% -60% 40%;
-        height: 120%;
-        background: radial-gradient(
-          closest-side,
-          rgba(56, 217, 122, 0.22),
-          transparent 70%
-        );
-        pointer-events: none;
+        padding: 64px 0 96px;
       }
       .hero-grid {
         display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
+        grid-template-columns: 1.05fr 0.95fr;
         gap: 56px;
         align-items: center;
-        position: relative;
       }
       @media (max-width: 960px) {
         .hero-grid {
           grid-template-columns: 1fr;
-          gap: 48px;
+          gap: 56px;
         }
-      }
-      .hero .eyebrow {
-        color: var(--green-bright);
-      }
-      .hero h1 {
-        font-size: clamp(40px, 5.4vw, 64px);
-        font-weight: 800;
-        margin: 18px 0 22px;
-      }
-      .hero h1 .strike {
-        color: var(--amber);
       }
       .hero-grid > *,
       .calc-grid > *,
@@ -295,8 +321,22 @@
       .faq-grid > * {
         min-width: 0;
       }
-      .hero .lead {
-        color: #c9d2cc;
+      .hero h1 {
+        font-size: clamp(40px, 5.4vw, 64px);
+        font-weight: 800;
+        line-height: 1;
+        margin: 20px 0 24px;
+      }
+      .hero h1 .cinta {
+        background: linear-gradient(
+          transparent 58%,
+          var(--kraft) 58%,
+          var(--kraft) 92%,
+          transparent 92%
+        );
+        padding: 0 0.06em;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
       }
       .hero-cta {
         display: flex;
@@ -309,8 +349,8 @@
         flex-wrap: wrap;
         gap: 10px 22px;
         margin-top: 30px;
-        font-size: 14px;
-        color: #a9b5ae;
+        font-size: 14.5px;
+        color: var(--niebla);
       }
       .hero-proof span {
         display: inline-flex;
@@ -320,42 +360,79 @@
       .hero-proof svg {
         width: 16px;
         height: 16px;
-        color: var(--green-bright);
+        color: var(--azul);
       }
 
-      /* Phone */
-      .phone {
-        width: 100%;
-        max-width: 360px;
+      /* Hero visual: phone resting on a kraft shipping label */
+      .visual {
+        position: relative;
+        padding: 28px 0 28px 28px;
+        max-width: 460px;
         margin: 0 auto;
-        border-radius: 38px;
-        padding: 10px;
-        background: #050a07;
-        box-shadow:
-          0 40px 80px -30px rgba(0, 0, 0, 0.7),
-          inset 0 0 0 2px #26352c;
+        width: 100%;
+      }
+      .label {
+        position: absolute;
+        inset: 0 12% 0 0;
+        background: var(--kraft);
+        border-radius: var(--radius-lg);
+      }
+      .label i {
+        position: absolute;
+        left: 18px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--papel);
+      }
+      .label i:nth-child(1) {
+        top: 22%;
+      }
+      .label i:nth-child(2) {
+        top: 48%;
+      }
+      .label i:nth-child(3) {
+        top: 74%;
+      }
+      .label b {
+        position: absolute;
+        left: 44px;
+        top: 16px;
+        bottom: 16px;
+        border-left: 1.5px dashed var(--kraft-tinta);
+      }
+      .phone {
+        position: relative;
+        width: 100%;
+        max-width: 340px;
+        margin-left: auto;
+        margin-right: 6%;
+        border-radius: 36px;
+        padding: 9px;
+        background: var(--tinta);
+        box-shadow: var(--shadow-flota);
       }
       .phone-screen {
-        border-radius: 30px;
+        border-radius: 28px;
         overflow: hidden;
-        background: var(--chat-bg);
+        background: var(--chat-fondo);
       }
       .chat-head {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 14px 16px;
-        background: #14271c;
-        color: #fff;
+        padding: 13px 16px;
+        background: var(--tinta-2);
+        color: var(--sobre-oscuro);
       }
       .chat-avatar {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
-        background: var(--green-bright);
+        background: var(--kraft);
+        color: var(--tinta);
         display: grid;
         place-items: center;
-        color: var(--ink);
         font: 800 15px/1 var(--display);
         flex: none;
       }
@@ -366,10 +443,10 @@
       }
       .chat-status {
         font-size: 12px;
-        color: #9fb5a7;
+        color: var(--sobre-oscuro-3);
       }
       .chat-body {
-        height: 480px;
+        height: 470px;
         padding: 16px 12px;
         display: flex;
         flex-direction: column;
@@ -378,28 +455,28 @@
         justify-content: flex-end;
       }
       .msg {
-        max-width: 86%;
+        max-width: 88%;
         padding: 8px 11px 6px;
         border-radius: 12px;
         font-size: 14px;
-        line-height: 1.4;
-        color: #111;
+        line-height: 1.42;
+        color: var(--tinta);
         box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
       }
       .msg time {
         display: block;
         text-align: right;
-        font-size: 10.5px;
-        color: #7a847e;
+        font: 500 10.5px var(--mono);
+        color: var(--niebla);
         margin-top: 2px;
       }
       .msg.in {
-        background: var(--bubble-in);
+        background: var(--chat-entrante);
         align-self: flex-start;
         border-top-left-radius: 4px;
       }
       .msg.out {
-        background: var(--bubble-out);
+        background: var(--chat-saliente);
         align-self: flex-end;
         border-top-right-radius: 4px;
       }
@@ -408,33 +485,31 @@
       }
       .msg-buttons {
         display: grid;
-        gap: 1px;
         margin: 8px -11px -6px;
-        border-top: 1px solid #e6e6e6;
+        border-top: 1px solid var(--linea);
       }
       .msg-buttons span {
         display: block;
         text-align: center;
         padding: 8px 6px;
-        color: #0a7cbf;
+        color: var(--azul);
         font-weight: 600;
         font-size: 13.5px;
-        background: #fff;
       }
       .msg-buttons span + span {
-        border-top: 1px solid #efefef;
+        border-top: 1px solid var(--linea);
       }
       .msg-buttons span.tapped {
-        background: #eaf6fd;
+        background: var(--azul-velo);
       }
       .msg-buttons span:last-child {
         border-radius: 0 0 12px 12px;
       }
       .chat-note {
         align-self: center;
-        font-size: 11.5px;
-        background: rgba(255, 255, 255, 0.7);
-        color: #4e5a53;
+        font: 500 11px var(--mono);
+        background: rgba(255, 255, 255, 0.75);
+        color: var(--grafito);
         padding: 4px 10px;
         border-radius: 8px;
       }
@@ -443,7 +518,7 @@
       }
       .reveal-msg.on {
         display: block;
-        animation: pop 0.35s ease both;
+        animation: pop 0.35s ease-out both;
       }
       @keyframes pop {
         from {
@@ -457,7 +532,7 @@
       }
       .typing {
         align-self: flex-start;
-        background: #fff;
+        background: var(--chat-entrante);
         padding: 10px 14px;
         border-radius: 12px;
         display: none;
@@ -470,7 +545,7 @@
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: #9aa39d;
+        background: var(--niebla);
         animation: blink 1s infinite;
       }
       .typing i:nth-child(2) {
@@ -489,11 +564,40 @@
           opacity: 1;
         }
       }
+      .stamp {
+        position: absolute;
+        right: 0;
+        top: 14px;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        background: var(--papel);
+        border: 2px solid var(--azul);
+        border-radius: var(--radius-sm);
+        color: var(--azul);
+        font: 600 13px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        transform: rotate(-6deg);
+        box-shadow: 0 6px 16px -8px rgba(18, 21, 26, 0.35);
+      }
+      .stamp svg {
+        width: 16px;
+        height: 16px;
+      }
+      .stamp small {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        margin-top: 3px;
+      }
       .phone-caption {
         text-align: center;
-        font-size: 13px;
-        color: #8fa197;
-        margin-top: 16px;
+        font-size: 13.5px;
+        color: var(--niebla);
+        margin-top: 14px;
       }
 
       /* Sections */
@@ -504,60 +608,57 @@
         section {
           padding: 72px 0;
         }
+        .hero {
+          padding: 40px 0 72px;
+        }
       }
       .section-head {
         max-width: 760px;
-        margin-bottom: 56px;
+        margin-bottom: 48px;
       }
       .section-head h2 {
-        margin: 14px 0 18px;
+        margin: 16px 0 18px;
+      }
+      .dark {
+        background: var(--tinta);
+        color: var(--sobre-oscuro-2);
+      }
+      .arena {
+        background: var(--arena);
       }
 
       /* Pain */
-      .pain {
-        background: var(--paper);
-      }
       .pain-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
+        gap: 16px;
       }
       @media (max-width: 760px) {
         .pain-grid {
           grid-template-columns: 1fr;
         }
       }
-      .pain-card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
+      .card {
+        background: var(--superficie);
+        border: 1px solid var(--linea);
+        border-radius: var(--radius-lg);
         padding: 28px;
         display: grid;
         gap: 12px;
         align-content: start;
       }
-      .pain-card .quote {
+      .quote {
         font: 700 22px/1.2 var(--display);
+        font-stretch: 108%;
         letter-spacing: -0.01em;
-      }
-      .pain-card .quote::before {
-        content: "“";
-        color: var(--coral);
-        margin-right: 2px;
-      }
-      .pain-card .quote::after {
-        content: "”";
-        color: var(--coral);
-      }
-      .pain-card p {
-        color: var(--ink-soft);
+        color: var(--tinta);
       }
       .pain-icon {
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        background: var(--coral-tint);
-        color: var(--coral);
+        background: var(--devolucion-velo);
+        color: var(--devolucion);
         display: grid;
         place-items: center;
       }
@@ -566,10 +667,10 @@
         height: 22px;
       }
       .triple {
-        margin-top: 28px;
-        border-radius: var(--radius);
-        background: var(--ink);
-        color: var(--paper);
+        margin-top: 16px;
+        border-radius: var(--radius-lg);
+        background: var(--tinta);
+        color: var(--sobre-oscuro);
         padding: 36px;
         display: grid;
         grid-template-columns: 1fr auto;
@@ -583,12 +684,13 @@
         }
       }
       .triple h3 {
-        font-size: clamp(24px, 3vw, 32px);
+        font-size: clamp(26px, 3vw, 34px);
         font-weight: 800;
+        color: var(--sobre-oscuro);
       }
       .triple h3 em {
         font-style: normal;
-        color: var(--amber);
+        color: var(--devolucion-claro);
       }
       .triple-steps {
         display: flex;
@@ -596,32 +698,30 @@
         flex-wrap: wrap;
       }
       .triple-steps div {
-        background: var(--ink-2);
-        border: 1px solid #2e4036;
+        background: var(--tinta-2);
+        border: 1px solid var(--tinta-3);
         border-radius: 14px;
         padding: 14px 16px;
         flex: 1 1 150px;
       }
       .triple-steps small {
         display: block;
-        font-size: 12px;
-        color: #9fb0a6;
+        font: 600 11px var(--mono);
+        color: var(--sobre-oscuro-3);
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
       }
       .triple-steps strong {
-        font: 700 17px/1.2 var(--display);
+        font: 700 16px/1.25 var(--sans);
+        color: var(--sobre-oscuro);
       }
 
       /* Calculator */
-      .calc {
-        background: var(--paper-2);
-      }
       .calc-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        gap: 16px;
         align-items: stretch;
       }
       @media (max-width: 900px) {
@@ -630,9 +730,9 @@
         }
       }
       .calc-panel {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
+        background: var(--superficie);
+        border: 1px solid var(--linea);
+        border-radius: var(--radius-lg);
         padding: 30px;
         display: grid;
         gap: 26px;
@@ -648,52 +748,57 @@
         gap: 12px;
       }
       .field label {
-        font-weight: 700;
+        font-weight: 600;
         font-size: 16px;
+        color: var(--tinta);
       }
       .field output {
-        font: 800 22px/1 var(--display);
-        color: var(--ink);
+        font: 600 20px/1 var(--mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--tinta);
         white-space: nowrap;
       }
       .field .hint {
-        font-size: 13.5px;
-        color: var(--muted);
+        font-size: 14px;
+        color: var(--niebla);
       }
       input[type="range"] {
         -webkit-appearance: none;
         appearance: none;
         width: 100%;
-        height: 8px;
+        height: 6px;
         border-radius: 99px;
-        background: var(--paper-2);
-        outline-offset: 6px;
+        background: var(--arena);
+        border: 1px solid var(--linea-control);
       }
       input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
         width: 26px;
         height: 26px;
         border-radius: 50%;
-        background: var(--ink);
-        border: 4px solid var(--green-bright);
+        background: var(--azul);
+        border: 4px solid var(--superficie);
+        box-shadow: 0 0 0 1px var(--azul);
         cursor: pointer;
       }
       input[type="range"]::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
-        background: var(--ink);
-        border: 4px solid var(--green-bright);
+        background: var(--azul);
+        border: 4px solid var(--superficie);
+        box-shadow: 0 0 0 1px var(--azul);
         cursor: pointer;
       }
       .calc-result {
-        background: var(--ink);
-        color: var(--paper);
-        border-radius: var(--radius);
+        background: var(--tinta);
+        color: var(--sobre-oscuro-2);
+        border-radius: var(--radius-lg);
         padding: 30px;
         display: grid;
         gap: 18px;
         align-content: start;
+        --foco: #8fb0ff;
       }
       .result-row {
         display: flex;
@@ -701,45 +806,50 @@
         align-items: baseline;
         gap: 16px;
         padding-bottom: 16px;
-        border-bottom: 1px solid #2a3b31;
+        border-bottom: 1px dashed var(--tinta-3);
       }
       .result-row span {
-        color: #b4c1b9;
         font-size: 15px;
       }
+      .result-row b {
+        color: var(--sobre-oscuro);
+        font-weight: 600;
+      }
       .result-row strong {
-        font: 800 24px/1.1 var(--display);
+        font: 600 22px/1.1 var(--mono);
+        font-variant-numeric: tabular-nums;
         white-space: nowrap;
+        color: var(--sobre-oscuro);
       }
       .result-row.loss strong {
-        color: #ff8d72;
+        color: var(--devolucion-claro);
       }
       .result-row.win strong {
-        color: var(--green-bright);
-      }
-      .result-big {
-        padding-top: 4px;
+        color: var(--entregado-claro);
       }
       .result-big span {
         display: block;
-        color: #b4c1b9;
         font-size: 15px;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
       }
       .result-big strong {
         display: block;
-        font: 800 clamp(40px, 6vw, 56px) / 1 var(--display);
-        color: var(--green-bright);
+        font: 600 clamp(36px, 5vw, 48px) / 1 var(--mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--entregado-claro);
         letter-spacing: -0.03em;
+      }
+      .result-big strong.neg {
+        color: var(--devolucion-claro);
       }
       .result-big p {
         margin-top: 12px;
-        color: #c9d2cc;
+        color: var(--sobre-oscuro-2);
         font-size: 15px;
       }
       .calc-disclaimer {
         font-size: 13px;
-        color: #8fa197;
+        color: var(--sobre-oscuro-3);
         line-height: 1.5;
       }
 
@@ -747,7 +857,7 @@
       .steps {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
+        gap: 16px;
         counter-reset: step;
       }
       @media (max-width: 980px) {
@@ -760,30 +870,15 @@
           grid-template-columns: 1fr;
         }
       }
-      .step {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        padding: 26px;
-        display: grid;
-        gap: 12px;
-        align-content: start;
-        position: relative;
-      }
       .step::before {
         counter-increment: step;
-        content: counter(step);
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        background: var(--ink);
-        color: var(--green-bright);
-        display: grid;
-        place-items: center;
-        font: 800 17px/1 var(--display);
+        content: "0" counter(step);
+        font: 600 13px/1 var(--mono);
+        letter-spacing: 0.08em;
+        color: var(--azul);
       }
       .step p {
-        color: var(--ink-soft);
+        color: var(--grafito);
         font-size: 16px;
       }
       .chips {
@@ -792,28 +887,32 @@
         gap: 6px;
       }
       .chip {
-        font-size: 12.5px;
-        font-weight: 700;
-        padding: 5px 10px;
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 0 11px;
         border-radius: 99px;
-        background: var(--green-tint);
-        color: #166b3a;
       }
-      .chip.coral {
-        background: var(--coral-tint);
-        color: #a8321b;
+      .chip.azul {
+        background: var(--azul-velo);
+        color: var(--azul);
       }
-      .chip.amber {
-        background: #fcf0d6;
-        color: #8a5a05;
+      .chip.ambar {
+        background: var(--pendiente-velo);
+        color: var(--pendiente);
+      }
+      .chip.roja {
+        background: var(--devolucion-velo);
+        color: var(--devolucion);
       }
 
-      /* Before / after */
       .ba {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 18px;
-        margin-top: 18px;
+        gap: 16px;
+        margin-top: 16px;
       }
       @media (max-width: 760px) {
         .ba {
@@ -821,16 +920,19 @@
         }
       }
       .ba-col {
-        border-radius: var(--radius);
+        border-radius: var(--radius-lg);
         padding: 28px;
       }
       .ba-col.before {
-        background: var(--card);
-        border: 1px solid var(--line);
+        background: var(--superficie);
+        border: 1px solid var(--linea);
       }
       .ba-col.after {
-        background: var(--ink);
-        color: var(--paper);
+        background: var(--tinta);
+        color: var(--sobre-oscuro-2);
+      }
+      .ba-col.after h3 {
+        color: var(--sobre-oscuro);
       }
       .ba-col h3 {
         margin-bottom: 16px;
@@ -854,30 +956,17 @@
         margin-top: 2px;
       }
       .before li svg {
-        color: var(--coral);
+        color: var(--devolucion);
       }
       .after li svg {
-        color: var(--green-bright);
-      }
-      .after li {
-        color: #d5ddd8;
+        color: var(--azul-claro);
       }
 
       /* Why */
-      .why {
-        background: var(--ink);
-        color: var(--paper);
-      }
-      .why .eyebrow {
-        color: var(--green-bright);
-      }
-      .why .lead {
-        color: #c9d2cc;
-      }
       .why-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
+        gap: 16px;
       }
       @media (max-width: 960px) {
         .why-grid {
@@ -890,37 +979,24 @@
         }
       }
       .why-card {
-        background: var(--ink-2);
-        border: 1px solid #2a3b31;
-        border-radius: var(--radius);
+        background: var(--tinta-2);
+        border: 1px solid var(--tinta-3);
+        border-radius: var(--radius-lg);
         padding: 28px;
         display: grid;
         gap: 12px;
         align-content: start;
       }
       .why-card p {
-        color: #bac6bf;
+        color: var(--sobre-oscuro-2);
         font-size: 16px;
-      }
-      .why-card.feature {
-        grid-column: span 2;
-        background: linear-gradient(135deg, #1e3a2a, #16271d);
-        border-color: #2f5a41;
-      }
-      @media (max-width: 620px) {
-        .why-card.feature {
-          grid-column: auto;
-        }
-      }
-      .why-card.feature h3 {
-        font-size: 26px;
       }
       .why-icon {
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        background: rgba(56, 217, 122, 0.14);
-        color: var(--green-bright);
+        background: rgba(143, 176, 255, 0.14);
+        color: var(--azul-claro);
         display: grid;
         place-items: center;
       }
@@ -928,11 +1004,57 @@
         width: 22px;
         height: 22px;
       }
+      .why-card.kraft {
+        grid-column: span 2;
+        background: var(--kraft);
+        border-color: var(--kraft);
+        position: relative;
+        padding-left: 64px;
+      }
+      .why-card.kraft::before {
+        content: "";
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        width: 14px;
+        height: 14px;
+        margin-top: -7px;
+        border-radius: 50%;
+        background: var(--tinta);
+      }
+      .why-card.kraft::after {
+        content: "";
+        position: absolute;
+        left: 46px;
+        top: 18px;
+        bottom: 18px;
+        border-left: 1.5px dashed var(--kraft-tinta);
+      }
+      .why-card.kraft h3 {
+        color: var(--tinta);
+        font-size: 26px;
+      }
+      .why-card.kraft p {
+        color: var(--tinta);
+      }
+      .why-card.kraft .why-icon {
+        background: rgba(18, 21, 26, 0.1);
+        color: var(--tinta);
+      }
+      @media (max-width: 620px) {
+        .why-card.kraft {
+          grid-column: auto;
+        }
+      }
+      .compare-scroll {
+        margin-top: 48px;
+        overflow-x: auto;
+      }
       .compare {
-        margin-top: 56px;
-        border: 1px solid #2a3b31;
-        border-radius: var(--radius);
+        border: 1px solid var(--tinta-3);
+        border-radius: var(--radius-lg);
         overflow: hidden;
+        min-width: 0;
       }
       .compare-row {
         display: grid;
@@ -940,28 +1062,30 @@
       }
       .compare-row > div {
         padding: 18px 22px;
-        border-top: 1px solid #2a3b31;
+        border-top: 1px solid var(--tinta-3);
         font-size: 15.5px;
       }
       .compare-row:first-child > div {
         border-top: 0;
-        font-weight: 700;
-        font-size: 13px;
+        font: 600 12px/1.2 var(--mono);
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #9fb0a6;
-        background: #132219;
+        letter-spacing: 0.08em;
+        color: var(--sobre-oscuro-3);
+        background: var(--tinta-2);
       }
       .compare-row > div:nth-child(2) {
-        background: rgba(56, 217, 122, 0.07);
-        color: #e9f7ee;
+        background: rgba(143, 176, 255, 0.1);
+        color: var(--sobre-oscuro);
         font-weight: 600;
       }
+      .compare-row:first-child > div:nth-child(2) {
+        color: var(--azul-claro);
+      }
       .compare-row > div:nth-child(3) {
-        color: #a6b3ab;
+        color: var(--sobre-oscuro-3);
       }
       .compare-row > div:first-child {
-        color: #d5ddd8;
+        color: var(--sobre-oscuro-2);
         font-weight: 600;
       }
       @media (max-width: 680px) {
@@ -971,7 +1095,7 @@
         .compare-row > div:first-child {
           grid-column: 1 / -1;
           padding-bottom: 4px;
-          background: #132219;
+          background: var(--tinta-2);
         }
         .compare-row:first-child > div:first-child {
           display: none;
@@ -979,36 +1103,32 @@
       }
 
       /* Pricing */
-      .pricing {
-        background: var(--paper);
-      }
       .billing-toggle {
         display: inline-flex;
-        background: var(--paper-2);
+        background: var(--superficie);
         border-radius: 999px;
         padding: 5px;
         margin-top: 8px;
-        border: 1px solid var(--line);
+        border: 1px solid var(--linea-control);
       }
       .billing-toggle button {
         border: 0;
         background: transparent;
         padding: 10px 18px;
         border-radius: 999px;
-        font: 700 15px/1 var(--body);
-        color: var(--ink-soft);
+        font: 600 15px/1 var(--sans);
+        color: var(--grafito);
         cursor: pointer;
       }
       .billing-toggle button[aria-pressed="true"] {
-        background: var(--ink);
-        color: var(--paper);
+        background: var(--tinta);
+        color: var(--sobre-oscuro);
       }
       .billing-toggle .save {
-        color: var(--green);
-        font-weight: 700;
+        color: var(--entregado);
       }
       .billing-toggle button[aria-pressed="true"] .save {
-        color: var(--green-bright);
+        color: var(--entregado-claro);
       }
       .plans {
         display: grid;
@@ -1027,9 +1147,9 @@
         }
       }
       .plan {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
+        background: var(--superficie);
+        border: 1px solid var(--linea);
+        border-radius: var(--radius-lg);
         padding: 28px 24px;
         display: grid;
         gap: 18px;
@@ -1037,27 +1157,28 @@
         position: relative;
       }
       .plan.popular {
-        border: 2px solid var(--ink);
-        box-shadow: var(--shadow);
+        border: 2px solid var(--azul);
+        box-shadow: var(--shadow-flota);
       }
       .plan .badge {
         position: absolute;
-        top: -13px;
-        left: 24px;
-        background: var(--green-bright);
-        color: var(--ink);
-        font-size: 12px;
-        font-weight: 800;
-        padding: 5px 12px;
+        top: -12px;
+        left: 22px;
+        background: var(--azul);
+        color: #fff;
+        font: 600 11px/1 var(--mono);
+        padding: 6px 10px;
         border-radius: 99px;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.08em;
       }
       .plan-name {
         font: 800 22px/1 var(--display);
+        font-stretch: 112%;
+        color: var(--tinta);
       }
       .plan-for {
         font-size: 14px;
-        color: var(--muted);
+        color: var(--niebla);
         margin-top: 6px;
       }
       .price {
@@ -1066,18 +1187,20 @@
         gap: 6px;
       }
       .price strong {
-        font: 800 46px/1 var(--display);
+        font: 800 44px/1 var(--display);
+        font-stretch: 108%;
         letter-spacing: -0.03em;
+        color: var(--tinta);
       }
       .price span {
-        color: var(--muted);
+        color: var(--niebla);
         font-size: 15px;
       }
       .price-sub {
-        font-size: 13.5px;
-        color: var(--muted);
-        margin-top: 6px;
-        min-height: 1.5em;
+        font: 500 13px/1.4 var(--mono);
+        color: var(--niebla);
+        margin-top: 8px;
+        min-height: 1.4em;
       }
       .plan ul {
         list-style: none;
@@ -1095,7 +1218,7 @@
       .plan li svg {
         width: 18px;
         height: 18px;
-        color: var(--green);
+        color: var(--azul);
         margin-top: 3px;
       }
       .plan .btn {
@@ -1103,13 +1226,16 @@
         min-height: 48px;
         font-size: 16px;
       }
+      .plan .btn-borde {
+        border-color: var(--tinta);
+      }
       .plan-per-order {
-        background: var(--green-tint);
-        color: #166b3a;
+        background: var(--kraft-velo);
+        color: var(--kraft-tinta);
         border-radius: 12px;
         padding: 10px 12px;
-        font-size: 14px;
-        font-weight: 600;
+        font: 500 13px/1.45 var(--mono);
+        border-top: 1.5px dashed var(--kraft-tinta);
       }
       .pricing-notes {
         display: grid;
@@ -1124,19 +1250,16 @@
       }
       .pricing-notes div {
         font-size: 14.5px;
-        color: var(--ink-soft);
-        background: var(--paper-2);
+        color: var(--grafito);
+        background: var(--arena);
         border-radius: 14px;
         padding: 16px 18px;
       }
       .pricing-notes strong {
-        color: var(--ink);
+        color: var(--tinta);
       }
 
       /* FAQ */
-      .faq {
-        background: var(--paper-2);
-      }
       .faq-grid {
         display: grid;
         grid-template-columns: 0.8fr 1.2fr;
@@ -1148,8 +1271,8 @@
         }
       }
       details {
-        background: var(--card);
-        border: 1px solid var(--line);
+        background: var(--superficie);
+        border: 1px solid var(--linea);
         border-radius: 14px;
         padding: 0 22px;
       }
@@ -1160,8 +1283,9 @@
         cursor: pointer;
         list-style: none;
         padding: 20px 0;
-        font-weight: 700;
+        font-weight: 600;
         font-size: 17px;
+        color: var(--tinta);
         display: flex;
         justify-content: space-between;
         gap: 16px;
@@ -1172,8 +1296,8 @@
       }
       summary::after {
         content: "+";
-        font: 700 24px/1 var(--display);
-        color: var(--green);
+        font: 600 22px/1 var(--mono);
+        color: var(--azul);
         flex: none;
         transition: transform 0.2s ease;
       }
@@ -1182,35 +1306,15 @@
       }
       details p {
         padding: 0 0 20px;
-        color: var(--ink-soft);
+        color: var(--grafito);
       }
 
       /* Final CTA */
-      .final {
-        background: var(--ink);
-        color: var(--paper);
-        position: relative;
-        overflow: hidden;
-      }
-      .final::before {
-        content: "";
-        position: absolute;
-        inset: -40% -10% auto auto;
-        width: 70%;
-        height: 140%;
-        background: radial-gradient(
-          closest-side,
-          rgba(56, 217, 122, 0.18),
-          transparent 70%
-        );
-        pointer-events: none;
-      }
       .final-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 56px;
         align-items: center;
-        position: relative;
       }
       @media (max-width: 900px) {
         .final-grid {
@@ -1219,14 +1323,8 @@
         }
       }
       .final h2 {
-        font-size: clamp(36px, 5.4vw, 60px);
-        margin: 14px 0 20px;
-      }
-      .final .eyebrow {
-        color: var(--green-bright);
-      }
-      .final .lead {
-        color: #c9d2cc;
+        font-size: clamp(34px, 5vw, 56px);
+        margin: 16px 0 20px;
       }
       .pilot-perks {
         list-style: none;
@@ -1239,50 +1337,53 @@
         display: grid;
         grid-template-columns: 22px 1fr;
         gap: 10px;
-        color: #d5ddd8;
+        color: var(--sobre-oscuro-2);
       }
       .pilot-perks svg {
         width: 20px;
         height: 20px;
-        color: var(--green-bright);
+        color: var(--azul-claro);
         margin-top: 2px;
       }
       form.lead-form {
-        background: var(--paper);
-        color: var(--ink);
+        background: var(--papel);
+        color: var(--grafito);
         border-radius: 22px;
         padding: 30px;
         display: grid;
         gap: 16px;
-        box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+        box-shadow: var(--shadow-flota);
+        --foco: #1d4ed8;
       }
       form.lead-form h3 {
         font-size: 24px;
+        color: var(--tinta);
       }
       .form-row {
         display: grid;
         gap: 6px;
       }
       .form-row label {
-        font-weight: 700;
+        font-weight: 600;
         font-size: 14.5px;
+        color: var(--tinta);
       }
       .form-row input,
       .form-row select {
         width: 100%;
         min-height: 50px;
-        border-radius: 12px;
-        border: 1.5px solid var(--line);
-        background: #fff;
+        border-radius: var(--radius-md);
+        border: 1.5px solid var(--linea-control);
+        background: var(--superficie);
         padding: 0 14px;
-        font: 500 16px var(--body);
-        color: var(--ink);
+        font: 500 16px var(--sans);
+        color: var(--tinta);
       }
       .form-row input:focus,
       .form-row select:focus {
-        border-color: var(--green);
+        border-color: var(--azul);
         outline: none;
-        box-shadow: 0 0 0 4px rgba(56, 217, 122, 0.25);
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.22);
       }
       .form-2 {
         display: grid;
@@ -1294,9 +1395,12 @@
           grid-template-columns: 1fr;
         }
       }
+      .lead-form .btn-primario {
+        background: var(--azul);
+      }
       .form-small {
         font-size: 13px;
-        color: var(--muted);
+        color: var(--niebla);
         text-align: center;
       }
       .form-status {
@@ -1307,18 +1411,19 @@
       }
       .form-status.ok {
         display: block;
-        background: var(--green-tint);
-        color: #166b3a;
+        background: var(--entregado-velo);
+        color: var(--entregado);
       }
       .form-status.err {
         display: block;
-        background: var(--coral-tint);
-        color: #a8321b;
+        background: var(--devolucion-velo);
+        color: var(--devolucion);
       }
 
       footer {
-        background: #08110c;
-        color: #8fa197;
+        background: var(--tinta);
+        border-top: 1px solid var(--tinta-3);
+        color: var(--sobre-oscuro-3);
         padding: 40px 0;
         font-size: 14px;
       }
@@ -1329,15 +1434,17 @@
         justify-content: space-between;
         align-items: center;
       }
-      footer .logo {
-        color: var(--paper);
-        font-size: 18px;
+      footer .lema {
+        font: 600 12px/1.4 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--azul-claro);
+        margin-top: 8px;
       }
       footer p {
-        max-width: 70ch;
+        max-width: 62ch;
       }
 
-      /* Sticky mobile CTA */
       .mobile-cta {
         display: none;
       }
@@ -1347,9 +1454,9 @@
           position: fixed;
           left: 12px;
           right: 12px;
-          bottom: 12px;
+          bottom: calc(12px + env(safe-area-inset-bottom, 0px));
           z-index: 60;
-          transform: translateY(140%);
+          transform: translateY(160%);
           transition: transform 0.25s ease;
         }
         .mobile-cta.show {
@@ -1357,7 +1464,7 @@
         }
         .mobile-cta .btn {
           width: 100%;
-          box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+          box-shadow: var(--shadow-flota);
         }
         footer {
           padding-bottom: 96px;
@@ -1365,20 +1472,20 @@
       }
 
       .fade-up {
-        opacity: 0;
-        transform: translateY(18px);
         transition:
-          opacity 0.6s ease,
-          transform 0.6s ease;
+          opacity 0.35s ease-out,
+          transform 0.35s ease-out;
       }
-      .fade-up.in {
-        opacity: 1;
-        transform: none;
+      .js .fade-up:not(.in) {
+        opacity: 0;
+        transform: translateY(14px);
       }
       @media (prefers-reduced-motion: reduce) {
-        .fade-up {
+        .js .fade-up:not(.in) {
           opacity: 1;
           transform: none;
+        }
+        .fade-up {
           transition: none;
         }
         .reveal-msg.on {
@@ -1392,22 +1499,52 @@
   </head>
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-simbolo" viewBox="0 0 48 48">
+        <path
+          fill="#1D4ED8"
+          fill-rule="evenodd"
+          d="M16 6H40a5 5 0 0 1 5 5V37a5 5 0 0 1-5 5H16a5 5 0 0 1-3.6-1.5L3.9 27.5a5 5 0 0 1 0-7L12.4 7.5A5 5 0 0 1 16 6Z M13.5 24a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0Z"
+        />
+        <path
+          d="M24.5 24.5l5.2 5.2L39.5 18.5"
+          fill="none"
+          stroke="#fff"
+          stroke-width="4.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-simbolo-inverso" viewBox="0 0 48 48">
+        <path
+          fill="#F6F5F1"
+          fill-rule="evenodd"
+          d="M16 6H40a5 5 0 0 1 5 5V37a5 5 0 0 1-5 5H16a5 5 0 0 1-3.6-1.5L3.9 27.5a5 5 0 0 1 0-7L12.4 7.5A5 5 0 0 1 16 6Z M13.5 24a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0Z"
+        />
+        <path
+          d="M24.5 24.5l5.2 5.2L39.5 18.5"
+          fill="none"
+          stroke="#1D4ED8"
+          stroke-width="4.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
       <symbol id="i-check" viewBox="0 0 24 24">
         <path
-          d="M5 12.5l4.5 4.5L19 7.5"
+          d="M20 6 9 17l-5-5"
           fill="none"
           stroke="currentColor"
-          stroke-width="2.6"
+          stroke-width="2.4"
           stroke-linecap="round"
           stroke-linejoin="round"
         />
       </symbol>
       <symbol id="i-x" viewBox="0 0 24 24">
         <path
-          d="M7 7l10 10M17 7L7 17"
+          d="M18 6 6 18M6 6l12 12"
           fill="none"
           stroke="currentColor"
-          stroke-width="2.6"
+          stroke-width="2.4"
           stroke-linecap="round"
         />
       </symbol>
@@ -1416,7 +1553,7 @@
           d="M5 12h14M13 6l6 6-6 6"
           fill="none"
           stroke="currentColor"
-          stroke-width="2.4"
+          stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
         />
@@ -1467,7 +1604,7 @@
           stroke-width="2"
         />
         <path
-          d="M12 7v5l3.5 2"
+          d="M12 7v5l3 2"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -1561,43 +1698,20 @@
           stroke-linecap="round"
         />
       </symbol>
-      <symbol id="i-wa" viewBox="0 0 24 24">
-        <path
-          d="M4 20l1.2-3.9A8.5 8.5 0 1 1 8 19z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M9 9.2c.2 2.6 2.3 4.8 5 5.4l1.1-1.2 1.7.9c-.3 1-1.1 1.6-2.2 1.6-3.5 0-6.8-3.2-6.8-6.8 0-1 .6-1.9 1.6-2.2l.9 1.7z"
-          fill="currentColor"
-        />
-      </symbol>
     </svg>
 
     <header class="nav">
       <div class="wrap">
-        <a href="#" class="logo" aria-label="DropChat, inicio">
-          <span class="logo-mark"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M5 12.5l4.5 4.5L19 7.5"
-                fill="none"
-                stroke="#0E1A13"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
-          ></span>
-          DropChat
-        </a>
+        <a href="#" class="logo" aria-label="DropChat, inicio"
+          ><svg aria-hidden="true"><use href="#i-simbolo" /></svg
+          ><span>DropChat</span></a
+        >
         <nav class="nav-links" aria-label="Principal">
           <a href="#dolor">El problema</a>
           <a href="#calculadora">Calculadora</a>
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#precios">Precios</a>
-          <a href="#piloto" class="btn btn-primary">Entrar al piloto</a>
+          <a href="#piloto" class="btn btn-primario btn-sm">Entrar al piloto</a>
         </nav>
       </div>
     </header>
@@ -1607,12 +1721,10 @@
       <section class="hero" aria-labelledby="hero-title">
         <div class="wrap hero-grid">
           <div>
-            <span class="eyebrow"
-              >Para tiendas en Chile que venden contra entrega con Dropi</span
-            >
+            <span class="etiqueta">Pedidos contra entrega · Chile · Dropi</span>
             <h1 id="hero-title">
               Deja de pagar despachos por pedidos que
-              <span class="strike">nadie iba a recibir.</span>
+              <span class="cinta">nadie iba a recibir.</span>
             </h1>
             <p class="lead">
               DropChat le escribe por WhatsApp a cada cliente apenas entra su
@@ -1621,11 +1733,11 @@
               por uno. Sin tu equipo colapsado.
             </p>
             <div class="hero-cta">
-              <a href="#piloto" class="btn btn-primary"
+              <a href="#piloto" class="btn btn-primario"
                 >Quiero entrar al piloto
                 <svg aria-hidden="true"><use href="#i-arrow" /></svg
               ></a>
-              <a href="#calculadora" class="btn btn-ghost"
+              <a href="#calculadora" class="btn btn-borde"
                 >¿Cuánto pierdo en devoluciones?</a
               >
             </div>
@@ -1646,57 +1758,66 @@
           </div>
 
           <div>
-            <div
-              class="phone"
-              role="img"
-              aria-label="Ejemplo de conversación: DropChat confirma un pedido por WhatsApp, la clienta corrige su dirección y luego recibe el aviso de que el pedido va en camino."
-            >
-              <div class="phone-screen" aria-hidden="true">
-                <div class="chat-head">
-                  <div class="chat-avatar">T</div>
-                  <div>
-                    <div class="chat-name">Tu Tienda</div>
-                    <div class="chat-status">cuenta de empresa</div>
-                  </div>
-                </div>
-                <div class="chat-body" id="chat">
-                  <div class="chat-note reveal-msg">Hoy</div>
-                  <div class="msg in reveal-msg">
-                    ¡Hola Laura! 👋 Recibimos tu pedido <b>#4821</b>:<br />
-                    Freidora de aire 5L · <b>$49.990</b><br />
-                    Pago contra entrega<br />
-                    📍 Los Aromos 1234, Maipú<br /><br />
-                    ¿Confirmamos el envío?
-                    <time>9:02</time>
-                    <div class="msg-buttons">
-                      <span>✅ Confirmar pedido</span>
-                      <span id="tap-btn">📍 Cambiar dirección</span>
-                      <span>Cancelar</span>
+            <div class="visual">
+              <div class="label" aria-hidden="true">
+                <i></i><i></i><i></i><b></b>
+              </div>
+              <div
+                class="phone"
+                role="img"
+                aria-label="Ejemplo de conversación: DropChat confirma un pedido por WhatsApp, la clienta corrige su dirección y luego recibe el aviso de que el pedido va en camino."
+              >
+                <div class="phone-screen" aria-hidden="true">
+                  <div class="chat-head">
+                    <div class="chat-avatar">T</div>
+                    <div>
+                      <div class="chat-name">Tu Tienda</div>
+                      <div class="chat-status">cuenta de empresa</div>
                     </div>
                   </div>
-                  <div class="msg out reveal-msg">
-                    📍 Cambiar dirección<time>9:03 ✓✓</time>
+                  <div class="chat-body" id="chat">
+                    <div class="chat-note reveal-msg">Hoy</div>
+                    <div class="msg in reveal-msg">
+                      ¡Hola Laura! 👋 Recibimos tu pedido <b>#4821</b>:<br />
+                      Freidora de aire 5L · <b>$49.990</b><br />
+                      Pago contra entrega<br />
+                      Los Aromos 1234, Maipú<br /><br />
+                      ¿Confirmamos el despacho?
+                      <time>09:02</time>
+                      <div class="msg-buttons">
+                        <span>Confirmar pedido</span
+                        ><span id="tap-btn">Cambiar dirección</span
+                        ><span>Cancelar</span>
+                      </div>
+                    </div>
+                    <div class="msg out reveal-msg">
+                      Cambiar dirección<time>09:03 ✓✓</time>
+                    </div>
+                    <div class="msg in reveal-msg">
+                      Claro, Laura. ¿A qué dirección te lo enviamos? Incluye
+                      block y depto si aplica.<time>09:03</time>
+                    </div>
+                    <div class="msg out reveal-msg">
+                      Los Aromos 1234, block B depto 302, Maipú<time
+                        >09:04 ✓✓</time
+                      >
+                    </div>
+                    <div class="msg in reveal-msg">
+                      ¡Listo! Dirección actualizada ✅ Tu pedido sale hoy y te
+                      avisamos cuando vaya en camino.<time>09:04</time>
+                    </div>
+                    <div class="chat-note reveal-msg">Al día siguiente</div>
+                    <div class="msg in reveal-msg">
+                      🚚 Tu freidora va en camino y llega hoy. Ten listos
+                      <b>$49.990</b> para el repartidor.<time>08:15</time>
+                    </div>
+                    <div class="typing" id="typing"><i></i><i></i><i></i></div>
                   </div>
-                  <div class="msg in reveal-msg">
-                    Claro, Laura. ¿A qué dirección te lo enviamos? Incluye block
-                    y depto si aplica 🙏<time>9:03</time>
-                  </div>
-                  <div class="msg out reveal-msg">
-                    Los Aromos 1234, block B depto 302, Maipú<time
-                      >9:04 ✓✓</time
-                    >
-                  </div>
-                  <div class="msg in reveal-msg">
-                    ¡Listo! Dirección actualizada ✅ Tu pedido sale hoy y te
-                    avisamos cuando vaya en camino.<time>9:04</time>
-                  </div>
-                  <div class="chat-note reveal-msg">Al día siguiente</div>
-                  <div class="msg in reveal-msg">
-                    🚚 Tu freidora va en camino y llega hoy. Ten listos
-                    <b>$49.990</b> para el repartidor.<time>8:15</time>
-                  </div>
-                  <div class="typing" id="typing"><i></i><i></i><i></i></div>
                 </div>
+              </div>
+              <div class="stamp" aria-hidden="true">
+                <svg><use href="#i-check" /></svg
+                ><span>Confirmado<small>#4821 · 09:04</small></span>
               </div>
             </div>
             <p class="phone-caption">
@@ -1707,10 +1828,10 @@
       </section>
 
       <!-- PAIN -->
-      <section class="pain" id="dolor" aria-labelledby="pain-title">
+      <section class="arena" id="dolor" aria-labelledby="pain-title">
         <div class="wrap">
           <div class="section-head fade-up">
-            <span class="eyebrow coral">El problema</span>
+            <span class="etiqueta roja">El problema</span>
             <h2 id="pain-title">
               Vender no es lo difícil. Lo difícil empieza después del “lo
               quiero”.
@@ -1720,50 +1841,48 @@
               confirmas, se te olvida a ti… y se le olvida a él.
             </p>
           </div>
-
           <div class="pain-grid">
-            <article class="pain-card fade-up">
+            <article class="card fade-up">
               <div class="pain-icon">
                 <svg aria-hidden="true"><use href="#i-door" /></svg>
               </div>
-              <p class="quote">El repartidor tocó y nadie abrió.</p>
+              <p class="quote">“El repartidor tocó y nadie abrió.”</p>
               <p>
                 El paquete vuelve a bodega. Pagaste el despacho de ida, ahora
                 pagas el de vuelta, y el producto regresa golpeado.
               </p>
             </article>
-            <article class="pain-card fade-up">
+            <article class="card fade-up">
               <div class="pain-icon">
                 <svg aria-hidden="true"><use href="#i-pin" /></svg>
               </div>
-              <p class="quote">Frente al almacén de la esquina.</p>
+              <p class="quote">“Frente al almacén de la esquina.”</p>
               <p>
                 Sin número, sin depto, sin comuna. Novedad, reintento, cliente
                 que se enfría y pedido que termina devuelto.
               </p>
             </article>
-            <article class="pain-card fade-up">
+            <article class="card fade-up">
               <div class="pain-icon">
                 <svg aria-hidden="true"><use href="#i-phone" /></svg>
               </div>
-              <p class="quote">Llamé a 80 y me contestaron 30.</p>
+              <p class="quote">“Llamé a 80 y me contestaron 30.”</p>
               <p>
                 Tu equipo pierde la mañana marcando números que no contestan y
                 la tarde respondiendo “¿dónde está mi pedido?”.
               </p>
             </article>
-            <article class="pain-card fade-up">
+            <article class="card fade-up">
               <div class="pain-icon">
                 <svg aria-hidden="true"><use href="#i-clock" /></svg>
               </div>
-              <p class="quote">Me enteré cuando ya venía de vuelta.</p>
+              <p class="quote">“Me enteré cuando ya venía de vuelta.”</p>
               <p>
                 Cuando ves la devolución en Dropi, la pauta ya se gastó, el
                 producto ya viajó y esa plata no vuelve.
               </p>
             </article>
           </div>
-
           <div class="triple fade-up">
             <h3>Cada devolución la pagas <em>tres veces</em>.</h3>
             <div class="triple-steps">
@@ -1783,10 +1902,10 @@
       </section>
 
       <!-- CALCULATOR -->
-      <section class="calc" id="calculadora" aria-labelledby="calc-title">
+      <section id="calculadora" aria-labelledby="calc-title">
         <div class="wrap">
           <div class="section-head fade-up">
-            <span class="eyebrow coral">Haz la cuenta</span>
+            <span class="etiqueta roja">Haz la cuenta</span>
             <h2 id="calc-title">
               ¿Cuánta plata se te está devolviendo cada mes?
             </h2>
@@ -1796,7 +1915,6 @@
               número.
             </p>
           </div>
-
           <div class="calc-grid">
             <div class="calc-panel fade-up">
               <div class="field">
@@ -1864,11 +1982,10 @@
                 />
                 <span class="hint"
                   >Cuántos pedidos de cada 100 dejan de devolverse al confirmar
-                  y corregir la dirección antes de despachar.</span
+                  y corregir la dirección antes del despacho.</span
                 >
               </div>
             </div>
-
             <div class="calc-result fade-up" aria-live="polite">
               <div class="result-row loss">
                 <span>Hoy pierdes en devoluciones</span
@@ -1900,37 +2017,36 @@
       </section>
 
       <!-- HOW -->
-      <section id="como-funciona" aria-labelledby="how-title">
+      <section class="arena" id="como-funciona" aria-labelledby="how-title">
         <div class="wrap">
           <div class="section-head fade-up">
-            <span class="eyebrow">Cómo funciona</span>
+            <span class="etiqueta">Cómo funciona</span>
             <h2 id="how-title">
               Del pedido a la puerta, sin que nadie de tu equipo marque un
               número.
             </h2>
           </div>
-
           <div class="steps">
-            <article class="step fade-up">
+            <article class="card step fade-up">
               <h3>Entra el pedido</h3>
               <p>
                 Tu cliente compra y la orden llega a Dropi como siempre.
                 DropChat la toma en ese momento.
               </p>
             </article>
-            <article class="step fade-up">
+            <article class="card step fade-up">
               <h3>Le escribimos por WhatsApp</h3>
               <p>
                 Con su nombre, el producto, el valor a pagar y la dirección.
                 Tres botones, una decisión.
               </p>
               <div class="chips">
-                <span class="chip">Confirmar</span
-                ><span class="chip amber">Cambiar dirección</span
-                ><span class="chip coral">Cancelar</span>
+                <span class="chip azul">Confirmar</span
+                ><span class="chip ambar">Cambiar dirección</span
+                ><span class="chip roja">Cancelar</span>
               </div>
             </article>
-            <article class="step fade-up">
+            <article class="card step fade-up">
               <h3>El cliente decide en un toque</h3>
               <p>
                 Si confirma, se despacha. Si corrige la dirección, la IA le pide
@@ -1938,7 +2054,7 @@
                 le recordamos.
               </p>
             </article>
-            <article class="step fade-up">
+            <article class="card step fade-up">
               <h3>Lo acompañamos hasta la puerta</h3>
               <p>
                 Avisos automáticos en cada estado: en camino, en reparto,
@@ -1947,7 +2063,6 @@
               </p>
             </article>
           </div>
-
           <div class="ba">
             <div class="ba-col before fade-up">
               <h3>Tu día hoy</h3>
@@ -2004,10 +2119,10 @@
       </section>
 
       <!-- WHY -->
-      <section class="why" aria-labelledby="why-title">
+      <section class="dark" aria-labelledby="why-title">
         <div class="wrap">
           <div class="section-head fade-up">
-            <span class="eyebrow">Por qué DropChat</span>
+            <span class="etiqueta">Por qué DropChat</span>
             <h2 id="why-title">
               No es otro chatbot para armar. Es tu confirmación de pedidos,
               lista.
@@ -2018,9 +2133,8 @@
               cosa: que el pedido contra entrega llegue y se pague.
             </p>
           </div>
-
           <div class="why-grid">
-            <article class="why-card feature fade-up">
+            <article class="why-card kraft fade-up">
               <div class="why-icon">
                 <svg aria-hidden="true"><use href="#i-coin" /></svg>
               </div>
@@ -2072,59 +2186,61 @@
               <h3>Tu equipo entra cuando hace falta.</h3>
               <p>
                 Todas las conversaciones en una bandeja compartida. Si un
-                cliente necesita a una persona, cualquier asesor la toma en un
-                clic.
+                cliente necesita a una persona, cualquier miembro de tu equipo
+                la toma en un clic.
               </p>
             </article>
           </div>
-
-          <div
-            class="compare fade-up"
-            role="table"
-            aria-label="Comparación entre DropChat y las plataformas de chatbots genéricas"
-          >
-            <div class="compare-row" role="row">
-              <div role="columnheader">&nbsp;</div>
-              <div role="columnheader">DropChat</div>
-              <div role="columnheader">Chatbots todo-en-uno</div>
-            </div>
-            <div class="compare-row" role="row">
-              <div role="rowheader">Cómo te cobran</div>
-              <div role="cell">Por pedido procesado</div>
-              <div role="cell">Por contactos acumulados</div>
-            </div>
-            <div class="compare-row" role="row">
-              <div role="rowheader">Puesta en marcha</div>
-              <div role="cell">Flujo contra entrega ya armado</div>
-              <div role="cell">Armas y mantienes tus propios flujos</div>
-            </div>
-            <div class="compare-row" role="row">
-              <div role="rowheader">Quién confirma el pedido</div>
-              <div role="cell">
-                Reglas fijas y botones; la IA no confirma sola
+          <div class="compare-scroll fade-up">
+            <div
+              class="compare"
+              role="table"
+              aria-label="Comparación entre DropChat y las plataformas de chatbots genéricas"
+            >
+              <div class="compare-row" role="row">
+                <div role="columnheader">&nbsp;</div>
+                <div role="columnheader">DropChat</div>
+                <div role="columnheader">Chatbots todo-en-uno</div>
               </div>
-              <div role="cell">Depende de cómo configures el bot</div>
-            </div>
-            <div class="compare-row" role="row">
-              <div role="rowheader">Enfoque</div>
-              <div role="cell">Confirmación y seguimiento contra entrega</div>
-              <div role="cell">Marketing, ventas, redes, todo junto</div>
+              <div class="compare-row" role="row">
+                <div role="rowheader">Cómo te cobran</div>
+                <div role="cell">Por pedido procesado</div>
+                <div role="cell">Por contactos acumulados</div>
+              </div>
+              <div class="compare-row" role="row">
+                <div role="rowheader">Puesta en marcha</div>
+                <div role="cell">Flujo contra entrega ya armado</div>
+                <div role="cell">Armas y mantienes tus propios flujos</div>
+              </div>
+              <div class="compare-row" role="row">
+                <div role="rowheader">Quién confirma el pedido</div>
+                <div role="cell">
+                  Reglas fijas y botones; la IA no confirma sola
+                </div>
+                <div role="cell">Depende de cómo configures el bot</div>
+              </div>
+              <div class="compare-row" role="row">
+                <div role="rowheader">Enfoque</div>
+                <div role="cell">Confirmación y seguimiento contra entrega</div>
+                <div role="cell">Marketing, ventas, redes, todo junto</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- PRICING -->
-      <section class="pricing" id="precios" aria-labelledby="price-title">
+      <section id="precios" aria-labelledby="price-title">
         <div class="wrap">
           <div class="section-head fade-up">
-            <span class="eyebrow">Precios</span>
+            <span class="etiqueta">Precios</span>
             <h2 id="price-title">
               Menos de lo que te cuestan <span id="pp-n"></span> devoluciones al
               mes.
             </h2>
             <p class="lead">
-              Si cada devolución te cuesta <span id="pp-cost"></span>, evitar
+              Si cada devolución te cuesta
+              <span id="pp-cost" class="num"></span>, evitar
               <span id="pp-n2"></span> al mes ya paga el plan Pro. Todo lo que
               evites de ahí en adelante es ganancia.
             </p>
@@ -2141,9 +2257,7 @@
               </button>
             </div>
           </div>
-
           <div class="plans" id="plans"></div>
-
           <div class="pricing-notes">
             <div>
               <strong>Los mensajes de Meta van aparte.</strong> Se pagan directo
@@ -2163,11 +2277,11 @@
       </section>
 
       <!-- FAQ -->
-      <section class="faq" aria-labelledby="faq-title">
+      <section class="arena" aria-labelledby="faq-title">
         <div class="wrap faq-grid">
           <div class="fade-up">
-            <span class="eyebrow">Preguntas frecuentes</span>
-            <h2 id="faq-title" style="margin-top: 14px">
+            <span class="etiqueta">Preguntas frecuentes</span>
+            <h2 id="faq-title" style="margin-top: 16px">
               Lo que nos preguntan antes de arrancar.
             </h2>
           </div>
@@ -2235,10 +2349,10 @@
       </section>
 
       <!-- FINAL CTA -->
-      <section class="final" id="piloto" aria-labelledby="final-title">
+      <section class="dark final" id="piloto" aria-labelledby="final-title">
         <div class="wrap final-grid">
           <div>
-            <span class="eyebrow">Piloto abierto</span>
+            <span class="etiqueta">Piloto abierto</span>
             <h2 id="final-title">
               Tu próxima devolución ya está en camino. Todavía puedes
               confirmarla.
@@ -2267,17 +2381,16 @@
               </li>
             </ul>
           </div>
-
           <form class="lead-form" id="lead-form" novalidate>
             <h3>Quiero entrar al piloto</h3>
             <div class="form-row">
-              <label for="f-name">Tu nombre</label>
-              <input id="f-name" name="nombre" autocomplete="name" required />
+              <label for="f-name">Tu nombre</label
+              ><input id="f-name" name="nombre" autocomplete="name" required />
             </div>
             <div class="form-2">
               <div class="form-row">
-                <label for="f-phone">WhatsApp</label>
-                <input
+                <label for="f-phone">WhatsApp</label
+                ><input
                   id="f-phone"
                   name="whatsapp"
                   type="tel"
@@ -2288,8 +2401,8 @@
                 />
               </div>
               <div class="form-row">
-                <label for="f-store">Tienda o Instagram</label>
-                <input
+                <label for="f-store">Tienda o Instagram</label
+                ><input
                   id="f-store"
                   name="tienda"
                   placeholder="@mitienda"
@@ -2308,7 +2421,7 @@
                 <option>Más de 3.000</option>
               </select>
             </div>
-            <button class="btn btn-dark" type="submit">
+            <button class="btn btn-primario" type="submit">
               Quiero dejar de perder pedidos
               <svg aria-hidden="true"><use href="#i-arrow" /></svg>
             </button>
@@ -2322,22 +2435,15 @@
       </section>
     </main>
 
-    <footer>
+    <footer class="dark">
       <div class="wrap">
-        <a href="#" class="logo" aria-label="DropChat, inicio">
-          <span class="logo-mark"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M5 12.5l4.5 4.5L19 7.5"
-                fill="none"
-                stroke="#0E1A13"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
-          ></span>
-          DropChat
-        </a>
+        <div>
+          <a href="#" class="logo" aria-label="DropChat, inicio"
+            ><svg aria-hidden="true"><use href="#i-simbolo-inverso" /></svg
+            ><span>DropChat</span></a
+          >
+          <div class="lema">Que ningún pedido quede en visto.</div>
+        </div>
         <p>
           © 2026 DropChat. DropChat no está afiliado a Dropi ni a Meta.
           WhatsApp es una marca registrada de Meta Platforms, Inc.
@@ -2346,12 +2452,14 @@
     </footer>
 
     <div class="mobile-cta" id="mobile-cta">
-      <a href="#piloto" class="btn btn-primary"
+      <a href="#piloto" class="btn btn-primario"
         >Entrar al piloto <svg aria-hidden="true"><use href="#i-arrow" /></svg
       ></a>
     </div>
 
     <script>
+      document.documentElement.classList.add("js");
+
       /* ── Configuración: completa ANTES de publicar ─────────────────────────
      whatsappNumber: número que recibe los leads, solo dígitos con código
      de país (ej. "56912345678"). El formulario abre WhatsApp con los datos
@@ -2417,12 +2525,12 @@
           maximumFractionDigits: d,
         });
       const int = (n) => Math.round(n).toLocaleString("es-CL");
+      const $ = (id) => document.getElementById(id);
 
       /* ── Pricing cards ───────────────────────────────────────────────── */
       let billing = "monthly";
       function renderPlans() {
-        const el = document.getElementById("plans");
-        el.innerHTML = PLANS.map((p) => {
+        $("plans").innerHTML = PLANS.map((p) => {
           const monthly = billing === "annual" ? (p.usd * 10) / 12 : p.usd;
           const sub =
             billing === "annual"
@@ -2437,7 +2545,7 @@
             <div class="price"><strong>${usd(monthly, billing === "annual" && monthly % 1 ? 1 : 0)}</strong><span>/mes</span></div>
             <div class="price-sub">${sub}</div>
           </div>
-          <div class="plan-per-order">${int(p.orders)} pedidos al mes · ${clp(perOrder * CONFIG.clpPerUsd)} CLP por pedido</div>
+          <div class="plan-per-order">${int(p.orders)} pedidos al mes<br>${clp(perOrder * CONFIG.clpPerUsd)} CLP por pedido</div>
           <ul>
             <li><svg aria-hidden="true"><use href="#i-check"/></svg>Confirmación y avisos de estado por WhatsApp</li>
             <li><svg aria-hidden="true"><use href="#i-check"/></svg>IA para dudas y corrección de dirección</li>
@@ -2445,7 +2553,7 @@
             <li><svg aria-hidden="true"><use href="#i-check"/></svg>${p.users} usuarios en la bandeja</li>
             <li><svg aria-hidden="true"><use href="#i-check"/></svg>Pedido extra: ${usd(p.extra, 2)}</li>
           </ul>
-          <a href="#piloto" class="btn ${p.popular ? "btn-primary" : "btn-dark"}">Entrar al piloto</a>
+          <a href="#piloto" class="btn ${p.popular ? "btn-primario" : "btn-borde"}">Entrar al piloto</a>
         </article>`;
         }).join("");
       }
@@ -2463,17 +2571,14 @@
       // Textos de Precios derivados de la configuración, para que no queden desfasados.
       const proClp = PLANS.find((p) => p.id === "pro").usd * CONFIG.clpPerUsd;
       const proBreakEven = Math.ceil(proClp / CONFIG.returnCostClp);
-      document.getElementById("pp-n").textContent = int(proBreakEven + 1);
-      document.getElementById("pp-n2").textContent = int(proBreakEven);
-      document.getElementById("pp-cost").textContent = clp(
-        CONFIG.returnCostClp,
-      );
+      $("pp-n").textContent = int(proBreakEven + 1);
+      $("pp-n2").textContent = int(proBreakEven);
+      $("pp-cost").textContent = clp(CONFIG.returnCostClp);
       document
         .querySelectorAll("[data-rate]")
         .forEach((el) => (el.textContent = clp(CONFIG.clpPerUsd)));
 
       /* ── ROI calculator ──────────────────────────────────────────────── */
-      const $ = (id) => document.getElementById(id);
       function planFor(orders) {
         // El plan más barato para ese volumen, contando el costo de los pedidos extra.
         return PLANS.map((p) => ({
@@ -2489,7 +2594,7 @@
         $("o-orders").textContent = int(orders);
         $("o-rate").textContent = rate + "%";
         $("o-cost").textContent = clp(cost);
-        $("o-cut").textContent = cut + " de cada 100";
+        $("o-cut").textContent = cut + " de 100";
 
         const loss = orders * (rate / 100) * cost;
         const saved = orders * (cut / 100) * cost;
@@ -2506,7 +2611,7 @@
           : p.name;
         $("r-price").textContent = "− " + clp(planClp);
         $("r-net").textContent = (net < 0 ? "− " : "") + clp(Math.abs(net));
-        $("r-net").style.color = net < 0 ? "#FF8D72" : "";
+        $("r-net").classList.toggle("neg", net < 0);
         $("r-break").textContent =
           net >= 0
             ? `Con evitar ${int(breakEven)} devoluciones al mes el plan ya se paga solo. Al año son ${clp(net * 12)}.`
@@ -2541,7 +2646,7 @@
           console.warn("DropChat landing: CONFIG.whatsappNumber está vacío.");
           return;
         }
-        const text = `Hola, quiero entrar al piloto de DropChat.\n\nNombre: ${data.nombre}\nWhatsApp: ${data.whatsapp}\nTienda: ${data.tienda}\nPedidos COD al mes: ${data.pedidos}`;
+        const text = `Hola, quiero entrar al piloto de DropChat.\n\nNombre: ${data.nombre}\nWhatsApp: ${data.whatsapp}\nTienda: ${data.tienda}\nPedidos contra entrega al mes: ${data.pedidos}`;
         window.open(
           `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(text)}`,
           "_blank",
@@ -2562,9 +2667,10 @@
       if (reduced) {
         msgs.forEach((m) => m.classList.add("on"));
       } else {
+        // Arranca con el pedido ya enviado, para que la primera vista muestre de qué se trata.
+        msgs[0].classList.add("on");
+        msgs[1].classList.add("on");
         const plan = [
-          [0, 300],
-          [1, 700, true],
           [2, 1600, false, true],
           [3, 1500, true],
           [4, 1400],
@@ -2576,7 +2682,7 @@
         const run = () => {
           if (i >= plan.length) {
             setTimeout(() => {
-              msgs.forEach((m) => m.classList.remove("on"));
+              msgs.slice(2).forEach((m) => m.classList.remove("on"));
               tapBtn.classList.remove("tapped");
               i = 0;
               setTimeout(run, 600);
@@ -2590,15 +2696,15 @@
             if (tap) tapBtn.classList.add("tapped");
             setTimeout(run, 0);
           };
-          if (typed) {
+          if (typed)
             setTimeout(
               () => {
                 typing.classList.add("on");
                 setTimeout(show, 900);
               },
-              wait - 900 > 0 ? wait - 900 : 0,
+              Math.max(0, wait - 900),
             );
-          } else setTimeout(show, wait);
+          else setTimeout(show, wait);
         };
         run();
       }
