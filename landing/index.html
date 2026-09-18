@@ -1,0 +1,2637 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DropChat · Confirma tus pedidos contra entrega por WhatsApp</title>
+    <meta
+      name="description"
+      content="DropChat confirma por WhatsApp cada pedido contra entrega antes de despacharlo y avisa al cliente en cada estado. Menos devoluciones, menos despachos perdidos, cero llamadas uno por uno."
+    />
+    <meta
+      property="og:title"
+      content="DropChat · Deja de pagar despachos por pedidos que nadie iba a recibir"
+    />
+    <meta
+      property="og:description"
+      content="Confirmación y seguimiento de pedidos COD por WhatsApp, hecho para tiendas que venden con Dropi."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0E1A13" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E1A13'/%3E%3Cpath d='M18 33l9 9 19-20' stroke='%2338D97A' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0e1a13;
+        --ink-2: #1b2a21;
+        --ink-soft: #3e4d44;
+        --muted: #6a776f;
+        --paper: #f5f2ea;
+        --paper-2: #ece7db;
+        --card: #ffffff;
+        --line: #dcd5c5;
+        --green: #1e9e52;
+        --green-bright: #38d97a;
+        --green-tint: #e3f5e9;
+        --coral: #e8492a;
+        --coral-tint: #fce6e0;
+        --amber: #f2b33d;
+        --chat-bg: #e9e3d5;
+        --bubble-in: #ffffff;
+        --bubble-out: #d9f7c8;
+        --radius: 18px;
+        --shadow:
+          0 1px 2px rgba(14, 26, 19, 0.06),
+          0 12px 32px -12px rgba(14, 26, 19, 0.18);
+        --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+        --body:
+          "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
+          "Segoe UI", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      img,
+      svg {
+        display: block;
+        max-width: 100%;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid var(--green-bright);
+        outline-offset: 3px;
+        border-radius: 6px;
+      }
+      .wrap {
+        width: 100%;
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      h2 {
+        font-size: clamp(32px, 5vw, 52px);
+        font-weight: 800;
+      }
+      h3 {
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--green);
+      }
+      .eyebrow.coral {
+        color: var(--coral);
+      }
+      .lead {
+        font-size: clamp(18px, 2.2vw, 21px);
+        color: var(--ink-soft);
+        max-width: 60ch;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 54px;
+        padding: 0 26px;
+        border-radius: 999px;
+        border: 0;
+        cursor: pointer;
+        font: 700 17px/1 var(--body);
+        text-decoration: none;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          background 0.15s ease;
+      }
+      .btn-primary {
+        background: var(--green-bright);
+        color: var(--ink);
+        box-shadow: 0 8px 24px -8px rgba(56, 217, 122, 0.7);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px -10px rgba(56, 217, 122, 0.8);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: inherit;
+        border: 2px solid currentColor;
+      }
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .btn-dark {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .btn-dark:hover {
+        transform: translateY(-2px);
+      }
+      .btn svg {
+        width: 18px;
+        height: 18px;
+        flex: none;
+      }
+
+      /* Nav */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(14, 26, 19, 0.92);
+        backdrop-filter: saturate(1.4) blur(10px);
+        color: var(--paper);
+      }
+      .nav .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        gap: 16px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font: 800 21px/1 var(--display);
+        text-decoration: none;
+        letter-spacing: -0.02em;
+      }
+      .logo-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--green-bright);
+        display: grid;
+        place-items: center;
+      }
+      .logo-mark svg {
+        width: 18px;
+        height: 18px;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .nav-links a {
+        text-decoration: none;
+        opacity: 0.8;
+      }
+      .nav-links a:hover {
+        opacity: 1;
+      }
+      .nav .btn {
+        min-height: 42px;
+        padding: 0 18px;
+        font-size: 15px;
+      }
+      @media (max-width: 820px) {
+        .nav-links a:not(.btn) {
+          display: none;
+        }
+      }
+
+      /* Hero */
+      .hero {
+        background: var(--ink);
+        color: var(--paper);
+        position: relative;
+        overflow: hidden;
+        padding: 64px 0 88px;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: auto -20% -60% 40%;
+        height: 120%;
+        background: radial-gradient(
+          closest-side,
+          rgba(56, 217, 122, 0.22),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 56px;
+        align-items: center;
+        position: relative;
+      }
+      @media (max-width: 960px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 48px;
+        }
+      }
+      .hero .eyebrow {
+        color: var(--green-bright);
+      }
+      .hero h1 {
+        font-size: clamp(40px, 5.4vw, 64px);
+        font-weight: 800;
+        margin: 18px 0 22px;
+      }
+      .hero h1 .strike {
+        color: var(--amber);
+      }
+      .hero-grid > *,
+      .calc-grid > *,
+      .final-grid > *,
+      .faq-grid > * {
+        min-width: 0;
+      }
+      .hero .lead {
+        color: #c9d2cc;
+      }
+      .hero-cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 34px;
+      }
+      .hero-proof {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 22px;
+        margin-top: 30px;
+        font-size: 14px;
+        color: #a9b5ae;
+      }
+      .hero-proof span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .hero-proof svg {
+        width: 16px;
+        height: 16px;
+        color: var(--green-bright);
+      }
+
+      /* Phone */
+      .phone {
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+        border-radius: 38px;
+        padding: 10px;
+        background: #050a07;
+        box-shadow:
+          0 40px 80px -30px rgba(0, 0, 0, 0.7),
+          inset 0 0 0 2px #26352c;
+      }
+      .phone-screen {
+        border-radius: 30px;
+        overflow: hidden;
+        background: var(--chat-bg);
+      }
+      .chat-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: #14271c;
+        color: #fff;
+      }
+      .chat-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--green-bright);
+        display: grid;
+        place-items: center;
+        color: var(--ink);
+        font: 800 15px/1 var(--display);
+        flex: none;
+      }
+      .chat-name {
+        font-weight: 700;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+      .chat-status {
+        font-size: 12px;
+        color: #9fb5a7;
+      }
+      .chat-body {
+        height: 480px;
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow: hidden;
+        justify-content: flex-end;
+      }
+      .msg {
+        max-width: 86%;
+        padding: 8px 11px 6px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: #111;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+      }
+      .msg time {
+        display: block;
+        text-align: right;
+        font-size: 10.5px;
+        color: #7a847e;
+        margin-top: 2px;
+      }
+      .msg.in {
+        background: var(--bubble-in);
+        align-self: flex-start;
+        border-top-left-radius: 4px;
+      }
+      .msg.out {
+        background: var(--bubble-out);
+        align-self: flex-end;
+        border-top-right-radius: 4px;
+      }
+      .msg b {
+        font-weight: 700;
+      }
+      .msg-buttons {
+        display: grid;
+        gap: 1px;
+        margin: 8px -11px -6px;
+        border-top: 1px solid #e6e6e6;
+      }
+      .msg-buttons span {
+        display: block;
+        text-align: center;
+        padding: 8px 6px;
+        color: #0a7cbf;
+        font-weight: 600;
+        font-size: 13.5px;
+        background: #fff;
+      }
+      .msg-buttons span + span {
+        border-top: 1px solid #efefef;
+      }
+      .msg-buttons span.tapped {
+        background: #eaf6fd;
+      }
+      .msg-buttons span:last-child {
+        border-radius: 0 0 12px 12px;
+      }
+      .chat-note {
+        align-self: center;
+        font-size: 11.5px;
+        background: rgba(255, 255, 255, 0.7);
+        color: #4e5a53;
+        padding: 4px 10px;
+        border-radius: 8px;
+      }
+      .reveal-msg {
+        display: none;
+      }
+      .reveal-msg.on {
+        display: block;
+        animation: pop 0.35s ease both;
+      }
+      @keyframes pop {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .typing {
+        align-self: flex-start;
+        background: #fff;
+        padding: 10px 14px;
+        border-radius: 12px;
+        display: none;
+        gap: 4px;
+      }
+      .typing.on {
+        display: inline-flex;
+      }
+      .typing i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #9aa39d;
+        animation: blink 1s infinite;
+      }
+      .typing i:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .typing i:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      @keyframes blink {
+        0%,
+        80%,
+        100% {
+          opacity: 0.3;
+        }
+        40% {
+          opacity: 1;
+        }
+      }
+      .phone-caption {
+        text-align: center;
+        font-size: 13px;
+        color: #8fa197;
+        margin-top: 16px;
+      }
+
+      /* Sections */
+      section {
+        padding: 104px 0;
+      }
+      @media (max-width: 720px) {
+        section {
+          padding: 72px 0;
+        }
+      }
+      .section-head {
+        max-width: 760px;
+        margin-bottom: 56px;
+      }
+      .section-head h2 {
+        margin: 14px 0 18px;
+      }
+
+      /* Pain */
+      .pain {
+        background: var(--paper);
+      }
+      .pain-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+      }
+      @media (max-width: 760px) {
+        .pain-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .pain-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 28px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+      .pain-card .quote {
+        font: 700 22px/1.2 var(--display);
+        letter-spacing: -0.01em;
+      }
+      .pain-card .quote::before {
+        content: "“";
+        color: var(--coral);
+        margin-right: 2px;
+      }
+      .pain-card .quote::after {
+        content: "”";
+        color: var(--coral);
+      }
+      .pain-card p {
+        color: var(--ink-soft);
+      }
+      .pain-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: var(--coral-tint);
+        color: var(--coral);
+        display: grid;
+        place-items: center;
+      }
+      .pain-icon svg {
+        width: 22px;
+        height: 22px;
+      }
+      .triple {
+        margin-top: 28px;
+        border-radius: var(--radius);
+        background: var(--ink);
+        color: var(--paper);
+        padding: 36px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 28px;
+        align-items: center;
+      }
+      @media (max-width: 860px) {
+        .triple {
+          grid-template-columns: 1fr;
+          padding: 28px;
+        }
+      }
+      .triple h3 {
+        font-size: clamp(24px, 3vw, 32px);
+        font-weight: 800;
+      }
+      .triple h3 em {
+        font-style: normal;
+        color: var(--amber);
+      }
+      .triple-steps {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .triple-steps div {
+        background: var(--ink-2);
+        border: 1px solid #2e4036;
+        border-radius: 14px;
+        padding: 14px 16px;
+        flex: 1 1 150px;
+      }
+      .triple-steps small {
+        display: block;
+        font-size: 12px;
+        color: #9fb0a6;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+      }
+      .triple-steps strong {
+        font: 700 17px/1.2 var(--display);
+      }
+
+      /* Calculator */
+      .calc {
+        background: var(--paper-2);
+      }
+      .calc-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: stretch;
+      }
+      @media (max-width: 900px) {
+        .calc-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .calc-panel {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 30px;
+        display: grid;
+        gap: 26px;
+      }
+      .field {
+        display: grid;
+        gap: 10px;
+      }
+      .field-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .field label {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .field output {
+        font: 800 22px/1 var(--display);
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      .field .hint {
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 99px;
+        background: var(--paper-2);
+        outline-offset: 6px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--ink);
+        border: 4px solid var(--green-bright);
+        cursor: pointer;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--ink);
+        border: 4px solid var(--green-bright);
+        cursor: pointer;
+      }
+      .calc-result {
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: var(--radius);
+        padding: 30px;
+        display: grid;
+        gap: 18px;
+        align-content: start;
+      }
+      .result-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #2a3b31;
+      }
+      .result-row span {
+        color: #b4c1b9;
+        font-size: 15px;
+      }
+      .result-row strong {
+        font: 800 24px/1.1 var(--display);
+        white-space: nowrap;
+      }
+      .result-row.loss strong {
+        color: #ff8d72;
+      }
+      .result-row.win strong {
+        color: var(--green-bright);
+      }
+      .result-big {
+        padding-top: 4px;
+      }
+      .result-big span {
+        display: block;
+        color: #b4c1b9;
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      .result-big strong {
+        display: block;
+        font: 800 clamp(40px, 6vw, 56px) / 1 var(--display);
+        color: var(--green-bright);
+        letter-spacing: -0.03em;
+      }
+      .result-big p {
+        margin-top: 12px;
+        color: #c9d2cc;
+        font-size: 15px;
+      }
+      .calc-disclaimer {
+        font-size: 13px;
+        color: #8fa197;
+        line-height: 1.5;
+      }
+
+      /* How */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        counter-reset: step;
+      }
+      @media (max-width: 980px) {
+        .steps {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 560px) {
+        .steps {
+          grid-template-columns: 1fr;
+        }
+      }
+      .step {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 26px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        position: relative;
+      }
+      .step::before {
+        counter-increment: step;
+        content: counter(step);
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--green-bright);
+        display: grid;
+        place-items: center;
+        font: 800 17px/1 var(--display);
+      }
+      .step p {
+        color: var(--ink-soft);
+        font-size: 16px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        font-size: 12.5px;
+        font-weight: 700;
+        padding: 5px 10px;
+        border-radius: 99px;
+        background: var(--green-tint);
+        color: #166b3a;
+      }
+      .chip.coral {
+        background: var(--coral-tint);
+        color: #a8321b;
+      }
+      .chip.amber {
+        background: #fcf0d6;
+        color: #8a5a05;
+      }
+
+      /* Before / after */
+      .ba {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-top: 18px;
+      }
+      @media (max-width: 760px) {
+        .ba {
+          grid-template-columns: 1fr;
+        }
+      }
+      .ba-col {
+        border-radius: var(--radius);
+        padding: 28px;
+      }
+      .ba-col.before {
+        background: var(--card);
+        border: 1px solid var(--line);
+      }
+      .ba-col.after {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .ba-col h3 {
+        margin-bottom: 16px;
+      }
+      .ba-col ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 12px;
+      }
+      .ba-col li {
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+      .ba-col li svg {
+        width: 20px;
+        height: 20px;
+        margin-top: 2px;
+      }
+      .before li svg {
+        color: var(--coral);
+      }
+      .after li svg {
+        color: var(--green-bright);
+      }
+      .after li {
+        color: #d5ddd8;
+      }
+
+      /* Why */
+      .why {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .why .eyebrow {
+        color: var(--green-bright);
+      }
+      .why .lead {
+        color: #c9d2cc;
+      }
+      .why-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      @media (max-width: 960px) {
+        .why-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 620px) {
+        .why-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .why-card {
+        background: var(--ink-2);
+        border: 1px solid #2a3b31;
+        border-radius: var(--radius);
+        padding: 28px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+      .why-card p {
+        color: #bac6bf;
+        font-size: 16px;
+      }
+      .why-card.feature {
+        grid-column: span 2;
+        background: linear-gradient(135deg, #1e3a2a, #16271d);
+        border-color: #2f5a41;
+      }
+      @media (max-width: 620px) {
+        .why-card.feature {
+          grid-column: auto;
+        }
+      }
+      .why-card.feature h3 {
+        font-size: 26px;
+      }
+      .why-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(56, 217, 122, 0.14);
+        color: var(--green-bright);
+        display: grid;
+        place-items: center;
+      }
+      .why-icon svg {
+        width: 22px;
+        height: 22px;
+      }
+      .compare {
+        margin-top: 56px;
+        border: 1px solid #2a3b31;
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr 1fr;
+      }
+      .compare-row > div {
+        padding: 18px 22px;
+        border-top: 1px solid #2a3b31;
+        font-size: 15.5px;
+      }
+      .compare-row:first-child > div {
+        border-top: 0;
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #9fb0a6;
+        background: #132219;
+      }
+      .compare-row > div:nth-child(2) {
+        background: rgba(56, 217, 122, 0.07);
+        color: #e9f7ee;
+        font-weight: 600;
+      }
+      .compare-row > div:nth-child(3) {
+        color: #a6b3ab;
+      }
+      .compare-row > div:first-child {
+        color: #d5ddd8;
+        font-weight: 600;
+      }
+      @media (max-width: 680px) {
+        .compare-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .compare-row > div:first-child {
+          grid-column: 1 / -1;
+          padding-bottom: 4px;
+          background: #132219;
+        }
+        .compare-row:first-child > div:first-child {
+          display: none;
+        }
+      }
+
+      /* Pricing */
+      .pricing {
+        background: var(--paper);
+      }
+      .billing-toggle {
+        display: inline-flex;
+        background: var(--paper-2);
+        border-radius: 999px;
+        padding: 5px;
+        margin-top: 8px;
+        border: 1px solid var(--line);
+      }
+      .billing-toggle button {
+        border: 0;
+        background: transparent;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font: 700 15px/1 var(--body);
+        color: var(--ink-soft);
+        cursor: pointer;
+      }
+      .billing-toggle button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .billing-toggle .save {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .billing-toggle button[aria-pressed="true"] .save {
+        color: var(--green-bright);
+      }
+      .plans {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-top: 36px;
+      }
+      @media (max-width: 1060px) {
+        .plans {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 580px) {
+        .plans {
+          grid-template-columns: 1fr;
+        }
+      }
+      .plan {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 28px 24px;
+        display: grid;
+        gap: 18px;
+        align-content: start;
+        position: relative;
+      }
+      .plan.popular {
+        border: 2px solid var(--ink);
+        box-shadow: var(--shadow);
+      }
+      .plan .badge {
+        position: absolute;
+        top: -13px;
+        left: 24px;
+        background: var(--green-bright);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 5px 12px;
+        border-radius: 99px;
+        letter-spacing: 0.03em;
+      }
+      .plan-name {
+        font: 800 22px/1 var(--display);
+      }
+      .plan-for {
+        font-size: 14px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .price {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .price strong {
+        font: 800 46px/1 var(--display);
+        letter-spacing: -0.03em;
+      }
+      .price span {
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .price-sub {
+        font-size: 13.5px;
+        color: var(--muted);
+        margin-top: 6px;
+        min-height: 1.5em;
+      }
+      .plan ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+        font-size: 15px;
+      }
+      .plan li {
+        display: grid;
+        grid-template-columns: 20px 1fr;
+        gap: 8px;
+      }
+      .plan li svg {
+        width: 18px;
+        height: 18px;
+        color: var(--green);
+        margin-top: 3px;
+      }
+      .plan .btn {
+        width: 100%;
+        min-height: 48px;
+        font-size: 16px;
+      }
+      .plan-per-order {
+        background: var(--green-tint);
+        color: #166b3a;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .pricing-notes {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 28px;
+      }
+      @media (max-width: 860px) {
+        .pricing-notes {
+          grid-template-columns: 1fr;
+        }
+      }
+      .pricing-notes div {
+        font-size: 14.5px;
+        color: var(--ink-soft);
+        background: var(--paper-2);
+        border-radius: 14px;
+        padding: 16px 18px;
+      }
+      .pricing-notes strong {
+        color: var(--ink);
+      }
+
+      /* FAQ */
+      .faq {
+        background: var(--paper-2);
+      }
+      .faq-grid {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 48px;
+      }
+      @media (max-width: 900px) {
+        .faq-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      details {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 0 22px;
+      }
+      details + details {
+        margin-top: 12px;
+      }
+      summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 20px 0;
+        font-weight: 700;
+        font-size: 17px;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::after {
+        content: "+";
+        font: 700 24px/1 var(--display);
+        color: var(--green);
+        flex: none;
+        transition: transform 0.2s ease;
+      }
+      details[open] summary::after {
+        transform: rotate(45deg);
+      }
+      details p {
+        padding: 0 0 20px;
+        color: var(--ink-soft);
+      }
+
+      /* Final CTA */
+      .final {
+        background: var(--ink);
+        color: var(--paper);
+        position: relative;
+        overflow: hidden;
+      }
+      .final::before {
+        content: "";
+        position: absolute;
+        inset: -40% -10% auto auto;
+        width: 70%;
+        height: 140%;
+        background: radial-gradient(
+          closest-side,
+          rgba(56, 217, 122, 0.18),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .final-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        align-items: center;
+        position: relative;
+      }
+      @media (max-width: 900px) {
+        .final-grid {
+          grid-template-columns: 1fr;
+          gap: 40px;
+        }
+      }
+      .final h2 {
+        font-size: clamp(36px, 5.4vw, 60px);
+        margin: 14px 0 20px;
+      }
+      .final .eyebrow {
+        color: var(--green-bright);
+      }
+      .final .lead {
+        color: #c9d2cc;
+      }
+      .pilot-perks {
+        list-style: none;
+        padding: 0;
+        margin: 28px 0 0;
+        display: grid;
+        gap: 12px;
+      }
+      .pilot-perks li {
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        gap: 10px;
+        color: #d5ddd8;
+      }
+      .pilot-perks svg {
+        width: 20px;
+        height: 20px;
+        color: var(--green-bright);
+        margin-top: 2px;
+      }
+      form.lead-form {
+        background: var(--paper);
+        color: var(--ink);
+        border-radius: 22px;
+        padding: 30px;
+        display: grid;
+        gap: 16px;
+        box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+      }
+      form.lead-form h3 {
+        font-size: 24px;
+      }
+      .form-row {
+        display: grid;
+        gap: 6px;
+      }
+      .form-row label {
+        font-weight: 700;
+        font-size: 14.5px;
+      }
+      .form-row input,
+      .form-row select {
+        width: 100%;
+        min-height: 50px;
+        border-radius: 12px;
+        border: 1.5px solid var(--line);
+        background: #fff;
+        padding: 0 14px;
+        font: 500 16px var(--body);
+        color: var(--ink);
+      }
+      .form-row input:focus,
+      .form-row select:focus {
+        border-color: var(--green);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(56, 217, 122, 0.25);
+      }
+      .form-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      @media (max-width: 480px) {
+        .form-2 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .form-small {
+        font-size: 13px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .form-status {
+        font-size: 14.5px;
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: none;
+      }
+      .form-status.ok {
+        display: block;
+        background: var(--green-tint);
+        color: #166b3a;
+      }
+      .form-status.err {
+        display: block;
+        background: var(--coral-tint);
+        color: #a8321b;
+      }
+
+      footer {
+        background: #08110c;
+        color: #8fa197;
+        padding: 40px 0;
+        font-size: 14px;
+      }
+      footer .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 32px;
+        justify-content: space-between;
+        align-items: center;
+      }
+      footer .logo {
+        color: var(--paper);
+        font-size: 18px;
+      }
+      footer p {
+        max-width: 70ch;
+      }
+
+      /* Sticky mobile CTA */
+      .mobile-cta {
+        display: none;
+      }
+      @media (max-width: 720px) {
+        .mobile-cta {
+          display: block;
+          position: fixed;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          z-index: 60;
+          transform: translateY(140%);
+          transition: transform 0.25s ease;
+        }
+        .mobile-cta.show {
+          transform: none;
+        }
+        .mobile-cta .btn {
+          width: 100%;
+          box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+        }
+        footer {
+          padding-bottom: 96px;
+        }
+      }
+
+      .fade-up {
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 0.6s ease,
+          transform 0.6s ease;
+      }
+      .fade-up.in {
+        opacity: 1;
+        transform: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .fade-up {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+        .reveal-msg.on {
+          animation: none;
+        }
+        .typing i {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path
+          d="M5 12.5l4.5 4.5L19 7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24">
+        <path
+          d="M7 7l10 10M17 7L7 17"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path
+          d="M5 12h14M13 6l6 6-6 6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-door" viewBox="0 0 24 24">
+        <path
+          d="M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21M3 21h18M14 12h.01"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24">
+        <path
+          d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle
+          cx="12"
+          cy="9.5"
+          r="2.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+      </symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24">
+        <path
+          d="M6.6 3.5l2.6 3.2-1.8 2.4a12 12 0 0 0 7.5 7.5l2.4-1.8 3.2 2.6-1.4 3.1c-.3.6-1 1-1.7.9C9.5 20.6 3.4 14.5 2.6 6.7c-.1-.7.3-1.4.9-1.7z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24">
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <path
+          d="M12 7v5l3.5 2"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-coin" viewBox="0 0 24 24">
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <path
+          d="M14.8 9.2c-.5-.8-1.5-1.3-2.8-1.3-1.7 0-2.8.9-2.8 2.1 0 2.9 5.8 1.4 5.8 4.2 0 1.2-1.2 2.1-3 2.1-1.4 0-2.5-.6-3-1.5M12 6v1.9M12 16.3V18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path
+          d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M8.8 12.2l2.2 2.2 4.3-4.4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-target" viewBox="0 0 24 24">
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <circle
+          cx="12"
+          cy="12"
+          r="5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      </symbol>
+      <symbol id="i-key" viewBox="0 0 24 24">
+        <circle
+          cx="8"
+          cy="15"
+          r="4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <path
+          d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-users" viewBox="0 0 24 24">
+        <circle
+          cx="9"
+          cy="8"
+          r="3.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <path
+          d="M2.5 20c.6-3.5 3.3-5.5 6.5-5.5s5.9 2 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-wa" viewBox="0 0 24 24">
+        <path
+          d="M4 20l1.2-3.9A8.5 8.5 0 1 1 8 19z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M9 9.2c.2 2.6 2.3 4.8 5 5.4l1.1-1.2 1.7.9c-.3 1-1.1 1.6-2.2 1.6-3.5 0-6.8-3.2-6.8-6.8 0-1 .6-1.9 1.6-2.2l.9 1.7z"
+          fill="currentColor"
+        />
+      </symbol>
+    </svg>
+
+    <header class="nav">
+      <div class="wrap">
+        <a href="#" class="logo" aria-label="DropChat, inicio">
+          <span class="logo-mark"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 12.5l4.5 4.5L19 7.5"
+                fill="none"
+                stroke="#0E1A13"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></span>
+          DropChat
+        </a>
+        <nav class="nav-links" aria-label="Principal">
+          <a href="#dolor">El problema</a>
+          <a href="#calculadora">Calculadora</a>
+          <a href="#como-funciona">Cómo funciona</a>
+          <a href="#precios">Precios</a>
+          <a href="#piloto" class="btn btn-primary">Entrar al piloto</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero-grid">
+          <div>
+            <span class="eyebrow"
+              >Para tiendas en Chile que venden contra entrega con Dropi</span
+            >
+            <h1 id="hero-title">
+              Deja de pagar despachos por pedidos que
+              <span class="strike">nadie iba a recibir.</span>
+            </h1>
+            <p class="lead">
+              DropChat le escribe por WhatsApp a cada cliente apenas entra su
+              pedido, confirma que lo quiere, corrige la dirección antes del
+              despacho y lo acompaña hasta que abre la puerta. Sin llamar uno
+              por uno. Sin tu equipo colapsado.
+            </p>
+            <div class="hero-cta">
+              <a href="#piloto" class="btn btn-primary"
+                >Quiero entrar al piloto
+                <svg aria-hidden="true"><use href="#i-arrow" /></svg
+              ></a>
+              <a href="#calculadora" class="btn btn-ghost"
+                >¿Cuánto pierdo en devoluciones?</a
+              >
+            </div>
+            <div class="hero-proof">
+              <span
+                ><svg aria-hidden="true"><use href="#i-check" /></svg>API
+                oficial de WhatsApp</span
+              >
+              <span
+                ><svg aria-hidden="true"><use href="#i-check" /></svg>Con tu
+                propio número</span
+              >
+              <span
+                ><svg aria-hidden="true"><use href="#i-check" /></svg>Responde
+                24/7, también el domingo</span
+              >
+            </div>
+          </div>
+
+          <div>
+            <div
+              class="phone"
+              role="img"
+              aria-label="Ejemplo de conversación: DropChat confirma un pedido por WhatsApp, la clienta corrige su dirección y luego recibe el aviso de que el pedido va en camino."
+            >
+              <div class="phone-screen" aria-hidden="true">
+                <div class="chat-head">
+                  <div class="chat-avatar">T</div>
+                  <div>
+                    <div class="chat-name">Tu Tienda</div>
+                    <div class="chat-status">cuenta de empresa</div>
+                  </div>
+                </div>
+                <div class="chat-body" id="chat">
+                  <div class="chat-note reveal-msg">Hoy</div>
+                  <div class="msg in reveal-msg">
+                    ¡Hola Laura! 👋 Recibimos tu pedido <b>#4821</b>:<br />
+                    Freidora de aire 5L · <b>$49.990</b><br />
+                    Pago contra entrega<br />
+                    📍 Los Aromos 1234, Maipú<br /><br />
+                    ¿Confirmamos el envío?
+                    <time>9:02</time>
+                    <div class="msg-buttons">
+                      <span>✅ Confirmar pedido</span>
+                      <span id="tap-btn">📍 Cambiar dirección</span>
+                      <span>Cancelar</span>
+                    </div>
+                  </div>
+                  <div class="msg out reveal-msg">
+                    📍 Cambiar dirección<time>9:03 ✓✓</time>
+                  </div>
+                  <div class="msg in reveal-msg">
+                    Claro, Laura. ¿A qué dirección te lo enviamos? Incluye block
+                    y depto si aplica 🙏<time>9:03</time>
+                  </div>
+                  <div class="msg out reveal-msg">
+                    Los Aromos 1234, block B depto 302, Maipú<time
+                      >9:04 ✓✓</time
+                    >
+                  </div>
+                  <div class="msg in reveal-msg">
+                    ¡Listo! Dirección actualizada ✅ Tu pedido sale hoy y te
+                    avisamos cuando vaya en camino.<time>9:04</time>
+                  </div>
+                  <div class="chat-note reveal-msg">Al día siguiente</div>
+                  <div class="msg in reveal-msg">
+                    🚚 Tu freidora va en camino y llega hoy. Ten listos
+                    <b>$49.990</b> para el repartidor.<time>8:15</time>
+                  </div>
+                  <div class="typing" id="typing"><i></i><i></i><i></i></div>
+                </div>
+              </div>
+            </div>
+            <p class="phone-caption">
+              Así ve tu cliente cada pedido. Tú no tocaste el teléfono.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAIN -->
+      <section class="pain" id="dolor" aria-labelledby="pain-title">
+        <div class="wrap">
+          <div class="section-head fade-up">
+            <span class="eyebrow coral">El problema</span>
+            <h2 id="pain-title">
+              Vender no es lo difícil. Lo difícil empieza después del “lo
+              quiero”.
+            </h2>
+            <p class="lead">
+              En contra entrega, el cliente todavía no ha pagado nada. Si no lo
+              confirmas, se te olvida a ti… y se le olvida a él.
+            </p>
+          </div>
+
+          <div class="pain-grid">
+            <article class="pain-card fade-up">
+              <div class="pain-icon">
+                <svg aria-hidden="true"><use href="#i-door" /></svg>
+              </div>
+              <p class="quote">El repartidor tocó y nadie abrió.</p>
+              <p>
+                El paquete vuelve a bodega. Pagaste el despacho de ida, ahora
+                pagas el de vuelta, y el producto regresa golpeado.
+              </p>
+            </article>
+            <article class="pain-card fade-up">
+              <div class="pain-icon">
+                <svg aria-hidden="true"><use href="#i-pin" /></svg>
+              </div>
+              <p class="quote">Frente al almacén de la esquina.</p>
+              <p>
+                Sin número, sin depto, sin comuna. Novedad, reintento, cliente
+                que se enfría y pedido que termina devuelto.
+              </p>
+            </article>
+            <article class="pain-card fade-up">
+              <div class="pain-icon">
+                <svg aria-hidden="true"><use href="#i-phone" /></svg>
+              </div>
+              <p class="quote">Llamé a 80 y me contestaron 30.</p>
+              <p>
+                Tu equipo pierde la mañana marcando números que no contestan y
+                la tarde respondiendo “¿dónde está mi pedido?”.
+              </p>
+            </article>
+            <article class="pain-card fade-up">
+              <div class="pain-icon">
+                <svg aria-hidden="true"><use href="#i-clock" /></svg>
+              </div>
+              <p class="quote">Me enteré cuando ya venía de vuelta.</p>
+              <p>
+                Cuando ves la devolución en Dropi, la pauta ya se gastó, el
+                producto ya viajó y esa plata no vuelve.
+              </p>
+            </article>
+          </div>
+
+          <div class="triple fade-up">
+            <h3>Cada devolución la pagas <em>tres veces</em>.</h3>
+            <div class="triple-steps">
+              <div>
+                <small>1 · Pauta</small
+                ><strong>El anuncio que trajo al cliente</strong>
+              </div>
+              <div>
+                <small>2 · Ida</small><strong>El despacho a su casa</strong>
+              </div>
+              <div>
+                <small>3 · Vuelta</small><strong>El despacho de regreso</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CALCULATOR -->
+      <section class="calc" id="calculadora" aria-labelledby="calc-title">
+        <div class="wrap">
+          <div class="section-head fade-up">
+            <span class="eyebrow coral">Haz la cuenta</span>
+            <h2 id="calc-title">
+              ¿Cuánta plata se te está devolviendo cada mes?
+            </h2>
+            <p class="lead">
+              Mueve los valores con los números de tu tienda. La mayoría de
+              dueños nunca suma todas las devoluciones del mes en un solo
+              número.
+            </p>
+          </div>
+
+          <div class="calc-grid">
+            <div class="calc-panel fade-up">
+              <div class="field">
+                <div class="field-top">
+                  <label for="c-orders">Pedidos contra entrega al mes</label
+                  ><output id="o-orders" for="c-orders"></output>
+                </div>
+                <input
+                  type="range"
+                  id="c-orders"
+                  min="50"
+                  max="10000"
+                  step="50"
+                  value="800"
+                />
+              </div>
+              <div class="field">
+                <div class="field-top">
+                  <label for="c-rate">Pedidos que hoy se te devuelven</label
+                  ><output id="o-rate" for="c-rate"></output>
+                </div>
+                <input
+                  type="range"
+                  id="c-rate"
+                  min="5"
+                  max="50"
+                  step="1"
+                  value="25"
+                />
+                <span class="hint"
+                  >Míralo en Dropi: devoluciones ÷ pedidos despachados.</span
+                >
+              </div>
+              <div class="field">
+                <div class="field-top">
+                  <label for="c-cost">Lo que te cuesta cada devolución</label
+                  ><output id="o-cost" for="c-cost"></output>
+                </div>
+                <input
+                  type="range"
+                  id="c-cost"
+                  min="2000"
+                  max="30000"
+                  step="500"
+                  value="8000"
+                />
+                <span class="hint"
+                  >Despacho de ida y vuelta, más el producto que vuelve dañado.
+                  Sin contar la pauta.</span
+                >
+              </div>
+              <div class="field">
+                <div class="field-top">
+                  <label for="c-cut"
+                    >Devoluciones que evitas confirmando antes</label
+                  ><output id="o-cut" for="c-cut"></output>
+                </div>
+                <input
+                  type="range"
+                  id="c-cut"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value="3"
+                />
+                <span class="hint"
+                  >Cuántos pedidos de cada 100 dejan de devolverse al confirmar
+                  y corregir la dirección antes de despachar.</span
+                >
+              </div>
+            </div>
+
+            <div class="calc-result fade-up" aria-live="polite">
+              <div class="result-row loss">
+                <span>Hoy pierdes en devoluciones</span
+                ><strong id="r-loss">—</strong>
+              </div>
+              <div class="result-row win">
+                <span>Dejarías de perder con DropChat</span
+                ><strong id="r-save">—</strong>
+              </div>
+              <div class="result-row">
+                <span>Tu plan: <b id="r-plan">—</b></span
+                ><strong id="r-price">—</strong>
+              </div>
+              <div class="result-big">
+                <span>Te quedan en el bolsillo cada mes</span>
+                <strong id="r-net">—</strong>
+                <p id="r-break">—</p>
+              </div>
+              <p class="calc-disclaimer">
+                Estimación con tus datos. El precio del plan se calcula a
+                <span data-rate></span> pesos chilenos por dólar y no incluye
+                los mensajes que cobra Meta directo a tu cuenta. El resultado
+                real depende de tu producto y tus clientes: lo medimos contigo
+                durante el piloto.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW -->
+      <section id="como-funciona" aria-labelledby="how-title">
+        <div class="wrap">
+          <div class="section-head fade-up">
+            <span class="eyebrow">Cómo funciona</span>
+            <h2 id="how-title">
+              Del pedido a la puerta, sin que nadie de tu equipo marque un
+              número.
+            </h2>
+          </div>
+
+          <div class="steps">
+            <article class="step fade-up">
+              <h3>Entra el pedido</h3>
+              <p>
+                Tu cliente compra y la orden llega a Dropi como siempre.
+                DropChat la toma en ese momento.
+              </p>
+            </article>
+            <article class="step fade-up">
+              <h3>Le escribimos por WhatsApp</h3>
+              <p>
+                Con su nombre, el producto, el valor a pagar y la dirección.
+                Tres botones, una decisión.
+              </p>
+              <div class="chips">
+                <span class="chip">Confirmar</span
+                ><span class="chip amber">Cambiar dirección</span
+                ><span class="chip coral">Cancelar</span>
+              </div>
+            </article>
+            <article class="step fade-up">
+              <h3>El cliente decide en un toque</h3>
+              <p>
+                Si confirma, se despacha. Si corrige la dirección, la IA le pide
+                lo que falta. Si cancela, no pagaste despacho. Si no contesta,
+                le recordamos.
+              </p>
+            </article>
+            <article class="step fade-up">
+              <h3>Lo acompañamos hasta la puerta</h3>
+              <p>
+                Avisos automáticos en cada estado: en camino, en reparto,
+                entregado. Cuando llega el repartidor, el cliente lo está
+                esperando con la plata lista.
+              </p>
+            </article>
+          </div>
+
+          <div class="ba">
+            <div class="ba-col before fade-up">
+              <h3>Tu día hoy</h3>
+              <ul>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-x" /></svg>Llamadas uno
+                  por uno que nadie contesta
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-x" /></svg>Direcciones
+                  incompletas que descubres cuando ya hay novedad
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-x" /></svg>Clientes que
+                  preguntan “¿dónde está mi pedido?” diez veces
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-x" /></svg>Pedidos
+                  despachados a clientes que ya se arrepintieron
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-x" /></svg>Nadie
+                  confirma los sábados por la tarde ni los domingos
+                </li>
+              </ul>
+            </div>
+            <div class="ba-col after fade-up">
+              <h3>Tu día con DropChat</h3>
+              <ul>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>Cada
+                  pedido recibe su WhatsApp apenas entra
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>La
+                  dirección se corrige antes de salir de bodega
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>El
+                  cliente sabe dónde va su pedido sin tener que preguntar
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>Solo
+                  despachas lo que el cliente confirmó que quiere
+                </li>
+                <li>
+                  <svg aria-hidden="true"><use href="#i-check" /></svg>Tu equipo
+                  solo entra a las conversaciones que lo necesitan
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- WHY -->
+      <section class="why" aria-labelledby="why-title">
+        <div class="wrap">
+          <div class="section-head fade-up">
+            <span class="eyebrow">Por qué DropChat</span>
+            <h2 id="why-title">
+              No es otro chatbot para armar. Es tu confirmación de pedidos,
+              lista.
+            </h2>
+            <p class="lead">
+              Las plataformas de chatbots todo-en-uno te dan cien herramientas y
+              te dejan a ti el trabajo de armarlas. Nosotros hacemos una sola
+              cosa: que el pedido contra entrega llegue y se pague.
+            </p>
+          </div>
+
+          <div class="why-grid">
+            <article class="why-card feature fade-up">
+              <div class="why-icon">
+                <svg aria-hidden="true"><use href="#i-coin" /></svg>
+              </div>
+              <h3>Pagas por pedido, no por contacto.</h3>
+              <p>
+                Las plataformas de chatbots cobran por contactos acumulados:
+                cada cliente que ya te compró sigue sumando a tu factura, aunque
+                no vuelva a escribir. En DropChat pagas por los pedidos que
+                procesamos. Si un mes vendes menos, tu factura también baja.
+              </p>
+            </article>
+            <article class="why-card fade-up">
+              <div class="why-icon">
+                <svg aria-hidden="true"><use href="#i-shield" /></svg>
+              </div>
+              <h3>La IA conversa, no decide.</h3>
+              <p>
+                Confirmar, cancelar o cambiar una dirección lo hace el sistema
+                con reglas claras, no un modelo que puede equivocarse. La IA
+                resuelve dudas y pide los datos que faltan.
+              </p>
+            </article>
+            <article class="why-card fade-up">
+              <div class="why-icon">
+                <svg aria-hidden="true"><use href="#i-target" /></svg>
+              </div>
+              <h3>Listo desde el primer día.</h3>
+              <p>
+                No tienes que dibujar flujos ni aprender otra herramienta. El
+                proceso de confirmación y seguimiento contra entrega ya viene
+                armado. Tú solo pones tu marca.
+              </p>
+            </article>
+            <article class="why-card fade-up">
+              <div class="why-icon">
+                <svg aria-hidden="true"><use href="#i-key" /></svg>
+              </div>
+              <h3>Tu número, tus datos.</h3>
+              <p>
+                API oficial de WhatsApp con tu propio número. Meta te cobra sus
+                mensajes directo, sin recargos nuestros. Tus conversaciones y
+                clientes son tuyos.
+              </p>
+            </article>
+            <article class="why-card fade-up">
+              <div class="why-icon">
+                <svg aria-hidden="true"><use href="#i-users" /></svg>
+              </div>
+              <h3>Tu equipo entra cuando hace falta.</h3>
+              <p>
+                Todas las conversaciones en una bandeja compartida. Si un
+                cliente necesita a una persona, cualquier asesor la toma en un
+                clic.
+              </p>
+            </article>
+          </div>
+
+          <div
+            class="compare fade-up"
+            role="table"
+            aria-label="Comparación entre DropChat y las plataformas de chatbots genéricas"
+          >
+            <div class="compare-row" role="row">
+              <div role="columnheader">&nbsp;</div>
+              <div role="columnheader">DropChat</div>
+              <div role="columnheader">Chatbots todo-en-uno</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div role="rowheader">Cómo te cobran</div>
+              <div role="cell">Por pedido procesado</div>
+              <div role="cell">Por contactos acumulados</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div role="rowheader">Puesta en marcha</div>
+              <div role="cell">Flujo contra entrega ya armado</div>
+              <div role="cell">Armas y mantienes tus propios flujos</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div role="rowheader">Quién confirma el pedido</div>
+              <div role="cell">
+                Reglas fijas y botones; la IA no confirma sola
+              </div>
+              <div role="cell">Depende de cómo configures el bot</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div role="rowheader">Enfoque</div>
+              <div role="cell">Confirmación y seguimiento contra entrega</div>
+              <div role="cell">Marketing, ventas, redes, todo junto</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section class="pricing" id="precios" aria-labelledby="price-title">
+        <div class="wrap">
+          <div class="section-head fade-up">
+            <span class="eyebrow">Precios</span>
+            <h2 id="price-title">
+              Menos de lo que te cuestan <span id="pp-n"></span> devoluciones al
+              mes.
+            </h2>
+            <p class="lead">
+              Si cada devolución te cuesta <span id="pp-cost"></span>, evitar
+              <span id="pp-n2"></span> al mes ya paga el plan Pro. Todo lo que
+              evites de ahí en adelante es ganancia.
+            </p>
+            <div
+              class="billing-toggle"
+              role="group"
+              aria-label="Periodo de facturación"
+            >
+              <button type="button" data-billing="monthly" aria-pressed="true">
+                Mensual
+              </button>
+              <button type="button" data-billing="annual" aria-pressed="false">
+                Anual <span class="save">2 meses gratis</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="plans" id="plans"></div>
+
+          <div class="pricing-notes">
+            <div>
+              <strong>Los mensajes de Meta van aparte.</strong> Se pagan directo
+              desde tu cuenta de WhatsApp, a la tarifa oficial de tu país, sin
+              recargo nuestro.
+            </div>
+            <div>
+              <strong>¿Te pasas de los pedidos del plan?</strong> No se corta
+              nada: cada pedido extra se cobra al precio que ves en tu plan.
+            </div>
+            <div>
+              <strong>Precios en dólares.</strong> El valor en pesos chilenos es
+              una referencia a <span data-rate></span> por dólar.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="faq" aria-labelledby="faq-title">
+        <div class="wrap faq-grid">
+          <div class="fade-up">
+            <span class="eyebrow">Preguntas frecuentes</span>
+            <h2 id="faq-title" style="margin-top: 14px">
+              Lo que nos preguntan antes de arrancar.
+            </h2>
+          </div>
+          <div class="fade-up">
+            <details>
+              <summary>¿Necesito la API oficial de WhatsApp?</summary>
+              <p>
+                Sí. Trabajamos solo con la API oficial de Meta, que es la que
+                protege tu número de bloqueos por enviar mensajes a muchos
+                clientes. Si todavía no la tienes, te acompañamos a conectarla
+                con tu número durante la puesta en marcha.
+              </p>
+            </details>
+            <details>
+              <summary>¿Cuánto cobra Meta por los mensajes?</summary>
+              <p>
+                Meta cobra por cada mensaje de plantilla de utilidad según el
+                país del cliente, y lo paga tu cuenta directamente. Las
+                respuestas que envías dentro de las 24 horas siguientes a un
+                mensaje del cliente no tienen costo de Meta. Nosotros no le
+                ponemos recargo.
+              </p>
+            </details>
+            <details>
+              <summary>¿Funciona con mi cuenta de Dropi?</summary>
+              <p>
+                DropChat está hecho para tiendas que despachan con Dropi.
+                Estamos construyendo la conexión junto a las tiendas del piloto,
+                por eso ahora mismo buscamos tiendas que quieran probarlo
+                primero y ayudarnos a ajustarlo a su operación.
+              </p>
+            </details>
+            <details>
+              <summary>
+                ¿Qué pasa si el cliente escribe algo que no es un botón?
+              </summary>
+              <p>
+                La IA responde las dudas sobre su pedido y le pide los datos que
+                falten para corregir la dirección. Si la conversación se
+                complica, la pasa a tu equipo, que la ve en la bandeja
+                compartida y la toma desde ahí.
+              </p>
+            </details>
+            <details>
+              <summary>
+                ¿La IA puede confirmar o cancelar un pedido por error?
+              </summary>
+              <p>
+                No. Confirmar, cancelar y cambiar la dirección pasan por reglas
+                fijas del sistema, normalmente con los botones del mensaje. La
+                IA conversa y extrae datos, pero no cambia el estado de un
+                pedido por su cuenta.
+              </p>
+            </details>
+            <details>
+              <summary>¿Puedo usar mi número actual?</summary>
+              <p>
+                Sí. Usas tu propio número de WhatsApp de empresa conectado a la
+                API oficial. Tus clientes ven el nombre de tu tienda, no el
+                nuestro.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINAL CTA -->
+      <section class="final" id="piloto" aria-labelledby="final-title">
+        <div class="wrap final-grid">
+          <div>
+            <span class="eyebrow">Piloto abierto</span>
+            <h2 id="final-title">
+              Tu próxima devolución ya está en camino. Todavía puedes
+              confirmarla.
+            </h2>
+            <p class="lead">
+              Estamos abriendo DropChat con un grupo reducido de tiendas contra
+              entrega. Entra primero, ayúdanos a ajustarlo a tu operación y deja
+              de pagar despachos de vuelta.
+            </p>
+            <ul class="pilot-perks">
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg>Te
+                acompañamos a conectar tu número de WhatsApp
+              </li>
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg
+                >Configuramos los mensajes con el tono de tu marca
+              </li>
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg>Medimos
+                contigo cuántas devoluciones dejas de tener
+              </li>
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg>Hablas
+                directo con quienes construyen el producto
+              </li>
+            </ul>
+          </div>
+
+          <form class="lead-form" id="lead-form" novalidate>
+            <h3>Quiero entrar al piloto</h3>
+            <div class="form-row">
+              <label for="f-name">Tu nombre</label>
+              <input id="f-name" name="nombre" autocomplete="name" required />
+            </div>
+            <div class="form-2">
+              <div class="form-row">
+                <label for="f-phone">WhatsApp</label>
+                <input
+                  id="f-phone"
+                  name="whatsapp"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="+56 9 1234 5678"
+                  required
+                />
+              </div>
+              <div class="form-row">
+                <label for="f-store">Tienda o Instagram</label>
+                <input
+                  id="f-store"
+                  name="tienda"
+                  placeholder="@mitienda"
+                  required
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="f-volume">Pedidos contra entrega al mes</label>
+              <select id="f-volume" name="pedidos" required>
+                <option value="">Elige un rango</option>
+                <option>Menos de 100</option>
+                <option>100 a 300</option>
+                <option>300 a 1.000</option>
+                <option>1.000 a 3.000</option>
+                <option>Más de 3.000</option>
+              </select>
+            </div>
+            <button class="btn btn-dark" type="submit">
+              Quiero dejar de perder pedidos
+              <svg aria-hidden="true"><use href="#i-arrow" /></svg>
+            </button>
+            <div class="form-status" id="form-status" role="status"></div>
+            <p class="form-small">
+              Te escribimos por WhatsApp para coordinar la puesta en marcha. Sin
+              spam.
+            </p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <a href="#" class="logo" aria-label="DropChat, inicio">
+          <span class="logo-mark"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 12.5l4.5 4.5L19 7.5"
+                fill="none"
+                stroke="#0E1A13"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></span>
+          DropChat
+        </a>
+        <p>
+          © 2026 DropChat. DropChat no está afiliado a Dropi ni a Meta.
+          WhatsApp es una marca registrada de Meta Platforms, Inc.
+        </p>
+      </div>
+    </footer>
+
+    <div class="mobile-cta" id="mobile-cta">
+      <a href="#piloto" class="btn btn-primary"
+        >Entrar al piloto <svg aria-hidden="true"><use href="#i-arrow" /></svg
+      ></a>
+    </div>
+
+    <script>
+      /* ── Configuración: completa ANTES de publicar ─────────────────────────
+     whatsappNumber: número que recibe los leads, solo dígitos con código
+     de país (ej. "56912345678"). El formulario abre WhatsApp con los datos
+     del lead ya escritos. Si queda vacío, el formulario muestra un error.
+     clpPerUsd: tipo de cambio de referencia para mostrar precios en CLP.
+     returnCostClp: costo de una devolución que usa el texto de Precios. */
+      const CONFIG = {
+        whatsappNumber: "",
+        clpPerUsd: 950,
+        returnCostClp: 8000,
+      };
+
+      // Planes: de modelo_costos_pricing.xlsx, hoja "Planes" (2026-09-17).
+      const PLANS = [
+        {
+          id: "starter",
+          name: "Starter",
+          for: "Para arrancar a confirmar",
+          usd: 29,
+          orders: 500,
+          extra: 0.03,
+          numbers: 1,
+          users: 3,
+        },
+        {
+          id: "pro",
+          name: "Pro",
+          for: "La tienda que ya vende todos los días",
+          usd: 79,
+          orders: 2500,
+          extra: 0.03,
+          numbers: 1,
+          users: 5,
+          popular: true,
+        },
+        {
+          id: "growth",
+          name: "Growth",
+          for: "Varias tiendas o varios productos",
+          usd: 179,
+          orders: 7500,
+          extra: 0.02,
+          numbers: 2,
+          users: 10,
+        },
+        {
+          id: "scale",
+          name: "Scale",
+          for: "Operaciones de alto volumen",
+          usd: 399,
+          orders: 20000,
+          extra: 0.02,
+          numbers: 5,
+          users: 20,
+        },
+      ];
+
+      const clp = (n) => "$" + Math.round(n).toLocaleString("es-CL");
+      const usd = (n, d = 0) =>
+        "US$" +
+        n.toLocaleString("es-CL", {
+          minimumFractionDigits: d,
+          maximumFractionDigits: d,
+        });
+      const int = (n) => Math.round(n).toLocaleString("es-CL");
+
+      /* ── Pricing cards ───────────────────────────────────────────────── */
+      let billing = "monthly";
+      function renderPlans() {
+        const el = document.getElementById("plans");
+        el.innerHTML = PLANS.map((p) => {
+          const monthly = billing === "annual" ? (p.usd * 10) / 12 : p.usd;
+          const sub =
+            billing === "annual"
+              ? `${usd(p.usd * 10)} al año · ≈ ${clp(monthly * CONFIG.clpPerUsd)} CLP/mes`
+              : `≈ ${clp(p.usd * CONFIG.clpPerUsd)} CLP al mes`;
+          const perOrder = monthly / p.orders;
+          return `
+        <article class="plan${p.popular ? " popular" : ""}">
+          ${p.popular ? '<span class="badge">RECOMENDADO</span>' : ""}
+          <div><div class="plan-name">${p.name}</div><div class="plan-for">${p.for}</div></div>
+          <div>
+            <div class="price"><strong>${usd(monthly, billing === "annual" && monthly % 1 ? 1 : 0)}</strong><span>/mes</span></div>
+            <div class="price-sub">${sub}</div>
+          </div>
+          <div class="plan-per-order">${int(p.orders)} pedidos al mes · ${clp(perOrder * CONFIG.clpPerUsd)} CLP por pedido</div>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Confirmación y avisos de estado por WhatsApp</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>IA para dudas y corrección de dirección</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>${p.numbers} ${p.numbers === 1 ? "número" : "números"} de WhatsApp</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>${p.users} usuarios en la bandeja</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Pedido extra: ${usd(p.extra, 2)}</li>
+          </ul>
+          <a href="#piloto" class="btn ${p.popular ? "btn-primary" : "btn-dark"}">Entrar al piloto</a>
+        </article>`;
+        }).join("");
+      }
+      document.querySelectorAll("[data-billing]").forEach((b) =>
+        b.addEventListener("click", () => {
+          billing = b.dataset.billing;
+          document
+            .querySelectorAll("[data-billing]")
+            .forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+          renderPlans();
+        }),
+      );
+      renderPlans();
+
+      // Textos de Precios derivados de la configuración, para que no queden desfasados.
+      const proClp = PLANS.find((p) => p.id === "pro").usd * CONFIG.clpPerUsd;
+      const proBreakEven = Math.ceil(proClp / CONFIG.returnCostClp);
+      document.getElementById("pp-n").textContent = int(proBreakEven + 1);
+      document.getElementById("pp-n2").textContent = int(proBreakEven);
+      document.getElementById("pp-cost").textContent = clp(
+        CONFIG.returnCostClp,
+      );
+      document
+        .querySelectorAll("[data-rate]")
+        .forEach((el) => (el.textContent = clp(CONFIG.clpPerUsd)));
+
+      /* ── ROI calculator ──────────────────────────────────────────────── */
+      const $ = (id) => document.getElementById(id);
+      function planFor(orders) {
+        // El plan más barato para ese volumen, contando el costo de los pedidos extra.
+        return PLANS.map((p) => ({
+          p,
+          costUsd: p.usd + Math.max(0, orders - p.orders) * p.extra,
+        })).sort((a, b) => a.costUsd - b.costUsd)[0];
+      }
+      function calc() {
+        const orders = +$("c-orders").value,
+          rate = +$("c-rate").value,
+          cost = +$("c-cost").value;
+        const cut = Math.min(+$("c-cut").value, rate);
+        $("o-orders").textContent = int(orders);
+        $("o-rate").textContent = rate + "%";
+        $("o-cost").textContent = clp(cost);
+        $("o-cut").textContent = cut + " de cada 100";
+
+        const loss = orders * (rate / 100) * cost;
+        const saved = orders * (cut / 100) * cost;
+        const { p, costUsd } = planFor(orders);
+        const planClp = costUsd * CONFIG.clpPerUsd;
+        const net = saved - planClp;
+        const breakEven = Math.ceil(planClp / cost);
+
+        $("r-loss").textContent = clp(loss);
+        $("r-save").textContent = clp(saved);
+        const extraOrders = Math.max(0, orders - p.orders);
+        $("r-plan").textContent = extraOrders
+          ? `${p.name} + ${int(extraOrders)} pedidos extra`
+          : p.name;
+        $("r-price").textContent = "− " + clp(planClp);
+        $("r-net").textContent = (net < 0 ? "− " : "") + clp(Math.abs(net));
+        $("r-net").style.color = net < 0 ? "#FF8D72" : "";
+        $("r-break").textContent =
+          net >= 0
+            ? `Con evitar ${int(breakEven)} devoluciones al mes el plan ya se paga solo. Al año son ${clp(net * 12)}.`
+            : `Con este volumen necesitas evitar ${int(breakEven)} devoluciones al mes para cubrir el plan.`;
+      }
+      ["c-orders", "c-rate", "c-cost", "c-cut"].forEach((id) =>
+        $(id).addEventListener("input", calc),
+      );
+      calc();
+
+      /* ── Lead form ───────────────────────────────────────────────────── */
+      $("lead-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const f = e.currentTarget,
+          status = $("form-status");
+        status.className = "form-status";
+        const data = Object.fromEntries(new FormData(f));
+        const missing = [...f.querySelectorAll("[required]")].find(
+          (x) => !x.value.trim(),
+        );
+        if (missing) {
+          status.textContent =
+            "Completa todos los campos para poder escribirte.";
+          status.classList.add("err");
+          missing.focus();
+          return;
+        }
+        if (!CONFIG.whatsappNumber) {
+          status.textContent =
+            "Este formulario todavía no está conectado. Vuelve a intentarlo más tarde.";
+          status.classList.add("err");
+          console.warn("DropChat landing: CONFIG.whatsappNumber está vacío.");
+          return;
+        }
+        const text = `Hola, quiero entrar al piloto de DropChat.\n\nNombre: ${data.nombre}\nWhatsApp: ${data.whatsapp}\nTienda: ${data.tienda}\nPedidos COD al mes: ${data.pedidos}`;
+        window.open(
+          `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(text)}`,
+          "_blank",
+          "noopener",
+        );
+        status.textContent =
+          "¡Listo! Se abrió WhatsApp con tus datos: envía el mensaje y te respondemos por ahí.";
+        status.classList.add("ok");
+      });
+
+      /* ── Hero chat animation ─────────────────────────────────────────── */
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      const msgs = [...document.querySelectorAll("#chat .reveal-msg")];
+      const typing = $("typing"),
+        tapBtn = $("tap-btn");
+      if (reduced) {
+        msgs.forEach((m) => m.classList.add("on"));
+      } else {
+        const plan = [
+          [0, 300],
+          [1, 700, true],
+          [2, 1600, false, true],
+          [3, 1500, true],
+          [4, 1400],
+          [5, 1500, true],
+          [6, 1300],
+          [7, 1600, true],
+        ];
+        let i = 0;
+        const run = () => {
+          if (i >= plan.length) {
+            setTimeout(() => {
+              msgs.forEach((m) => m.classList.remove("on"));
+              tapBtn.classList.remove("tapped");
+              i = 0;
+              setTimeout(run, 600);
+            }, 5000);
+            return;
+          }
+          const [idx, wait, typed, tap] = plan[i++];
+          const show = () => {
+            typing.classList.remove("on");
+            msgs[idx].classList.add("on");
+            if (tap) tapBtn.classList.add("tapped");
+            setTimeout(run, 0);
+          };
+          if (typed) {
+            setTimeout(
+              () => {
+                typing.classList.add("on");
+                setTimeout(show, 900);
+              },
+              wait - 900 > 0 ? wait - 900 : 0,
+            );
+          } else setTimeout(show, wait);
+        };
+        run();
+      }
+
+      /* ── Scroll reveal + sticky mobile CTA ───────────────────────────── */
+      const io =
+        "IntersectionObserver" in window && !reduced
+          ? new IntersectionObserver(
+              (es) =>
+                es.forEach((e) => {
+                  if (e.isIntersecting) {
+                    e.target.classList.add("in");
+                    io.unobserve(e.target);
+                  }
+                }),
+              { threshold: 0.12 },
+            )
+          : null;
+      document
+        .querySelectorAll(".fade-up")
+        .forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
+
+      const mcta = $("mobile-cta"),
+        hero = document.querySelector(".hero"),
+        pilot = $("piloto");
+      const onScroll = () => {
+        const pastHero = hero.getBoundingClientRect().bottom < 0;
+        const atPilot =
+          pilot.getBoundingClientRect().top < window.innerHeight * 0.8;
+        mcta.classList.toggle("show", pastHero && !atPilot);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    </script>
+  </body>
+</html>
