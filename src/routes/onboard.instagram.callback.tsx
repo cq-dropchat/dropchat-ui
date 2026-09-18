@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { IG_ONBOARD_REDIRECT_PATH } from "./onboard.instagram.$token";
+import BrandMark from "@/components/BrandMark";
 
 export const Route = createFileRoute("/onboard/instagram/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -53,9 +54,7 @@ function OnboardInstagramCallback() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        Open BSP
-      </div>
+      <BrandMark />
 
       <div className="flex flex-col gap-4 w-[320px] text-center">
         {result.status === "working" && (

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import Button from "@/components/Button";
 import type { SignupPayload } from "@/contexts/WhatsAppIntegrationContext";
+import BrandMark from "@/components/BrandMark";
 
 export const Route = createFileRoute("/onboard/whatsapp/$token")({
   component: Onboard,
@@ -137,9 +138,7 @@ function Onboard() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        OpenBSP
-      </div>
+      <BrandMark />
 
       <div className="flex flex-col gap-4 w-[320px] text-center">
         {state.status === "loading" && (

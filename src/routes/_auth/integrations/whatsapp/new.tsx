@@ -78,7 +78,7 @@ function WhatsAppNew() {
               <div className="instructions">
                 <p>
                   {t(
-                    "Sobrescribir la URL de callback es útil para evadir OpenBSP y recibir los webhooks crudos en el endpoint que indiques. OpenBSP seguirá recibiendo los eventos de cuenta y plantillas (no se pueden redirigir), pero no recibirá los mensajes.",
+                    "Sobrescribir la URL de callback es útil para evadir DropChat y recibir los webhooks crudos en el endpoint que indiques. DropChat seguirá recibiendo los eventos de cuenta y plantillas (no se pueden redirigir), pero no recibirá los mensajes.",
                   )}
                 </p>
               </div>

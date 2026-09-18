@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { GoogleOutlined, GithubOutlined } from "@ant-design/icons";
+import BrandMark from "@/components/BrandMark";
 
 type OAuthProvider = "google" | "github";
 
@@ -49,14 +50,12 @@ function Login() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        OpenBSP
-      </div>
+      <BrandMark />
 
       <div className="flex flex-col gap-3 w-[250px]">
         <button
           type="button"
-          className="primary bg-blue-500 hover:bg-blue-400 text-white w-full border-none"
+          className="primary w-full border-none"
           onClick={() => handleLogInWithOauth("google")}
         >
           <GoogleOutlined /> {t("Continuar con Google")}

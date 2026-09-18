@@ -1,67 +1,78 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.98 0.01 95.1);
-  --foreground: oklch(0.34 0.03 95.72);
-  --card: oklch(0.98 0.01 95.1);
-  --card-foreground: oklch(0.19 0 106.59);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.27 0.02 98.94);
-  --primary: oklch(0.62 0.14 39.04);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.92 0.01 92.99);
-  --secondary-foreground: oklch(0.43 0.02 98.6);
-  --muted: oklch(0.93 0.02 90.24);
-  --muted-foreground: oklch(0.61 0.01 97.42);
-  --accent: oklch(0.92 0.01 92.99);
-  --accent-foreground: oklch(0.27 0.02 98.94);
-  --destructive: oklch(0.19 0 106.59);
-  --border: oklch(0.88 0.01 97.36);
-  --input: oklch(0.76 0.02 98.35);
-  --ring: oklch(0.59 0.17 253.06);
-  --sidebar: oklch(0.97 0.01 98.88);
-  --sidebar-foreground: oklch(0.36 0.01 106.65);
-  --sidebar-primary: oklch(0.62 0.14 39.04);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.92 0.01 92.99);
-  --sidebar-accent-foreground: oklch(0.33 0 0);
-  --sidebar-border: oklch(0.94 0 0);
-  --sidebar-ring: oklch(0.77 0 0);
+  /* DropChat brand tokens (see the DropChat brandbook). Every text pair here
+     meets WCAG AA; primary with primary-foreground is 6.7:1. */
+  --background: #f6f5f1; /* papel */
+  --foreground: #12151a; /* tinta */
+  --card: #ffffff; /* superficie */
+  --card-foreground: #12151a;
+  --popover: #ffffff;
+  --popover-foreground: #12151a;
+  --primary: #1d4ed8; /* azul visto */
+  --primary-foreground: #ffffff;
+  --secondary: #eceae3; /* arena */
+  --secondary-foreground: #3b414a; /* grafito */
+  --muted: #eae6dd; /* chat-fondo */
+  --muted-foreground: #5f6670; /* niebla, 5.3:1 */
+  --accent: #eceae3;
+  --accent-foreground: #12151a;
+  --destructive: #c23325; /* devolución */
+  --border: #dedbd2; /* línea */
+  --input: #767e89; /* línea de control, 3:1 */
+  --ring: #1d4ed8; /* foco */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3b414a;
+  --sidebar-primary: #1d4ed8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eceae3;
+  --sidebar-accent-foreground: #12151a;
+  --sidebar-border: #dedbd2;
+  --sidebar-ring: #1d4ed8;
 
-  --chat-out: oklch(91.619% 0.0445 38.665);
-  --chat-in: oklch(1 0 0);
+  --chat-out: #dcf4c9;
+  --chat-in: #ffffff;
+
+  --brand-tag: #1d4ed8;
+  --brand-check: #ffffff;
 }
 
 .dark {
-  --background: oklch(0.27 0 106.64);
-  --foreground: oklch(0.81 0.01 93.01);
-  --card: oklch(0.27 0 106.64);
-  --card-foreground: oklch(0.98 0.01 95.1);
-  --popover: oklch(0.31 0 106.6);
-  --popover-foreground: oklch(0.92 0 106.48);
-  --primary: oklch(0.67 0.13 38.76);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.98 0.01 95.1);
-  --secondary-foreground: oklch(0.31 0 106.6);
-  --muted: oklch(0.22 0 106.71);
-  --muted-foreground: oklch(0.77 0.02 99.07);
-  --accent: oklch(0.21 0.01 95.42);
-  --accent-foreground: oklch(0.97 0.01 98.88);
-  --destructive: oklch(0.64 0.21 25.33);
-  --border: oklch(0.36 0.01 106.89);
-  --input: oklch(0.43 0.01 100.22);
-  --ring: oklch(0.59 0.17 253.06);
-  --sidebar: oklch(0.24 0 67.71);
-  --sidebar-foreground: oklch(0.81 0.01 93.01);
-  --sidebar-primary: oklch(0.33 0 0);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.17 0 106.62);
-  --sidebar-accent-foreground: oklch(0.81 0.01 93.01);
-  --sidebar-border: oklch(0.94 0 0);
-  --sidebar-ring: oklch(0.77 0 0);
+  /* In dark mode the accent lightens and carries dark text, so one --primary
+     works both as a fill (8.9:1 with its foreground) and as text on the
+     background (8.9:1). */
+  --background: #0d1117;
+  --foreground: #f3f2ee;
+  --card: #171c24;
+  --card-foreground: #f3f2ee;
+  --popover: #171c24;
+  --popover-foreground: #f3f2ee;
+  --primary: #8fb0ff;
+  --primary-foreground: #0d1117;
+  --secondary: #1f2630;
+  --secondary-foreground: #c9ced6;
+  --muted: #0f141a;
+  --muted-foreground: #a3abb6;
+  --accent: #1f2630;
+  --accent-foreground: #f3f2ee;
+  --destructive: #ff8a7a;
+  --border: #2a313b;
+  --input: #6f7986;
+  --ring: #8fb0ff;
+  --sidebar: #11151b;
+  --sidebar-foreground: #c9ced6;
+  --sidebar-primary: #8fb0ff;
+  --sidebar-primary-foreground: #0d1117;
+  --sidebar-accent: #1f2630;
+  --sidebar-accent-foreground: #f3f2ee;
+  --sidebar-border: #2a313b;
+  --sidebar-ring: #8fb0ff;
 
-  --chat-out: oklch(43.696% 0.08141 40.805);
-  --chat-in: oklch(0.31 0 106.6);
+  --chat-out: #1e4d3a;
+  --chat-in: #1f2630;
+
+  --brand-tag: #f6f5f1;
+  --brand-check: #1d4ed8;
 }
 
 @theme inline {
@@ -101,14 +112,13 @@ body {
   padding: 0;
   margin: 0;
   font-family:
-    Segoe UI,
-    Helvetica Neue,
+    "Instrument Sans",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
     Helvetica,
-    Lucida Grande,
     Arial,
-    Ubuntu,
-    Cantarell,
-    Fira Sans,
     sans-serif;
 }
 

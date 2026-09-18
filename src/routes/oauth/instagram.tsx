@@ -6,6 +6,7 @@ import {
   IG_INAPP_REDIRECT_PATH,
   IG_OAUTH_AGENT_KEY,
 } from "@/routes/_auth/integrations/instagram/new";
+import BrandMark from "@/components/BrandMark";
 
 // Standalone (outside the `_auth` layout) so the return page is a bare
 // "connecting" screen instead of the whole app shell.
@@ -71,9 +72,7 @@ function InstagramOAuthCallback() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        Open BSP
-      </div>
+      <BrandMark />
 
       <div className="flex flex-col items-center gap-4 w-[320px] text-center">
         {failed ? (

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import Button from "@/components/Button";
 import { getInstagramAuthorizeUrl } from "@/queries/useInstagramSignup";
+import BrandMark from "@/components/BrandMark";
 
 export const Route = createFileRoute("/onboard/instagram/$token")({
   component: OnboardInstagram,
@@ -59,9 +60,7 @@ function OnboardInstagram() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        Open BSP
-      </div>
+      <BrandMark />
 
       <div className="flex flex-col gap-4 w-[320px] text-center">
         {state.status === "loading" && (

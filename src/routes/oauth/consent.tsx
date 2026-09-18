@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { OAuthAuthorizationDetails } from "@supabase/supabase-js";
+import BrandMark from "@/components/BrandMark";
 
 // Consent screen for Supabase Auth's native OAuth 2.1 server (the MCP
 // connector's authorization server). Supabase handles the whole protocol
@@ -90,9 +91,7 @@ function OAuthConsent() {
 
   return (
     <div className="flex flex-col gap-9 justify-center items-center bg-background text-foreground h-dvh w-screen">
-      <div className="text-primary tracking-tighter font-bold text-[36px]">
-        OpenBSP
-      </div>
+      <BrandMark />
 
       <div className="flex flex-col gap-4 w-[340px] max-w-[90vw]">
         {invalid && (
@@ -112,7 +111,7 @@ function OAuthConsent() {
             <div className="text-center">
               <span className="font-bold">{details.client.client_name}</span>{" "}
               {t(
-                "quiere conectarse a OpenBSP como tú. Podrá actuar en tu nombre, dentro de tus permisos.",
+                "quiere conectarse a DropChat como tú. Podrá actuar en tu nombre, dentro de tus permisos.",
               )}
               {host && (
                 <>
