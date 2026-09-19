@@ -14,7 +14,7 @@
 >     password?: string;
 >     database?: string;
 > };
-120c131
+121c132
 <         product?: "calendar" | "sheets";
 ---
 >         product?: "calendar" | "sheets" | "openbsp";
