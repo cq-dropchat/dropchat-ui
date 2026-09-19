@@ -27,6 +27,7 @@ import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
 import SectionField from "@/components/SectionField";
 import ToolsSection from "@/components/ToolsSection";
+import SwitchField from "@/components/SwitchField";
 
 export const Route = createFileRoute("/_auth/agents/$agentId")({
   component: AgentDetail,
@@ -318,6 +319,16 @@ function AgentDetail() {
                   {...register("extra.temperature", { valueAsNumber: true })}
                 />
               </label>
+
+              <SwitchField
+                name="extra.multi_message_response"
+                control={control}
+                defaultChecked
+                label={t("Respuestas en varios mensajes")}
+                description={t(
+                  "Desactivar para modelos de razonamiento que no permiten forzar herramientas",
+                )}
+              />
 
               {provider === "custom" && (
                 <div className="instructions">
