@@ -38,7 +38,8 @@ export const Route = createRootRoute({
     if (
       !user &&
       !location.pathname.startsWith("/login") &&
-      !location.pathname.startsWith("/onboard")
+      !location.pathname.startsWith("/onboard") &&
+      !location.pathname.startsWith("/privacy")
     ) {
       throw redirect({
         to: "/login",

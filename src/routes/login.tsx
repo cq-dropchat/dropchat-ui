@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -110,6 +110,13 @@ function Login() {
           </button>
         </form>
       </div>
+
+      <Link
+        to="/privacy"
+        className="text-[13px] text-muted-foreground underline"
+      >
+        {t("Política de privacidad")}
+      </Link>
     </div>
   );
 }
