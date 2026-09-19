@@ -4,7 +4,7 @@ import { Search, X, MessageCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { startConversation } from "@/utils/ConversationUtils";
 import { useState } from "react";
-import { formatPhoneNumber } from "@/utils/FormatUtils";
+import { formatPhoneNumber, toWhatsAppAddress } from "@/utils/FormatUtils";
 import SectionHeader from "@/components/SectionHeader";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import SectionItem from "@/components/SectionItem";
@@ -26,22 +26,9 @@ function NewChat() {
 
   const [phoneNumber, setPhoneNumber] = useState("");
 
-  function sanitizePhoneNumber(phone: string): string {
-    // Remove all non-digit characters
-    const digits = phone.replace(/\D/g, "");
-
-    // If empty after sanitizing, return empty string
-    if (!digits) return "";
-
-    // If it already starts with 549, return as is
-    if (digits.startsWith("549")) return digits;
-
-    // If it starts with 54 but not 549, prepend 9
-    if (digits.startsWith("54")) return "549" + digits.slice(2);
-
-    // Otherwise prepend 549
-    return "549" + digits;
-  }
+  // E.164 digits for what was typed; a number without a country code is
+  // read as Chilean (see toWhatsAppAddress).
+  const address = toWhatsAppAddress(phoneNumber);
 
   return (
     <div className="flex flex-col h-full">
@@ -66,31 +53,30 @@ function NewChat() {
       </div>
 
       <SectionBody>
-        {!!whatsappAddresses?.length &&
-          phoneNumber.replace(/\D/g, "").length >= 10 && (
-            <SectionItem
-              title={formatPhoneNumber(sanitizePhoneNumber(phoneNumber))}
-              aside={
-                <div className="p-[8px] bg-primary/10 rounded-full">
-                  <MessageCircle className="w-[24px] h-[24px] text-primary" />
-                </div>
-              }
-              onClick={() => {
-                if (!activeOrgId) return;
+        {!!whatsappAddresses?.length && address.length >= 10 && (
+          <SectionItem
+            title={formatPhoneNumber(address)}
+            aside={
+              <div className="p-[8px] bg-primary/10 rounded-full">
+                <MessageCircle className="w-[24px] h-[24px] text-primary" />
+              </div>
+            }
+            onClick={() => {
+              if (!activeOrgId) return;
 
-                const convId = startConversation({
-                  organization_id: activeOrgId,
-                  organization_address: whatsappAddresses[0].address,
-                  address: sanitizePhoneNumber(phoneNumber),
-                  service: "whatsapp",
-                  name: formatPhoneNumber(sanitizePhoneNumber(phoneNumber)),
-                });
+              const convId = startConversation({
+                organization_id: activeOrgId,
+                organization_address: whatsappAddresses[0].address,
+                address,
+                service: "whatsapp",
+                name: formatPhoneNumber(address),
+              });
 
-                // setActiveConv(convId!);
-                void navigate({ to: "/conversations", hash: convId });
-              }}
-            />
-          )}
+              // setActiveConv(convId!);
+              void navigate({ to: "/conversations", hash: convId });
+            }}
+          />
+        )}
       </SectionBody>
     </div>
   );

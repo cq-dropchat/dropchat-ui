@@ -10,6 +10,7 @@ import {
   isValidPhoneNumber,
   nameInitials,
   normalizePhoneNumber,
+  toWhatsAppAddress,
 } from "./FormatUtils";
 
 describe("formatPhoneNumber", () => {
@@ -61,5 +62,36 @@ describe("nameInitials", () => {
   it("takes two initials or the first two letters", () => {
     expect(nameInitials("Carla Gómez Ruiz")).toBe("CG");
     expect(nameInitials("Dario")).toBe("Da");
+  });
+});
+
+// Starting a conversation used to prepend Argentina's 549 to every number, so
+// no Chilean number could be reached. Numbers here are fictitious.
+describe("toWhatsAppAddress", () => {
+  it.each([
+    // Chile, the default country: with and without the country code
+    ["+56 9 1234 5678", "56912345678"],
+    ["56912345678", "56912345678"],
+    ["9 1234 5678", "56912345678"],
+    ["912345678", "56912345678"],
+    // Argentina keeps the mobile 9, typed or not
+    ["+54 9 11 5555-1234", "5491155551234"],
+    ["+54 11 5555 1234", "5491155551234"],
+    ["5491155551234", "5491155551234"],
+    // Other countries, by their code
+    ["+1 415 555 2671", "14155552671"],
+    ["+34 612 34 56 78", "34612345678"],
+  ])("reads %s as %s", (input, expected) => {
+    expect(toWhatsAppAddress(input)).toBe(expected);
+  });
+
+  it("returns the bare digits when nothing parses, and nothing for no digits", () => {
+    expect(toWhatsAppAddress("123")).toBe("123");
+    expect(toWhatsAppAddress("abc")).toBe("");
+    expect(toWhatsAppAddress("")).toBe("");
+  });
+
+  it("reads a local number in the country it is given", () => {
+    expect(toWhatsAppAddress("11 5555 1234", "AR")).toBe("5491155551234");
   });
 });
