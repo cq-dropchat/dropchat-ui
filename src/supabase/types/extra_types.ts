@@ -297,6 +297,25 @@ export type ToolConfig =
  * typed), and invitations are their own table.
  */
 
+/**
+ * A member's own settings. `role` is not here — it is a column, because it is
+ * access control — and neither are invitations, which are their own table.
+ *
+ * H5: what a member wants to be told about. Written by the member themselves
+ * (the "members can update themselves" policy of 05-04), so an admin cannot
+ * decide for somebody else what interrupts them.
+ */
+export type MemberExtra = {
+  notifications?: {
+    /**
+     * Browser notifications when a conversation starts waiting for a person
+     * (H3's escalation). Absent means on: somebody has to see a handover,
+     * and the count in the tab's title is shown either way.
+     */
+    escalation?: boolean;
+  };
+};
+
 export type AIAgentExtra = {
   /**
    * The persona — "presupuestador metalúrgico" — not an access-control role.

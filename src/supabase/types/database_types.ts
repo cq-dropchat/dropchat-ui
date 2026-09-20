@@ -19,6 +19,7 @@ import type {
   ConversationExtra,
   OrganizationAddressExtra,
   OrganizationExtra,
+  MemberExtra,
 } from "./extra_types";
 import type { ConversationAgentExtra } from "./ui_types";
 
@@ -44,7 +45,9 @@ type AgentUpdateGenerated =
 // table). An AI agent is nobody's membership (user_id null).
 export type HumanAgentRow = Omit<AgentRowGenerated, "user_id" | "extra"> & {
   user_id: string;
-  extra: null;
+  // H5: a member's own settings — today, what they want to be told about.
+  // Was `null` while members had nothing to configure.
+  extra: MemberExtra | null;
 };
 
 export type AIAgentRow = Omit<AgentRowGenerated, "user_id" | "extra"> & {
@@ -64,7 +67,7 @@ export type AIAgentInsert = Omit<AgentInsertGenerated, "user_id" | "extra"> & {
 type AgentInsertStrict = AIAgentInsert;
 
 export type HumanAgentUpdate = Omit<AgentUpdateGenerated, "extra"> & {
-  extra?: null;
+  extra?: MemberExtra | null;
 };
 
 export type AIAgentUpdate = Omit<AgentUpdateGenerated, "extra"> & {

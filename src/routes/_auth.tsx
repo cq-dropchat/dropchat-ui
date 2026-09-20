@@ -9,6 +9,7 @@ import { Bot, Building2, MessageSquarePlus, Settings } from "lucide-react";
 import { useResizable } from "@/hooks/useResizable";
 import { useCurrentAgents } from "@/queries/useAgents";
 import RouteError from "@/components/RouteError";
+import { useEscalationNotices } from "@/hooks/useEscalationNotices";
 
 // F22: this layout is on every signed-in screen, but the conversation panel
 // renders only once a conversation is open and the stats only on /stats.
@@ -40,6 +41,9 @@ function getMaxPanelWidth() {
 
 function AppLayout() {
   const { translate: t } = useTranslation();
+  // H5: a conversation handed to a person has to reach somebody — the tab's
+  // title counts them and, with permission, the browser says so.
+  useEscalationNotices();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const { data: agents } = useCurrentAgents();
   const hasAiAgents = agents?.some((a) => a.user_id === null);
