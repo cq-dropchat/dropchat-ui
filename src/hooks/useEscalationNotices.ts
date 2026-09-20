@@ -74,6 +74,13 @@ export function useEscalationNotices() {
 
     queue.current.push(...fresh);
 
+    // Still read through the ref when the notification is built — the
+    // language can change while the permission prompt is open — but named `t`
+    // at the call: a key reached through a member expression is invisible to
+    // `scripts/sync-translations.mjs`, which reported this one as unused in
+    // all four locales.
+    const t = (key: string) => translateRef.current(key);
+
     const flush = () => {
       const pending = queue.current;
 
@@ -83,7 +90,7 @@ export function useEscalationNotices() {
 
       for (const conv of pending) {
         new Notification(conv.name ?? conv.address, {
-          body: translateRef.current("Espera a una persona del equipo"),
+          body: t("Espera a una persona del equipo"),
           // One notification per conversation, replaced rather than
           // stacked if it somehow fires twice.
           tag: `escalation:${conv.id}`,

@@ -16,6 +16,7 @@
     "e2e": "playwright test",
     "preview": "vite preview",
     "types:sync-check": "bash scripts/check-type-sync.sh --strict",
+    "translations:check": "node scripts/sync-translations.mjs",
     "bundle:check": "vite build && node scripts/check-bundle.mjs"
   },
   "dependencies": {

@@ -217,11 +217,21 @@ const DAY_NAMES: Record<Day, string> = {
   sun: "Domingo",
 };
 
-const ERRORS: Record<string, string> = {
-  order: "La hora de cierre tiene que ser posterior a la de apertura",
-  overlap: "Los tramos de un día no pueden superponerse",
-  invalid: "Usá el formato HH:MM",
-};
+/**
+ * Why a day cannot be saved. The strings are translated here, at the call, and
+ * not stored in a map of Spanish that `t()` is handed later: a key reached
+ * through a variable is invisible to `scripts/sync-translations.mjs`, which
+ * reported all three as unused in all four locales.
+ */
+function errorMessage(code: string, t: (key: string) => string): string {
+  return (
+    {
+      order: t("La hora de cierre tiene que ser posterior a la de apertura"),
+      overlap: t("Los tramos de un día no pueden superponerse"),
+      invalid: t("Usá el formato HH:MM"),
+    }[code] ?? code
+  );
+}
 
 function DayRow({
   day,
@@ -305,7 +315,7 @@ function DayRow({
 
       {error && (
         <div className="text-[13px] text-destructive" role="alert">
-          {t(ERRORS[error])}
+          {errorMessage(error, t)}
         </div>
       )}
     </div>

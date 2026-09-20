@@ -21,6 +21,29 @@ export type AssignmentData = {
   reason?: string;
 };
 
+/**
+ * The escalation vocabulary of H3, which the agent-client enforces as a closed
+ * enum. Naming each one here rather than translating `data.category` straight
+ * is what puts them in the locale files at all: a key reached through a
+ * variable is invisible to `scripts/sync-translations.mjs`, so it was reported
+ * as unused in all four locales and would eventually have been deleted.
+ */
+function category(value: string, t: (key: string) => string): string {
+  const named: Record<string, string> = {
+    reclamo: t("reclamo"),
+    pedido_fuera_de_alcance: t("pedido_fuera_de_alcance"),
+    pide_persona: t("pide_persona"),
+    pago: t("pago"),
+    envio: t("envio"),
+    cambio_devolucion: t("cambio_devolucion"),
+    otro: t("otro"),
+  };
+
+  // A category the database grew and this screen has not: better the raw
+  // word than nothing.
+  return named[value] ?? value;
+}
+
 export function isAssignmentNote(
   message: MessageRow,
 ): message is MessageRow & { content: { data: AssignmentData } } {
@@ -72,7 +95,7 @@ export default function AssignmentNote({ message }: { message: MessageRow }) {
     }
   })();
 
-  const detail = [data.category && t(data.category), data.reason]
+  const detail = [data.category && category(data.category, t), data.reason]
     .filter(Boolean)
     .join(" — ");
 

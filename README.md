@@ -145,8 +145,13 @@ the Spanish text is shown.
 **Checking for drift**: run the sync script to detect missing or stale keys:
 
 ```bash
-./scripts/sync-translations.sh
+npm run translations:check
 ```
+
+It reads the sources, not line by line, so a `t(` whose string the formatter
+moved to the next line counts as used. A key reached through a variable
+(`t(labels[kind])`) does not: translate at the call instead, or the key is
+reported as unused in every locale.
 
 ## Acknowledgments
 
