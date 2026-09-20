@@ -69,3 +69,67 @@ describe("the list filters", () => {
     ).toBe(true);
   });
 });
+
+// H6 — the two filters the Fase H needs in the list: what is waiting for a
+// person, and what is mine. Without them a handover is a needle in the
+// haystack of every conversation the organization has ever had.
+describe("H6: waiting and mine", () => {
+  it("'esperando' is exactly the conversations waiting for a person", () => {
+    const waiting = conversationRow({
+      awaiting_human_since: "2026-09-20T12:00:00.000Z",
+    });
+    const answered = conversationRow({ assigned_agent_id: "agent-1" });
+
+    expect(
+      filters[Filters.WAITING](waiting, msg("2026-09-20T12:00:00.000Z")),
+    ).toBe(true);
+    expect(
+      filters[Filters.WAITING](answered, msg("2026-09-20T12:00:00.000Z")),
+    ).toBe(false);
+  });
+
+  it("an archived conversation still shows while it waits", () => {
+    // Archiving is a reading preference; a customer waiting for a person is
+    // not something a preference should hide.
+    const waiting = conversationRow({
+      awaiting_human_since: "2026-09-20T12:00:00.000Z",
+    });
+
+    expect(
+      filters[Filters.WAITING](waiting, msg("2026-09-20T12:00:00.000Z"), {
+        archived: "2026-09-21T00:00:00.000Z",
+      }),
+    ).toBe(true);
+  });
+
+  it("'mías' is what this member holds", () => {
+    const mine = conversationRow({ assigned_agent_id: "agent-me" });
+    const theirs = conversationRow({ assigned_agent_id: "agent-other" });
+    const nobody = conversationRow({ assigned_agent_id: null });
+
+    expect(
+      filters[Filters.MINE](
+        mine,
+        msg("2026-09-20T12:00:00.000Z"),
+        undefined,
+        "agent-me",
+      ),
+    ).toBe(true);
+    expect(
+      filters[Filters.MINE](
+        theirs,
+        msg("2026-09-20T12:00:00.000Z"),
+        undefined,
+        "agent-me",
+      ),
+    ).toBe(false);
+    expect(
+      filters[Filters.MINE](
+        nobody,
+        msg("2026-09-20T12:00:00.000Z"),
+        undefined,
+        "agent-me",
+      ),
+    ).toBe(false);
+  });
+});

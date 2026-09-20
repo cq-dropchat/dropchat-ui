@@ -1,3 +1,4 @@
+import { isAssignmentNote } from "./Message/AssignmentNote";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dayjs from "dayjs";
@@ -244,6 +245,12 @@ export default function Chat() {
     messages
       .filter((m) => {
         if (isAdmin) return true;
+
+        // H6: an assignment note is internal (never dispatched) but it is not
+        // machinery — it says who is answering this conversation and why, and
+        // that is for whoever opens the chat, not only for an admin. Tool
+        // traces and agent errors stay hidden.
+        if (isAssignmentNote(m)) return true;
 
         // Hide internal messages for non-admin users
         if (isInternal(m)) return false;

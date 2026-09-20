@@ -17,8 +17,11 @@ vi.mock("./Message/Message", () => ({
 vi.mock("@/queries/useOrganizations", () => ({
   useCurrentOrganization: () => ({ data: { name: "Org A" } }),
 }));
+const role = { value: "owner" };
+
 vi.mock("@/queries/useAgents", () => ({
-  useCurrentAgent: () => ({ data: { role: "owner" } }),
+  useCurrentAgent: () => ({ data: { role: role.value } }),
+  useCurrentAgents: () => ({ data: [] }),
 }));
 
 const CONV = "c0000000-0000-4000-8000-00000000f10a";
@@ -123,5 +126,89 @@ describe("F10: Chat is virtualized", () => {
 
     const ids = screen.getAllByTestId("message").map((r) => r.textContent);
     expect(ids).toContain(msgId(5000));
+  });
+});
+
+// H6 — an assignment note says who is answering this conversation. It is
+// internal (never dispatched), but it is not machinery: hiding it from
+// everyone who is not an admin would hide the handover from the very people
+// who have to act on it.
+describe("H6: assignment notes are not admin-only", () => {
+  function seedNotes() {
+    const base = Date.parse("2026-09-01T00:00:00.000Z");
+    const rows = [
+      messageRow({
+        id: msgId(900),
+        conversation_id: CONV,
+        timestamp: new Date(base).toISOString(),
+      }),
+      {
+        ...messageRow({
+          id: msgId(901),
+          conversation_id: CONV,
+          timestamp: new Date(base + 1000).toISOString(),
+        }),
+        content: {
+          version: "1",
+          type: "data",
+          kind: "assignment",
+          internal: true,
+          data: {
+            from: null,
+            to: null,
+            awaiting_human: true,
+            by: null,
+            cause: "escalation",
+          },
+        },
+      } as unknown as MessageRow,
+      {
+        ...messageRow({
+          id: msgId(902),
+          conversation_id: CONV,
+          timestamp: new Date(base + 2000).toISOString(),
+        }),
+        content: {
+          version: "1",
+          type: "text",
+          kind: "text",
+          internal: true,
+          text: "tool trace",
+        },
+      } as unknown as MessageRow,
+    ].reverse();
+
+    useBoundStore.setState((state) => ({
+      ui: { ...state.ui, activeConvId: CONV },
+      chat: {
+        ...state.chat,
+        conversations: new Map([[CONV, conversationRow({ id: CONV })]]),
+        messages: new Map([[CONV, new Map(rows.map((m) => [m.id, m]))]]),
+      },
+    }));
+  }
+
+  it("shows the note to a member, and still hides the tool trace", () => {
+    role.value = "member";
+    seedNotes();
+
+    render(<Chat />);
+
+    const shown = screen.getAllByTestId("message").map((m) => m.textContent);
+
+    expect(shown).toContain(msgId(901));
+    expect(shown).not.toContain(msgId(902));
+  });
+
+  it("shows both to an admin, as before", () => {
+    role.value = "owner";
+    seedNotes();
+
+    render(<Chat />);
+
+    const shown = screen.getAllByTestId("message").map((m) => m.textContent);
+
+    expect(shown).toContain(msgId(901));
+    expect(shown).toContain(msgId(902));
   });
 });

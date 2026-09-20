@@ -3,7 +3,7 @@ import SectionHeader from "@/components/SectionHeader";
 import SectionItem from "@/components/SectionItem";
 import { useTranslation } from "@/hooks/useTranslation";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Building2, Users, Webhook, Key } from "lucide-react";
+import { Building2, Clock, Users, Webhook, Key } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/settings/")({
   component: SettingsIndex,
@@ -33,6 +33,23 @@ function SettingsIndex() {
               })
             }
           />
+          {/* H6: when the organization answers, and how long an assignment
+              lasts — read by the sweeps of H4. */}
+          <SectionItem
+            title={t("Atención")}
+            aside={
+              <div className="p-[8px]">
+                <Clock className="w-[24px] h-[24px] text-muted-foreground" />
+              </div>
+            }
+            onClick={() =>
+              navigate({
+                to: "/settings/organization/attention",
+                hash: (prevHash) => prevHash!,
+              })
+            }
+          />
+
           <SectionItem
             title={t("Miembros")}
             aside={

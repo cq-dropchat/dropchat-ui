@@ -96,3 +96,71 @@ describe("F10: ChatList is virtualized", () => {
     );
   });
 });
+
+// H6 — the quick filters the Fase H adds. A handover is one row among every
+// conversation the organization ever had; without a filter, finding it means
+// scrolling.
+describe("H6: the waiting and mine filters", () => {
+  const WAITING = "c0000000-0000-4000-8000-000000009001";
+  const MINE = "c0000000-0000-4000-8000-000000009002";
+  const OTHER = "c0000000-0000-4000-8000-000000009003";
+
+  function seed(filter: Filters) {
+    const rows = [
+      conversationRow({
+        id: WAITING,
+        awaiting_human_since: "2026-09-20T12:00:00.000Z",
+      }),
+      conversationRow({ id: MINE, assigned_agent_id: "agent-me" }),
+      conversationRow({ id: OTHER, assigned_agent_id: "agent-someone" }),
+    ];
+
+    const messages = new Map(
+      rows.map((row) => [
+        row.id,
+        new Map([
+          [
+            "m-" + row.id,
+            messageRow({
+              conversation_id: row.id,
+              timestamp: "2026-09-20T12:00:00.000Z",
+            }),
+          ],
+        ]),
+      ]),
+    );
+
+    useBoundStore.setState((state) => ({
+      ui: { ...state.ui, activeOrgId: ORG_A, filter, searchPattern: "" },
+      chat: {
+        ...state.chat,
+        ownAgentId: "agent-me",
+        conversations: new Map(rows.map((row) => [row.id, row])),
+        messages,
+        convOrder: orderConversations(messages),
+      },
+    }));
+  }
+
+  it("'esperando' lists only what a customer is waiting on", () => {
+    seed(Filters.WAITING);
+    render(<ChatList />);
+
+    const listed = screen
+      .getAllByTestId("chat-list-item")
+      .map((item) => item.textContent);
+
+    expect(listed).toEqual([WAITING]);
+  });
+
+  it("'mías' lists only what this member holds", () => {
+    seed(Filters.MINE);
+    render(<ChatList />);
+
+    const listed = screen
+      .getAllByTestId("chat-list-item")
+      .map((item) => item.textContent);
+
+    expect(listed).toEqual([MINE]);
+  });
+});

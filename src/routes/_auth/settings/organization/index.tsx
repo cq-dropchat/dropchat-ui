@@ -14,6 +14,7 @@ import { useMemo } from "react";
 import useBoundStore from "@/stores/useBoundStore";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
+import TextAreaField from "@/components/TextAreaField";
 import { type OrganizationUpdate } from "@/supabase/client";
 import {
   isExportInProgress,
@@ -97,6 +98,19 @@ function EditOrganization() {
               {...register("name", { required: true })}
             />
           </label>
+
+          {/* H2: one voice of the brand. It leads the system prompt of every
+              agent of the organization, ahead of the agent's own
+              instructions. */}
+          <TextAreaField
+            name="extra.brand_voice"
+            control={control}
+            label={t("Voz de marca")}
+            placeholder={t(
+              "Tutea al cliente, sé breve y cálido, firma como «el equipo».",
+            )}
+            disabled={!isAdmin}
+          />
 
           <SelectField
             control={control}

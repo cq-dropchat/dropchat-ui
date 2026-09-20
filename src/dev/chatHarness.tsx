@@ -51,11 +51,49 @@ function message(timestamp: number, mine: boolean): MessageRow {
   } as MessageRow;
 }
 
+/**
+ * H6: an assignment note, as the database writes it (H1). The harness is the
+ * only place these can be looked at in a browser without signing in.
+ */
+function assignmentNote(timestamp: number, data: Record<string, unknown>) {
+  const row = message(timestamp, true);
+
+  return {
+    ...row,
+    status: {},
+    content: {
+      version: "1",
+      type: "data",
+      kind: "assignment",
+      internal: true,
+      data,
+    },
+  } as unknown as MessageRow;
+}
+
 const count = Number(new URLSearchParams(location.search).get("count")) || 3000;
 const start = Date.now() - count * 60_000;
-const rows = Array.from({ length: count }, (_, i) =>
-  message(start + i * 60_000, i % 3 === 0),
-).reverse();
+const rows = [
+  ...Array.from({ length: count }, (_, i) =>
+    message(start + i * 60_000, i % 3 === 0),
+  ),
+  assignmentNote(Date.now() - 120_000, {
+    from: null,
+    to: ME,
+    awaiting_human: false,
+    by: null,
+    cause: "entry",
+  }),
+  assignmentNote(Date.now() - 60_000, {
+    from: ME,
+    to: null,
+    awaiting_human: true,
+    by: ME,
+    cause: "escalation",
+    category: "reclamo",
+    reason: "el pedido llegó dañado",
+  }),
+].reverse();
 
 useBoundStore.setState((state) => ({
   ui: { ...state.ui, activeOrgId: ORG, activeConvId: CONV },

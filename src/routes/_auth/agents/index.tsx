@@ -2,6 +2,7 @@ import SectionBody from "@/components/SectionBody";
 import SectionHeader from "@/components/SectionHeader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgents, useCurrentAgent } from "@/queries/useAgents";
+import { useCurrentOrganization } from "@/queries/useOrganizations";
 import SectionItem from "@/components/SectionItem";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
@@ -19,8 +20,13 @@ function ListAgents() {
   const { data: currentAgent } = useCurrentAgent();
   const isAdmin = ["admin", "owner"].includes(currentAgent?.role || "");
 
+  const { data: organization } = useCurrentOrganization();
+
+  // H6: `draft` was missing here, so an agent that does not answer showed no
+  // state at all — indistinguishable from an active one at a glance.
   const modeLabels: Record<string, string | JSX.Element> = {
     active: <span className="text-primary">{t("Activo")}</span>,
+    draft: t("Borrador"),
     inactive: t("Inactivo"),
   };
 
@@ -50,8 +56,12 @@ function ListAgents() {
           .map((agent) => (
             <SectionItem
               key={agent.id}
-              title={agent.name}
-              description={modeLabels[agent.mode || ""]}
+              title={
+                agent.id === organization?.entry_agent_id
+                  ? `${agent.name} · ${t("Entrada")}`
+                  : agent.name
+              }
+              description={modeLabels[agent.mode || "active"]}
               aside={
                 <Avatar
                   src={agent.picture}

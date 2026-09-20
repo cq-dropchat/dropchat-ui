@@ -370,6 +370,18 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
               <div className="truncate text-foreground text-[16px]">
                 {displayName}
               </div>
+              {/* H6: a conversation the AI handed to a person, and nobody has
+                  taken yet. It is the one state in this list where somebody
+                  has to do something. */}
+              {conversation.awaiting_human_since && (
+                <div
+                  data-testid="waiting-badge"
+                  title={t("Esperando humano")}
+                  className="ml-[6px] shrink-0 rounded-full bg-primary/10 border border-primary px-[8px] py-[1px] text-[11px] text-primary"
+                >
+                  {t("Esperando humano")}
+                </div>
+              )}
               <div
                 className={
                   "text-[12px] ml-[6px] capitalize" +

@@ -5,6 +5,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useContactAddress } from "@/queries/useContactsAddresses";
+import ConversationAssignment from "./ConversationAssignment";
 import {
   contactName,
   type InstagramContactAddressExtra,
@@ -99,13 +100,10 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Options button - Hidden, does nothing yet. */}
-      <div className="options flex justify-end w-full hidden">
-        <button className="p-[8px] ml-[10px] rounded-full active:bg-gray-icon-bg">
-          <svg className="w-[24px] h-[24px] text-foreground">
-            <use href="/icons.svg#options" />
-          </svg>
-        </button>
+      {/* H6: who is attending, and the menu that changes it. Only external
+          conversations — a `local` DM's roster names its agent. */}
+      <div className="options flex justify-end w-full items-center">
+        {conversation && <ConversationAssignment conversation={conversation} />}
       </div>
     </div>
   );

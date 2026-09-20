@@ -35,6 +35,10 @@ export function isArchived(
 export const Filters = {
   ALL: "todas",
   UNREAD: "pendientes",
+  // H6: the two the Fase H needs — what a customer is waiting on, and what
+  // this member took.
+  WAITING: "esperando",
+  MINE: "mías",
   H24: "24h",
   ARCHIVED: "archivadas",
 } as const;
@@ -56,6 +60,11 @@ export const filters: {
     !isArchived(extra, msg) &&
     !!msg &&
     isIncoming(msg, ownAgentId, isTeamChat(conv)),
+  // Not filtered by `archived`: that is a reading preference, and a customer
+  // waiting for a person is not something a preference should hide.
+  esperando: (conv) => !!conv.awaiting_human_since,
+  mías: (conv, _msg, _extra, ownAgentId) =>
+    !!ownAgentId && conv.assigned_agent_id === ownAgentId,
   "24h": (_conv, msg, extra) =>
     !isArchived(extra, msg) &&
     dayjs(msg?.timestamp || 0).isAfter(dayjs().subtract(1, "day")),

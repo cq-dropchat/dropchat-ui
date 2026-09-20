@@ -11,6 +11,8 @@ export default function ChatFilter() {
   const filterNames: { [key in Filters]: string } = {
     todas: t("todas"),
     pendientes: t("pendientes"),
+    esperando: t("esperando"),
+    mías: t("mías"),
     "24h": t("24h"),
     archivadas: t("archivadas"),
   };

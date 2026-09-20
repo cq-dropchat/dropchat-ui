@@ -28,6 +28,7 @@ import TextAreaField from "@/components/TextAreaField";
 import SectionField from "@/components/SectionField";
 import ToolsSection from "@/components/ToolsSection";
 import SwitchField from "@/components/SwitchField";
+import EntryAgentSwitch from "@/components/EntryAgentSwitch";
 
 export const Route = createFileRoute("/_auth/agents/$agentId")({
   component: AgentDetail,
@@ -133,8 +134,33 @@ function AgentDetail() {
               label={t("Estado")}
               options={[
                 { value: "active", label: t("Activo") },
+                // H6: `draft` existed in the data and not in this list, so
+                // the one way to reach it was to not have a mode at all.
+                { value: "draft", label: t("Borrador") },
                 { value: "inactive", label: t("Inactivo") },
               ]}
+            />
+
+            <TextAreaField
+              name="extra.description"
+              control={control}
+              label={t("Descripción")}
+              placeholder={t("De qué se ocupa este agente")}
+            />
+
+            {/* H6: who takes a conversation nobody has taken yet. It is the
+                organization's setting, not the agent's, so it saves on its
+                own rather than with this form. */}
+            <EntryAgentSwitch agentId={agentId} disabled={!isAdmin} />
+
+            <SwitchField
+              name="extra.can_escalate"
+              control={control}
+              defaultChecked
+              label={t("Puede derivar a humanos")}
+              description={t(
+                "Le da la herramienta para entregar la conversación a una persona del equipo",
+              )}
             />
 
             <div className="border-t border-border" />

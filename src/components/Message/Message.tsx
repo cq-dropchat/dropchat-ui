@@ -23,6 +23,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import AvatarComponent from "@/components/Avatar";
 import { useAgentProfile } from "@/queries/useAgents";
 import useBoundStore from "@/stores/useBoundStore";
+import AssignmentNote, { isAssignmentNote } from "./AssignmentNote";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
@@ -455,6 +456,14 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
     ? contactName(senderContact?.extra) ||
       formatPhoneNumber(props.message.sender_address!)
     : undefined;
+
+  // H6: an assignment note (H1) is a line of the conversation's record, not a
+  // message anybody sent — no bubble, no direction, no status. Before this it
+  // fell through to the generic data branch and rendered as raw JSON in the
+  // middle of a customer conversation.
+  if (isAssignmentNote(props.message)) {
+    return <AssignmentNote message={props.message} />;
+  }
 
   let content;
   let text = false;

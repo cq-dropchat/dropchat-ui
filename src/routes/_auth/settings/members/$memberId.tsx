@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form";
 import type { HumanAgentRow, HumanAgentUpdate } from "@/supabase/client";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
+import SwitchField from "@/components/SwitchField";
 import { queryKeys } from "@/queries/queryKeys";
 
 export const Route = createFileRoute("/_auth/settings/members/$memberId")({
@@ -114,6 +115,21 @@ function EditMember() {
             disabled={!isOwner}
             required
           />
+
+          {/* H5/H6: what interrupts you is yours to decide — an owner can
+              rename a colleague and change their role, not choose what pops
+              up on their screen. */}
+          {isMe && (
+            <SwitchField
+              name="extra.notifications.escalation"
+              control={control}
+              defaultChecked
+              label={t("Avisarme de las derivaciones")}
+              description={t(
+                "Notificación del navegador cuando una conversación queda esperando a una persona",
+              )}
+            />
+          )}
         </form>
       </SectionBody>
 
