@@ -20,6 +20,9 @@ jobs:
       - run: npx tsc -b
       # Vitest with the coverage thresholds in vitest.config.ts as the gate.
       - run: npm run test:coverage
+      # Every `t("…")` in the sources has an entry in all four locales, and no
+      # locale carries a key nothing asks for (scripts/sync-translations.mjs).
+      - run: npm run translations:check
       # F22: initial and first-screen JS budgets, and no recharts/turndown/he
       # in the first screen (scripts/check-bundle.mjs).
       - run: npm run bundle:check
@@ -32,6 +35,14 @@ jobs:
 
   # F29: the hand-written types and db_types.ts mirror the API repository's.
   # Fails on drift not recorded in scripts/type-sync.baseline (see the script).
+  #
+  # The default below has to be the API this UI actually mirrors. It used to
+  # name `cquezada-m11/whasapi-api`, which is not a redirect to the current
+  # repository but a separate, still-public copy that stopped following it —
+  # so the job would have cloned it, found a `develop` branch, and compared
+  # the types against an API frozen before the Fase H. Green or red, the
+  # answer would not have been about this repository. Override with the
+  # `API_REPOSITORY` variable in a fork.
   types-sync:
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +51,7 @@ jobs:
           path: open-bsp-ui
       - uses: actions/checkout@v4
         with:
-          repository: ${{ vars.API_REPOSITORY || 'cquezada-m11/whasapi-api' }}
+          repository: ${{ vars.API_REPOSITORY || 'cq-dropchat/dropchat-api' }}
           # The API branch of the same name when it exists (a paired change),
           # otherwise the API's develop.
           ref: ${{ github.head_ref || github.ref_name }}
@@ -50,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.api-same-branch.outcome == 'failure'
         with:
-          repository: ${{ vars.API_REPOSITORY || 'cquezada-m11/whasapi-api' }}
+          repository: ${{ vars.API_REPOSITORY || 'cq-dropchat/dropchat-api' }}
           ref: develop
           path: open-bsp-api
       - uses: actions/setup-node@v4
@@ -74,7 +85,7 @@ jobs:
           path: open-bsp-ui
       - uses: actions/checkout@v4
         with:
-          repository: ${{ vars.API_REPOSITORY || 'cquezada-m11/whasapi-api' }}
+          repository: ${{ vars.API_REPOSITORY || 'cq-dropchat/dropchat-api' }}
           ref: ${{ github.ref_name }}
           path: open-bsp-api
       - uses: actions/setup-node@v4
@@ -84,11 +95,23 @@ jobs:
         with:
           version: latest
       - run: cd open-bsp-api && supabase start -x studio,imgproxy,inbucket,logflare,vector
+      # The local stack's anon key is a fixed demo JWT that `supabase start`
+      # mints identically on every machine — the stack it opens is this
+      # runner's throwaway container, so it guards nothing and belongs to no
+      # project. It was read from a `LOCAL_SUPABASE_ANON_KEY` repository
+      # variable that nobody ever set, which is why this job has been red
+      # since it landed: Playwright started against a client built with an
+      # empty key. Ask the CLI that just printed it instead.
+      - name: Read the local anon key
+        run: |
+          cd open-bsp-api
+          supabase status -o env \
+            | sed -n 's/^ANON_KEY="\(.*\)"$/VITE_SUPABASE_ANON_KEY=\1/p' \
+            >> "$GITHUB_ENV"
       - run: cd open-bsp-ui && npm ci && npx playwright install --with-deps chromium
       - run: cd open-bsp-ui && npm run e2e
         env:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
-          VITE_SUPABASE_ANON_KEY: ${{ vars.LOCAL_SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
