@@ -63,4 +63,13 @@ export const queryKeys = {
     planProducts: (orgId: NullableId) =>
       [orgId, "billing", "plan_products"] as const,
   },
+  // E1. Not keyed by organization, unlike everything above: an error issue
+  // belongs to the product, not to a tenant, and the panel that reads them
+  // crosses organizations by definition.
+  errors: {
+    issues: (status: string) => ["error_issues", status] as const,
+    settings: () => ["error_settings"] as const,
+    isPlatformAdmin: (userId: NullableId) =>
+      ["platform_admin", userId] as const,
+  },
 };

@@ -8,6 +8,7 @@ import { TickProvider } from "./contexts/useTick";
 import { WhatsAppIntegrationProvider } from "./contexts/WhatsAppIntegrationContext";
 import { loadTranslations } from "./i18n/translations";
 import { detectDefaultLanguage, type Language } from "./stores/uiSlice";
+import { installErrorReporting } from "./errors/report";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -23,6 +24,11 @@ declare module "@tanstack/react-router" {
 }
 
 const queryClient = createQueryClient();
+
+// E1. Registered before anything renders, so a throw while the app is still
+// starting up is caught too — that is the class of error nobody ever reports,
+// because for them the app simply never opened.
+installErrorReporting();
 
 // After a deploy, an open tab may still reference hashed chunks that no longer
 // exist ("Failed to fetch dynamically imported module"). Vite surfaces this as

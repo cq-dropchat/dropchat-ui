@@ -29,8 +29,18 @@ function chunkModules(): Plugin {
   };
 }
 
+// E1: the commit this bundle was built from, stamped on every error issue so
+// the panel can answer "which deploy introduced this". Cloudflare Pages sets
+// CF_PAGES_COMMIT_SHA on every build; a local build has neither and reports no
+// release, which is honest — there is no deploy to point at.
+const release =
+  process.env.VITE_RELEASE || process.env.CF_PAGES_COMMIT_SHA || "";
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_RELEASE": JSON.stringify(release),
+  },
   plugins: [
     // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
     tanstackRouter({

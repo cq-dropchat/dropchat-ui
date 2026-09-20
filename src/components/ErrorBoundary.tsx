@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportError } from "@/errors/report";
 
 type Props = {
   children: ReactNode;
@@ -29,6 +30,14 @@ export default class ErrorBoundary extends Component<Props, State> {
       error,
       info.componentStack,
     );
+
+    // E1. The component stack is the part worth keeping: a render error's own
+    // stack points into React's reconciler, and this is what names the
+    // component that actually threw.
+    reportError(error, {
+      boundary: this.props.label ?? "ErrorBoundary",
+      component_stack: info.componentStack,
+    });
   }
 
   render() {

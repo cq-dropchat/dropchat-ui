@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ErrorsRouteImport } from './routes/errors'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
@@ -73,6 +74,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErrorsRoute = ErrorsRouteImport.update({
+  id: '/errors',
+  path: '/errors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -370,6 +376,7 @@ const AuthIntegrationsWhatsappOrgAddressIdTemplatesTemplateIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/stats': typeof AuthStatsRouteWithChildren
@@ -426,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/integrations/whatsapp/$orgAddressId/templates': typeof AuthIntegrationsWhatsappOrgAddressIdTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/oauth/callback': typeof OauthCallbackRoute
@@ -483,6 +491,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteWithChildren
+  '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
@@ -541,6 +550,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/errors'
     | '/login'
     | '/privacy'
     | '/stats'
@@ -597,6 +607,7 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp/$orgAddressId/templates'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/errors'
     | '/login'
     | '/privacy'
     | '/oauth/callback'
@@ -653,6 +664,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_auth'
+    | '/errors'
     | '/login'
     | '/privacy'
     | '/_auth/stats'
@@ -711,6 +723,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
+  ErrorsRoute: typeof ErrorsRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
@@ -735,6 +748,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/errors': {
+      id: '/errors'
+      path: '/errors'
+      fullPath: '/errors'
+      preLoaderRoute: typeof ErrorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -1237,6 +1257,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
+  ErrorsRoute: ErrorsRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
   OauthCallbackRoute: OauthCallbackRoute,

@@ -48,6 +48,14 @@ https://github.com/user-attachments/assets/1ef30dde-9de1-4f5a-856a-db34ca2e3063
   (owner/admin/member), API keys, webhooks
 - **Stats** — Usage charts and billing quota dashboards
 - **Multi-org** — Switch between organizations; invite and onboard team members
+- **Error panel** — `/errors`, a crash reporter without an external APM. Not in
+  the menu and not under Settings: it crosses organizations, so it does not
+  belong in a customer's settings. Only a `platform_admins` row gets in. Errors
+  are reported from `window.onerror`, `unhandledrejection` and both error
+  boundaries, deduplicated into one row per distinct bug, and filed as
+  "preexisting" until the baseline is closed from the panel — so it opens empty
+  rather than full of what was already broken. See the API repo's README
+  ("Error panel") for the two one-off setup steps.
 
 <table align="center">
   <tr>
@@ -79,6 +87,10 @@ https://github.com/user-attachments/assets/1ef30dde-9de1-4f5a-856a-db34ca2e3063
    - **VITE_SUPABASE_ANON_KEY**
    - **VITE_META_APP_ID** — Optional. Needed for WhatsApp Embedded Signup.
    - **VITE_FB_LOGIN_CONFIG_ID** — Optional. Needed for Tech Provider flow.
+   - **VITE_RELEASE** — Optional, and set for you on Cloudflare Pages: the
+     build's commit, stamped on every error issue so the panel can answer
+     "which deploy introduced this". `vite.config.ts` falls back to
+     `CF_PAGES_COMMIT_SHA`.
 5. **Save and deploy**
 
 You are live! 🚀

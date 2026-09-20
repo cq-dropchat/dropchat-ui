@@ -10,4 +10,10 @@ interface ImportMetaEnv {
   readonly VITE_META_APP_ID?: string;
   /** Optional: Tech Provider login flow. */
   readonly VITE_FB_LOGIN_CONFIG_ID?: string;
+  /**
+   * E1: the commit this bundle was built from, stamped on every error issue
+   * so "which deploy introduced this" has an answer. vite.config.ts fills it
+   * from Cloudflare Pages' CF_PAGES_COMMIT_SHA; absent in a local build.
+   */
+  readonly VITE_RELEASE?: string;
 }

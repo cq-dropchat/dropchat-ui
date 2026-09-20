@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { reportError } from "@/errors/report";
 
 /**
  * F04. Route-level fallback (`errorComponent` on the root and `_auth`
@@ -8,6 +10,13 @@ import { useTranslation } from "@/hooks/useTranslation";
 export default function RouteError({ error }: { error: unknown }) {
   const { translate: t } = useTranslation();
   const message = error instanceof Error ? error.message : String(error);
+
+  // E1. TanStack Router renders this instead of the crashed route; there is no
+  // componentDidCatch to hang the report on, so it goes in an effect keyed by
+  // the error — one report per distinct failure, not one per re-render.
+  useEffect(() => {
+    reportError(error, { boundary: "RouteError" });
+  }, [error]);
 
   return (
     <div
