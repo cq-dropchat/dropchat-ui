@@ -34,9 +34,11 @@ export function conversationRow(
     address: CONTACT_A1,
     name: "Carla",
     type: "direct",
-    // H1: who answers this conversation, and since when.
+    // H1: who answers this conversation, and since when. H3: since when it
+    // is waiting for a person.
     assigned_agent_id: null,
     assigned_at: null,
+    awaiting_human_since: null,
     extra: null,
     created_at: "2026-09-01T10:00:00.000Z",
     updated_at: "2026-09-01T10:00:00.000Z",
