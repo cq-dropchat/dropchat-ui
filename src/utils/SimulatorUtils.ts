@@ -14,19 +14,26 @@ import { startConversation } from "./ConversationUtils";
  */
 
 /**
- * The address the member plays the customer from.
+ * The address the member plays the customer from: their own agent id.
  *
- * Per member, not per organization: the sandbox account is a shared inbox,
- * so a single address would put two colleagues rehearsing at the same time
- * into the same thread, answered by one agent, reading each other's turns.
+ * Per member, not per organization, because the sandbox account is a shared
+ * inbox — a single address would put two colleagues rehearsing at the same
+ * time into one thread, answered by one agent, reading each other's turns.
  * A conversation is identified by its address, so one each is all it takes.
  *
- * Not a phone number and not confusable with one — nothing dispatches it,
- * but it does get serialised into the agent's context, and a string that
- * looks like a real contact there would be a small lie to the model.
+ * The id PLAIN, with no `sim:` prefix, and that is the load-bearing part:
+ * RLS decides whose drill is whose by this same address
+ * (rls.get_own_sandbox_addresses), so a prefix would be a string format
+ * spelled here and again in SQL — a vocabulary duplicated by hand across the
+ * two repos, which this project already has one of. An id compared to an id
+ * has no format to drift.
+ *
+ * Nothing dispatches it, so it reaches no carrier; it is serialised into the
+ * agent's context as the peer's address, where a uuid reads as what it is
+ * rather than as a phone number that is not one.
  */
 export function simulatorAddress(memberAgentId: string): string {
-  return `sim:${memberAgentId}`;
+  return memberAgentId;
 }
 
 /**
@@ -86,19 +93,27 @@ export async function openSandbox(conv: {
 }
 
 /**
- * "Reiniciar": throws the drills away. Messages cascade.
+ * "Reiniciar": throws MY drills away. Messages cascade.
  *
- * Organization-wide, as §5 of the spec asks — a member resets every drill in
- * the organization, colleagues' included, not only their own. It is a plain
- * DELETE because the RLS policy that already covered `local` was widened to
- * cover `sandbox`; there is no RPC behind this.
+ * Scoped to the caller's own address, and so is the policy behind it — a
+ * member cannot delete a colleague's drill even by asking PostgREST
+ * directly. The filter here is therefore not the guarantee, it is what makes
+ * the button say what it does: without it the statement would silently
+ * delete nothing of anyone else's and still report success.
+ *
+ * A plain DELETE, no RPC: the policy that already covered `local` grew the
+ * `sandbox` case.
  */
-export async function resetSandbox(organizationId: string): Promise<void> {
+export async function resetSandbox(
+  organizationId: string,
+  address: string,
+): Promise<void> {
   const { data, error } = await supabase
     .from("conversations")
     .delete()
     .eq("organization_id", organizationId)
     .eq("service", "sandbox")
+    .eq("address", address)
     .select("id");
 
   if (error) throw error;

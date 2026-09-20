@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FlaskConical } from "lucide-react";
 import useBoundStore from "@/stores/useBoundStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import { resetSandbox } from "@/utils/SimulatorUtils";
+import { resetSandbox, simulatorAddress } from "@/utils/SimulatorUtils";
 import Button from "./Button";
 
 /**
@@ -22,13 +22,22 @@ export default function SimulatorBar() {
     state.chat.conversations.get(state.ui.activeConvId || ""),
   );
 
+  // The caller's own agent in this organization — which is also the address
+  // their drills are opened from, and so what "mine" means to RLS.
+  const ownAgentId = useBoundStore((state) => state.chat.ownAgentId);
+
   if (conversation?.service !== "sandbox") return null;
 
   const reset = async () => {
+    if (!ownAgentId) return;
+
     setResetting(true);
 
     try {
-      await resetSandbox(conversation.organization_id);
+      await resetSandbox(
+        conversation.organization_id,
+        simulatorAddress(ownAgentId),
+      );
     } finally {
       setResetting(false);
     }
@@ -49,6 +58,8 @@ export default function SimulatorBar() {
         type="button"
         onClick={reset}
         loading={resetting}
+        disabled={!ownAgentId}
+        title={t("Borra solo tus pruebas, no las de tus compañeros.")}
         className="shrink-0 px-[12px] py-[4px] rounded-lg border border-border"
       >
         {t("Reiniciar")}
