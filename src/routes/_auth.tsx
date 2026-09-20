@@ -17,6 +17,7 @@ import { useEscalationNotices } from "@/hooks/useEscalationNotices";
 // (composer and message rendering) leave the first screen.
 const Chat = lazy(() => import("@/components/Chat"));
 const ChatHeader = lazy(() => import("@/components/ChatHeader"));
+const SimulatorBar = lazy(() => import("@/components/SimulatorBar"));
 const ChatFooter = lazy(() => import("@/components/ChatFooter"));
 const FilePicker = lazy(() => import("@/components/FileUploader/FilePicker"));
 const FilePreviewer = lazy(() => import("@/components/FilePreviewer"));
@@ -127,6 +128,8 @@ function AppLayout() {
             {isHoveringFiles && <FilePicker setHovering={setIsHoveringFiles} />}
             <FilePreviewer />
             <ChatHeader />
+            {/* S1: renders nothing unless the open conversation is a drill. */}
+            <SimulatorBar />
             <Chat />
             <ChatFooter />
           </Suspense>

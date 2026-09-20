@@ -13,6 +13,7 @@ import SectionBody from "@/components/SectionBody";
 import useBoundStore from "@/stores/useBoundStore";
 import { type AIAgentRow, type AIAgentUpdate } from "@/supabase/client";
 import { openLocalDirect } from "@/utils/ConversationUtils";
+import { openSandbox, simulatorAddress } from "@/utils/SimulatorUtils";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import SectionFooter from "@/components/SectionFooter";
 import {
@@ -46,8 +47,15 @@ function AgentDetail() {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const [provider, setProvider] = useState<keyof typeof protocols>("openai");
 
-  const localAddress = useOrganizationsAddresses().data?.find(
+  const addresses = useOrganizationsAddresses().data;
+
+  const localAddress = addresses?.find(
     (address) => address.service === "local",
+  );
+
+  // S1: one per organization, minted with the `local` one.
+  const sandboxAddress = addresses?.find(
+    (address) => address.service === "sandbox",
   );
 
   useEffect(() => {
@@ -91,6 +99,25 @@ function AgentDetail() {
       organization_address: localAddress.address,
       roster: [currentAgent.id, agentId],
       name: agent?.name,
+    });
+
+    void navigate({ hash: convId });
+  };
+
+  // S1 — the drill. Unlike the DM above this walks the real path: the agent
+  // is chosen by H1's routing, the conversation gets an owner, the welcome
+  // message fires and the agent may hand over to a person. Which agent
+  // answers is therefore the ORGANIZATION's business, not this screen's —
+  // it is whatever routing picks, and if that is not this agent, that is
+  // itself the thing worth finding out before a customer does.
+  const handleSimulate = async () => {
+    if (!activeOrgId || !sandboxAddress || !currentAgent) return;
+
+    const convId = await openSandbox({
+      organization_id: activeOrgId,
+      organization_address: sandboxAddress.address,
+      address: simulatorAddress(currentAgent.id),
+      name: t("Simulador"),
     });
 
     void navigate({ hash: convId });
@@ -391,13 +418,26 @@ function AgentDetail() {
 
         <SectionFooter>
           {!isDirty ? (
-            <button
-              type="button"
-              className="primary"
-              onClick={() => void handleChat()}
-            >
-              {t("Chatea con este agente")}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => void handleChat()}
+                disabled={!localAddress}
+              >
+                {t("Chatea con este agente")}
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => void handleSimulate()}
+                disabled={!sandboxAddress}
+                title={t(
+                  "Escribe como si fueras un cliente: bienvenida, asignación y derivación a una persona, igual que en WhatsApp.",
+                )}
+              >
+                {t("Probar como cliente")}
+              </button>
+            </>
           ) : (
             <Button
               form="agent-form"

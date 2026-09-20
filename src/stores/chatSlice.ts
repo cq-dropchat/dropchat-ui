@@ -225,6 +225,15 @@ export type ChatActions = {
     rows: { conversation_id: string; extra: ConversationAgentExtra | null }[],
   ) => void;
   pushMessages: (msgs: MessageRow[]) => void;
+  /**
+   * S1 — forgets conversations the server no longer has. The first thing in
+   * this app that removes one: until the simulator's "Reiniciar" there was
+   * no way to delete a conversation at all, so the store only ever grew.
+   *
+   * Everything keyed by the id goes with it, or the next push would rebuild
+   * a thread out of the leftovers.
+   */
+  removeConversations: (ids: string[]) => void;
   setMediaLoad: (messageId: string, mediaLoad: MediaLoad) => void;
   setConversationTextDraft: (convId: string, textDraft: string) => void;
   setConversationFileDrafts: (convId: string, drafts: FileDraft[]) => void;
@@ -364,6 +373,37 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         chat: {
           ...state.chat,
           conversations,
+        },
+      };
+    }),
+  removeConversations: (ids: string[]) =>
+    set((state) => {
+      const conversations = new Map(state.chat.conversations);
+      const messages = new Map(state.chat.messages);
+      const membershipExtras = new Map(state.chat.membershipExtras);
+      const textDrafts = new Map(state.chat.textDrafts);
+      const fileDrafts = new Map(state.chat.fileDrafts);
+
+      for (const id of ids) {
+        conversations.delete(id);
+        messages.delete(id);
+        membershipExtras.delete(id);
+        textDrafts.delete(id);
+        fileDrafts.delete(id);
+      }
+
+      return {
+        chat: {
+          ...state.chat,
+          conversations,
+          messages,
+          membershipExtras,
+          textDrafts,
+          fileDrafts,
+          // The virtualized list reads this to know the thread changed
+          // underneath it; without the bump a reset leaves the old rows on
+          // screen until something else happens to write a message.
+          messagesVersion: state.chat.messagesVersion + 1,
         },
       };
     }),

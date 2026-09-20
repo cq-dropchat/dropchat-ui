@@ -449,3 +449,59 @@ describe("F10: convOrder", () => {
     expect(useBoundStore.getState().chat.convOrder).toEqual([]);
   });
 });
+
+// S1 — the simulator's "Reiniciar" is the first thing in this app that
+// removes a conversation. Until it existed the store only ever grew, so
+// nothing had ever had to take one back out.
+describe("removeConversations", () => {
+  beforeEach(resetStore);
+
+  it("takes the conversation and everything keyed by its id", () => {
+    const drill = conversationRow({ service: "sandbox" });
+    const real = conversationRow({ service: "whatsapp" });
+    const store = () => useBoundStore.getState().chat;
+
+    store().pushConversations([drill, real]);
+    store().pushMessages([
+      messageRow({ conversation_id: drill.id }),
+      messageRow({ conversation_id: real.id }),
+    ]);
+    store().setConversationTextDraft(drill.id, "a medio escribir");
+    store().setMembershipExtra(drill.id, {
+      pinned: "2026-09-20T12:00:00.000Z",
+    });
+
+    store().removeConversations([drill.id]);
+
+    expect(store().conversations.has(drill.id)).toBe(false);
+    expect(store().messages.has(drill.id)).toBe(false);
+    expect(store().textDrafts.has(drill.id)).toBe(false);
+    expect(store().membershipExtras.has(drill.id)).toBe(false);
+
+    // Scoped: the conversation next to it is untouched.
+    expect(store().conversations.has(real.id)).toBe(true);
+    expect(store().messages.get(real.id)?.size).toBe(1);
+  });
+
+  it("bumps messagesVersion so the virtualized list reads the change", () => {
+    const drill = conversationRow({ service: "sandbox" });
+    const before = useBoundStore.getState().chat.messagesVersion;
+
+    useBoundStore.getState().chat.pushConversations([drill]);
+    useBoundStore.getState().chat.removeConversations([drill.id]);
+
+    expect(useBoundStore.getState().chat.messagesVersion).toBeGreaterThan(
+      before,
+    );
+  });
+
+  it("ignores an id it does not hold", () => {
+    const store = () => useBoundStore.getState().chat;
+    const kept = conversationRow();
+
+    store().pushConversations([kept]);
+    store().removeConversations(["c0000000-0000-4000-8000-00000000dead"]);
+
+    expect(store().conversations.has(kept.id)).toBe(true);
+  });
+});

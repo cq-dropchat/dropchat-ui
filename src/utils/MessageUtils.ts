@@ -40,11 +40,14 @@ export function newMessage(
       conv.updated_at || conv.service === "local" ? conv.id : undefined,
     service: conv.service,
     organization_address: conv.organization_address,
-    // The peer the conversation is with — groups included. The UI only ever
-    // authors on our own side, so sender_address is always null: that IS what
-    // makes the row outgoing now that `direction` is gone.
+    // The peer the conversation is with — groups included.
     conversation_address: conv.address,
-    sender_address: null,
+    // The UI authors on our own side everywhere but one: in S1's simulator
+    // the member is PLAYING the customer, so the row is authored by the
+    // peer. That is not cosmetic — sender_address is what arms
+    // handle_incoming_message_to_agent, and so it is the whole reason the
+    // drill reaches the agent through the same trigger a real message does.
+    sender_address: conv.service === "sandbox" ? conv.address : null,
     content,
     agent_id: agentId || null,
   } as MessageInsert;
