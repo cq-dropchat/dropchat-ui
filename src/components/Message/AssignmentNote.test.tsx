@@ -10,9 +10,16 @@ import { createQueryClient } from "@/queryClient";
 import { describe, expect, it, vi } from "vitest";
 import AssignmentNote from "./AssignmentNote";
 import { messageRow, AGENT_ALICE } from "@/test/factories";
+import { ESCALATION_CATEGORIES } from "@/supabase/types/message_types";
 import type { MessageRow } from "@/supabase/client";
 
 const ROBOT = "aaaaaaaa-0000-4000-8000-00000000a0a9";
+
+const translate = vi.fn((text: string) => text);
+
+vi.mock("@/hooks/useTranslation", () => ({
+  useTranslation: () => ({ translate }),
+}));
 
 vi.mock("@/queries/useAgents", () => ({
   useCurrentAgents: () => ({
@@ -150,5 +157,46 @@ describe("H6: the chat renders notes as notes", () => {
     expect(
       container.querySelector('[data-testid="assignment-note"]'),
     ).not.toBeNull();
+  });
+});
+
+// H3's vocabulary is CLOSED — the agent-client enforces it as an enum, and
+// M1 counts escalations by category, which only groups if both sides spell
+// them the same. This screen names each one by hand, and on purpose: a key
+// reached through a variable is invisible to sync-translations.mjs, so
+// deriving the labels from a loop would empty all four locale files.
+//
+// Naming them by hand is what makes them driftable, though, and the failure
+// is quiet: an unknown category falls back to its raw slug, so the screen
+// would show `pedido_fuera_de_alcance` and nothing would turn red. Asserting
+// on the rendered text cannot catch it either — the source language is
+// Spanish, where the label and the slug are the same word. So this asks the
+// only question that separates them: was the category TRANSLATED, or passed
+// through? The vocabulary comes from the mirrored API type, so a category
+// the API adds fails here until this screen names it.
+describe("H3: the escalation vocabulary is the API's", () => {
+  it("translates every category the API defines, none falling through", () => {
+    for (const category of ESCALATION_CATEGORIES) {
+      translate.mockClear();
+
+      render(
+        <AssignmentNote
+          message={note({
+            from: ROBOT,
+            to: null,
+            awaiting_human: true,
+            by: ROBOT,
+            cause: "escalation",
+            category,
+            reason: "un motivo",
+          })}
+        />,
+      );
+
+      expect(
+        translate.mock.calls.map(([key]) => key),
+        `\`${category}\` is not named by this screen, so it renders raw`,
+      ).toContain(category);
+    }
   });
 });

@@ -1,6 +1,11 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgents } from "@/queries/useAgents";
 import type { MessageRow } from "@/supabase/client";
+import {
+  ESCALATION_CATEGORIES,
+  type AssignmentData,
+  type EscalationCategory,
+} from "@/supabase/types/message_types";
 
 /**
  * H6 — an assignment note (H1), rendered as a line of the conversation's
@@ -11,15 +16,7 @@ import type { MessageRow } from "@/supabase/client";
  * they read as a sentence: "Sofía derivó a Equipo humano: reclamo — el pedido
  * llegó dañado".
  */
-export type AssignmentData = {
-  from: string | null;
-  to: string | null;
-  awaiting_human: boolean;
-  by: string | null;
-  cause: "routing" | "entry" | "escalation" | "manual" | "takeover" | "expiry";
-  category?: string;
-  reason?: string;
-};
+export type { AssignmentData };
 
 /**
  * The escalation vocabulary of H3, which the agent-client enforces as a closed
@@ -27,9 +24,15 @@ export type AssignmentData = {
  * is what puts them in the locale files at all: a key reached through a
  * variable is invisible to `scripts/sync-translations.mjs`, so it was reported
  * as unused in all four locales and would eventually have been deleted.
+ *
+ * Spelling them out is also what makes them driftable, so the map is typed
+ * `Record<EscalationCategory, string>` against the API's own list: add a
+ * category upstream, re-sync the types, and this screen stops compiling until
+ * it names and translates the new one. The fallback below survives anyway —
+ * a row written by a newer API than the bundle the browser is running.
  */
 function category(value: string, t: (key: string) => string): string {
-  const named: Record<string, string> = {
+  const named: Record<EscalationCategory, string> = {
     reclamo: t("reclamo"),
     pedido_fuera_de_alcance: t("pedido_fuera_de_alcance"),
     pide_persona: t("pide_persona"),
@@ -39,9 +42,13 @@ function category(value: string, t: (key: string) => string): string {
     otro: t("otro"),
   };
 
-  // A category the database grew and this screen has not: better the raw
+  // A category the database grew and this bundle has not: better the raw
   // word than nothing.
-  return named[value] ?? value;
+  return isEscalationCategory(value) ? named[value] : value;
+}
+
+function isEscalationCategory(value: string): value is EscalationCategory {
+  return (ESCALATION_CATEGORIES as readonly string[]).includes(value);
 }
 
 export function isAssignmentNote(
