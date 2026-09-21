@@ -16,19 +16,22 @@ test("login with email, open a conversation, send a text, see it listed", async 
 
   await expect(page).not.toHaveURL(/\/login/);
 
-  // `goat` belongs to TWO seeded organizations, and only Mountain Peaks has
-  // the conversation below. Which one the app opens on is not a choice the
-  // test can make from outside: `useSetActiveOrg` picks one from a list it
-  // sorts with `+b.created_at - +a.created_at` — string minus string, so NaN,
-  // so no sorting at all — and seed.sql creates both in one statement, with
-  // the same created_at to the microsecond. There is no order to break the
-  // tie with. So pick the organization instead of hoping for it.
+  // `goat` belongs to TWO seeded organizations and only Mountain Peaks has
+  // the conversation below, so the test picks it instead of trusting whichever
+  // one the app opens on. By role and not by text: the active organization's
+  // name is also the conversation list's heading, so plain text matches twice
+  // the moment the one being picked is already active.
   await page.getByTestId("user-menu").click();
-  await page.getByText("Mountain Peaks").click();
+  await page.getByRole("menuitem", { name: "Mountain Peaks" }).click();
 
-  // The seeded conversation "Map trade" belongs to Mountain Peaks, the
-  // signed-in user's org.
-  await page.getByText("Map trade").first().click();
+  // By the contact's name, not the conversation's. The list shows the nearest
+  // name it has (ChatListItem.tsx: address book, then Instagram handle, then
+  // `conversations.name` last), and the address book calls this one Dolphin.
+  // "Map trade" is the row's own name and appears only in the window before
+  // the contacts query answers — which is to say this line used to pass by
+  // winning a race, and lost it as soon as the organization stopped changing
+  // underneath it and emptying the store.
+  await page.getByText("Dolphin").first().click();
   await expect(page).toHaveURL(/#/);
 
   const text = `e2e ${Date.now()}`;
