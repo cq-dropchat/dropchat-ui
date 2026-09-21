@@ -206,7 +206,14 @@ export default function Menu() {
           }}
           trigger={["click"]}
         >
-          <div className="cursor-pointer mt-[10px] p-[2px] rounded-full hover:bg-muted">
+          {/* The only handle on this menu is the avatar, whose visible text
+              is one letter of the signed-in user's name. The e2e flow has to
+              open it to pick an organization, and a one-letter locator would
+              match half the sidebar. */}
+          <div
+            data-testid="user-menu"
+            className="cursor-pointer mt-[10px] p-[2px] rounded-full hover:bg-muted"
+          >
             <Avatar
               src={agent?.picture || userMetadata?.picture}
               fallback={(

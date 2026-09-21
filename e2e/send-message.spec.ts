@@ -16,6 +16,16 @@ test("login with email, open a conversation, send a text, see it listed", async 
 
   await expect(page).not.toHaveURL(/\/login/);
 
+  // `goat` belongs to TWO seeded organizations, and only Mountain Peaks has
+  // the conversation below. Which one the app opens on is not a choice the
+  // test can make from outside: `useSetActiveOrg` picks one from a list it
+  // sorts with `+b.created_at - +a.created_at` — string minus string, so NaN,
+  // so no sorting at all — and seed.sql creates both in one statement, with
+  // the same created_at to the microsecond. There is no order to break the
+  // tie with. So pick the organization instead of hoping for it.
+  await page.getByTestId("user-menu").click();
+  await page.getByText("Mountain Peaks").click();
+
   // The seeded conversation "Map trade" belongs to Mountain Peaks, the
   // signed-in user's org.
   await page.getByText("Map trade").first().click();

@@ -17,6 +17,17 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: "http://127.0.0.1:4173",
+    // The UI has no language setting on the login screen: it reads
+    // `navigator.languages` and falls back to English for anything it does not
+    // recognise (`detectDefaultLanguage`, stores/uiSlice.ts). So the browser's
+    // locale decides whether the submit button reads "Entrar" or "Log in",
+    // and this spec looks for the Spanish one. On a developer's machine it
+    // passed by accident; on a CI runner Chromium is en-US and the click timed
+    // out after 60 s waiting for a button that was never going to appear —
+    // while the two `fill`s above kept working, because placeholders are not
+    // translated. Pinning it also states the intent: the flow is checked in
+    // the product's own language.
+    locale: "es-CL",
     trace: "retain-on-failure",
     viewport: { width: 1280, height: 800 },
   },
