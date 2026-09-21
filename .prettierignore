@@ -10,3 +10,6 @@ src/deprecated
 coverage
 playwright-report
 test-results
+
+# Salida de graphify
+graphify-out
