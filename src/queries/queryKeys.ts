@@ -28,6 +28,11 @@ export const queryKeys = {
   contacts: {
     all: (orgId: NullableId) => [orgId, "contacts_addresses"] as const,
   },
+  // T2: global, like the tiers themselves — three rows that are the same for
+  // every organization, so the key carries no org id.
+  modelTiers: {
+    all: () => ["model_tiers"] as const,
+  },
   organizations: {
     all: () => ["organizations"] as const,
     detail: (id: NullableId) => ["organizations", id] as const,

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -8,7 +8,7 @@ import {
   useUpdateAgent,
   useCurrentAgent,
 } from "@/queries/useAgents";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import SectionBody from "@/components/SectionBody";
 import useBoundStore from "@/stores/useBoundStore";
 import { type AIAgentRow, type AIAgentUpdate } from "@/supabase/client";
@@ -16,18 +16,11 @@ import { openLocalDirect } from "@/utils/ConversationUtils";
 import { openSandbox, simulatorAddress } from "@/utils/SimulatorUtils";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import SectionFooter from "@/components/SectionFooter";
-import {
-  protocols,
-  protocolLabels,
-  defaultModels,
-  creditModels,
-  apiKeyInstructions,
-} from "./new";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
-import SectionField from "@/components/SectionField";
 import ToolsSection from "@/components/ToolsSection";
+import ModelSection from "@/components/ModelSection";
 import SwitchField from "@/components/SwitchField";
 import EntryAgentSwitch from "@/components/EntryAgentSwitch";
 
@@ -45,7 +38,6 @@ function AgentDetail() {
   const deleteAgent = useDeleteAgent();
   const updateAgent = useUpdateAgent();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
-  const [provider, setProvider] = useState<keyof typeof protocols>("openai");
 
   const addresses = useOrganizationsAddresses().data;
 
@@ -57,13 +49,6 @@ function AgentDetail() {
   const sandboxAddress = addresses?.find(
     (address) => address.service === "sandbox",
   );
-
-  useEffect(() => {
-    if (!agent) return;
-    const apiUrl = agent.extra?.api_url || "";
-    const isKnown = ["openai", "anthropic", "groq", "google"].includes(apiUrl);
-    setProvider(isKnown ? apiUrl : "custom");
-  }, [agent]);
 
   // Normalize agent data to ensure tools is always an array
   const normalizedAgent = useMemo(() => {
@@ -84,8 +69,6 @@ function AgentDetail() {
     control,
     formState: { isDirty, isValid },
   } = useForm<AIAgentUpdate>({ values: normalizedAgent });
-
-  const model = useWatch({ control, name: "extra.model" });
 
   const handleChat = async () => {
     if (!activeOrgId || !localAddress || !currentAgent) return;
@@ -206,213 +189,34 @@ function AgentDetail() {
               setValue={setValue}
             />
 
-            {/* AI Section */}
-            <SectionField
-              label={t("Modelo de IA")}
-              description={model || t("Ninguno")}
-            >
-              <SelectField
-                value={provider}
-                modalClassName="bottom-0"
-                onChange={(val) => {
-                  setProvider(val);
-                  setValue("extra.model", defaultModels[val] || "");
-
-                  const availableProtocols =
-                    protocols[val as keyof typeof protocols];
-                  setValue("extra.protocol", availableProtocols[0]);
-
-                  if (val !== "custom") {
-                    setValue("extra.api_url", val, { shouldDirty: true });
-                  } else {
-                    setValue("extra.api_url", "", { shouldDirty: true });
-                  }
-                }}
-                label={t("Proveedor")}
-                options={[
-                  { value: "openai", label: "OpenAI" },
-                  { value: "anthropic", label: "Anthropic" },
-                  { value: "groq", label: "Groq" },
-                  { value: "google", label: "Google" },
-                  { value: "custom", label: t("Personalizado") },
-                ]}
+            {/* Not model configuration, and so not part of what T2 took
+                away: how long the agent waits for the contact to finish
+                typing, and what it says before it is asked anything. */}
+            <label>
+              <div className="label">{t("Demora de respuesta (segundos)")}</div>
+              <input
+                type="number"
+                className="text"
+                min={0}
+                placeholder="3"
+                {...register("extra.response_delay_seconds", {
+                  valueAsNumber: true,
+                })}
               />
+            </label>
 
-              <SelectField
-                name="extra.protocol"
-                control={control}
-                modalClassName="bottom-0"
-                label={t("Protocolo")}
-                options={(
-                  protocols[provider as keyof typeof protocols] || []
-                ).map((p) => ({
-                  value: p,
-                  label: protocolLabels[p] || p,
-                }))}
-              />
-
-              {provider === "custom" && (
-                <label>
-                  <div className="label">{t("API URL")}</div>
-                  <input
-                    type="text"
-                    className="text"
-                    placeholder="https://api.example.com/v1"
-                    {...register("extra.api_url")}
-                  />
-                </label>
+            <TextAreaField
+              control={control}
+              name="extra.welcome_message"
+              label={t("Mensaje de bienvenida")}
+              placeholder={t(
+                "Hola! Soy un agente virtual. ¿En qué puedo ayudarte?",
               )}
+            />
 
-              <label>
-                <div className="label">{t("Clave API")}</div>
-                <input
-                  type="text"
-                  className="text"
-                  placeholder={t("Clave API del proveedor")}
-                  {...register("extra.api_key")}
-                />
-              </label>
-
-              {provider !== "custom" && apiKeyInstructions[provider] && (
-                <div className="instructions">
-                  <p>
-                    {t(
-                      "Usar una clave API propia no consume créditos locales y permite usar cualquier modelo.",
-                    )}
-                  </p>
-                  <p>
-                    <strong>
-                      {apiKeyInstructions[provider].free
-                        ? t("Obtené una clave gratuita:")
-                        : t("Obtené una clave:")}
-                    </strong>{" "}
-                    <a
-                      href={apiKeyInstructions[provider].url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      {apiKeyInstructions[provider].label}
-                    </a>
-                    {" > "}
-                    {apiKeyInstructions[provider].steps}
-                  </p>
-                </div>
-              )}
-
-              <label>
-                <div className="label">{t("Modelo")}</div>
-                <input
-                  type="text"
-                  className="text"
-                  placeholder={t("Nombre del modelo")}
-                  {...register("extra.model")}
-                />
-              </label>
-
-              {provider !== "custom" && creditModels[provider] && (
-                <div className="instructions">
-                  <p>
-                    {t("Los siguientes modelos funcionan con créditos de IA:")}
-                  </p>
-                  <ul>
-                    {creditModels[provider].map((m) => (
-                      <li key={m}>
-                        <code>{m}</code>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <label>
-                <div className="label">
-                  {t("Demora de respuesta (segundos)")}
-                </div>
-                <input
-                  type="number"
-                  className="text"
-                  min={0}
-                  placeholder="3"
-                  {...register("extra.response_delay_seconds", {
-                    valueAsNumber: true,
-                  })}
-                />
-              </label>
-
-              <TextAreaField
-                control={control}
-                name="extra.welcome_message"
-                label={t("Mensaje de bienvenida")}
-                placeholder={t(
-                  "Hola! Soy un agente virtual. ¿En qué puedo ayudarte?",
-                )}
-              />
-
-              <label>
-                <div className="label">{t("Mensajes máximos")}</div>
-                <input
-                  type="number"
-                  className="text"
-                  min={1}
-                  placeholder="50"
-                  {...register("extra.max_messages", { valueAsNumber: true })}
-                />
-              </label>
-
-              <label>
-                <div className="label">{t("Temperatura")}</div>
-                <input
-                  type="number"
-                  className="text"
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  placeholder="1.0"
-                  {...register("extra.temperature", { valueAsNumber: true })}
-                />
-              </label>
-
-              <SwitchField
-                name="extra.multi_message_response"
-                control={control}
-                defaultChecked
-                label={t("Respuestas en varios mensajes")}
-                description={t(
-                  "Desactivar para modelos de razonamiento que no permiten forzar herramientas",
-                )}
-              />
-
-              {provider === "custom" && (
-                <div className="instructions">
-                  <p>
-                    {t(
-                      "Se envían los siguientes encabezados HTTP con cada solicitud:",
-                    )}
-                  </p>
-                  <ul>
-                    <li>
-                      <code>organization-id</code>
-                    </li>
-                    <li>
-                      <code>organization-address</code>
-                    </li>
-                    <li>
-                      <code>conversation-id</code>
-                    </li>
-                    <li>
-                      <code>agent-id</code>
-                    </li>
-                    <li>
-                      <code>contact-id</code>
-                    </li>
-                    <li>
-                      <code>contact-address</code>
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </SectionField>
+            {/* T2: what the agent runs on. Three levels instead of the
+                seven fields this used to ask for (D12). */}
+            <ModelSection control={control} register={register} />
           </form>
         </SectionBody>
 

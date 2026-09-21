@@ -3,109 +3,18 @@ import SectionHeader from "@/components/SectionHeader";
 import SectionFooter from "@/components/SectionFooter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCreateAgent, useCurrentAgent } from "@/queries/useAgents";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import SectionBody from "@/components/SectionBody";
-import { type AIAgentInsert, type AIAgentExtra } from "@/supabase/client";
-import { useState } from "react";
+import { type AIAgentInsert } from "@/supabase/client";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
-import SectionField from "@/components/SectionField";
 import ToolsSection from "@/components/ToolsSection";
-import SwitchField from "@/components/SwitchField";
+import ModelSection from "@/components/ModelSection";
 
 export const Route = createFileRoute("/_auth/agents/new")({
   component: AddAgent,
 });
-
-export const protocols: Record<
-  string,
-  NonNullable<AIAgentExtra["protocol"]>[]
-> = {
-  // Responses API support: OpenAI (native), Groq (stateless), and any
-  // conforming custom endpoint. Google's OpenAI-compat layer 404s on /responses
-  // and Anthropic uses its own Messages API — chat_completions only.
-  openai: ["chat_completions", "responses"],
-  google: ["chat_completions"],
-  anthropic: ["chat_completions"],
-  groq: ["chat_completions", "responses"],
-  custom: ["chat_completions", "responses"],
-};
-
-export const protocolLabels: Record<
-  NonNullable<AIAgentExtra["protocol"]>,
-  string
-> = {
-  chat_completions: "Chat Completions",
-  responses: "Responses",
-};
-
-export const defaultModels: Record<string, string> = {
-  openai: "gpt-5-mini",
-  anthropic: "claude-sonnet-4-6",
-  google: "gemini-3-flash-preview",
-  groq: "openai/gpt-oss-20b",
-};
-
-export const creditModels: Record<string, string[]> = {
-  // `gpt-5.3-chat-latest` was here and does not exist: OpenAI's models of that
-  // family are gpt-5.6-sol, -terra and -luna, and the API had it priced with
-  // gpt-5.3-codex's rates, which is a different model. Picking it produced an
-  // agent that failed against the provider. Not replaced by a flagship on
-  // purpose — see the note below.
-  openai: ["gpt-5-mini"],
-  // Sonnet 5 costs less than the 4.6 above ($2/$10 per million against $3/$15)
-  // and is newer. 4.6 stays priced and offered so no existing agent breaks.
-  anthropic: ["claude-sonnet-4-6", "claude-sonnet-5"],
-  google: ["gemini-2.5-flash", "gemini-3-flash-preview"],
-  groq: ["openai/gpt-oss-20b", "openai/gpt-oss-120b"],
-};
-
-// No flagship model is covered by credits, and that is a decision rather than
-// an omission. What the agent does — follow instructions, answer briefly in
-// Spanish, extract a field, call a tool, decide when to hand over — is not
-// reasoning-heavy, and the choice moves the cost per order by an order of
-// magnitude. With the cost model's own assumptions (4 turns, 3k in / 250 out
-// per turn, 30 % cache saving, 35 % of orders using AI), the AI cost per order
-// against the $0.03 overflow price a customer pays is:
-//
-//   groq/gpt-oss-20b     $0.0013     4 %
-//   openai/gpt-5-mini    $0.0024     8 %
-//   claude-sonnet-5      $0.0104    35 %
-//   claude-sonnet-4-6    $0.0151    50 %
-//   a flagship (~$10/$50) $0.048    160 %  — a loss on every overflow order
-//
-// Whether a stronger model is worth it is a question about TOOL CALLING, not
-// about conversation, and it is empirical: measure it in the simulator (S1)
-// before paying for it.
-
-export const apiKeyInstructions: Record<
-  string,
-  { url: string; label: string; steps: string; free?: boolean }
-> = {
-  openai: {
-    url: "https://platform.openai.com/api-keys",
-    label: "platform.openai.com",
-    steps: "API Keys > Create new secret key",
-  },
-  anthropic: {
-    url: "https://console.anthropic.com/settings/keys",
-    label: "console.anthropic.com",
-    steps: "Settings > API Keys > Create Key",
-  },
-  google: {
-    url: "https://aistudio.google.com/app/apikey",
-    label: "aistudio.google.com",
-    steps: "Get API key > Create API key",
-    free: true,
-  },
-  groq: {
-    url: "https://console.groq.com/keys",
-    label: "console.groq.com",
-    steps: "API Keys > Create API Key",
-    free: true,
-  },
-};
 
 function AddAgent() {
   const { translate: t } = useTranslation();
@@ -113,7 +22,6 @@ function AddAgent() {
   const createAgent = useCreateAgent();
   const { data: currentAgent } = useCurrentAgent();
   const isAdmin = ["admin", "owner"].includes(currentAgent?.role || "");
-  const [provider, setProvider] = useState<keyof typeof protocols>("groq");
 
   const {
     register,
@@ -125,15 +33,13 @@ function AddAgent() {
     defaultValues: {
       extra: {
         mode: "active",
-        api_url: "groq",
-        protocol: "chat_completions",
-        model: "openai/gpt-oss-20b",
+        // T2: the cheapest level, which is what this screen used to default
+        // to by spelling out groq and a model id.
+        model_tier: "rapido",
         tools: [],
       },
     },
   });
-
-  const model = useWatch({ control, name: "extra.model" });
 
   const onSubmit = (data: AIAgentInsert) => {
     createAgent.mutate(data, {
@@ -194,189 +100,9 @@ function AddAgent() {
               setValue={setValue}
             />
 
-            {/* AI Section */}
-            <SectionField
-              label={t("Modelo de IA")}
-              description={model || t("Ninguno")}
-            >
-              <SelectField
-                value={provider}
-                modalClassName="bottom-0"
-                onChange={(val) => {
-                  setProvider(val);
-                  setValue("extra.model", defaultModels[val] || "");
-
-                  const availableProtocols =
-                    protocols[val as keyof typeof protocols];
-                  setValue("extra.protocol", availableProtocols[0]);
-
-                  if (val !== "custom") {
-                    setValue("extra.api_url", val, { shouldDirty: true });
-                  } else {
-                    setValue("extra.api_url", "", { shouldDirty: true });
-                  }
-                }}
-                label={t("Proveedor")}
-                options={[
-                  { value: "openai", label: "OpenAI" },
-                  { value: "anthropic", label: "Anthropic" },
-                  { value: "groq", label: "Groq" },
-                  { value: "google", label: "Google" },
-                  { value: "custom", label: t("Personalizado") },
-                ]}
-              />
-
-              <SelectField
-                name="extra.protocol"
-                control={control}
-                modalClassName="bottom-0"
-                label={t("Protocolo")}
-                options={protocols[provider as keyof typeof protocols].map(
-                  (p) => ({
-                    value: p,
-                    label: protocolLabels[p] || p,
-                  }),
-                )}
-              />
-
-              {provider === "custom" && (
-                <label>
-                  <div className="label">{t("API URL")}</div>
-                  <input
-                    type="url"
-                    className="text"
-                    placeholder="https://api.example.com/v1"
-                    {...register("extra.api_url")}
-                  />
-                </label>
-              )}
-
-              <label>
-                <div className="label">{t("Clave API")}</div>
-                <input
-                  type="text"
-                  className="text"
-                  placeholder={t("Clave API del proveedor")}
-                  {...register("extra.api_key")}
-                />
-              </label>
-
-              {provider !== "custom" && apiKeyInstructions[provider] && (
-                <div className="instructions">
-                  <p>
-                    {t(
-                      "Usar una clave API propia no consume créditos locales y permite usar cualquier modelo.",
-                    )}
-                  </p>
-                  <p>
-                    <strong>
-                      {apiKeyInstructions[provider].free
-                        ? t("Obtené una clave gratuita:")
-                        : t("Obtené una clave:")}
-                    </strong>{" "}
-                    <a
-                      href={apiKeyInstructions[provider].url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      {apiKeyInstructions[provider].label}
-                    </a>
-                    {" > "}
-                    {apiKeyInstructions[provider].steps}
-                  </p>
-                </div>
-              )}
-
-              <label>
-                <div className="label">{t("Modelo")}</div>
-                <input
-                  type="text"
-                  className="text"
-                  placeholder={t("Nombre del modelo")}
-                  {...register("extra.model")}
-                />
-              </label>
-
-              {provider !== "custom" && creditModels[provider] && (
-                <div className="instructions">
-                  <p>
-                    {t("Los siguientes modelos funcionan con créditos de IA:")}
-                  </p>
-                  <ul>
-                    {creditModels[provider].map((m) => (
-                      <li key={m}>
-                        <code>{m}</code>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <label>
-                <div className="label">{t("Mensajes máximos")}</div>
-                <input
-                  type="number"
-                  className="text"
-                  min={1}
-                  placeholder="50"
-                  {...register("extra.max_messages", { valueAsNumber: true })}
-                />
-              </label>
-
-              <label>
-                <div className="label">{t("Temperatura")}</div>
-                <input
-                  type="number"
-                  className="text"
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  placeholder="1.0"
-                  {...register("extra.temperature", { valueAsNumber: true })}
-                />
-              </label>
-
-              <SwitchField
-                name="extra.multi_message_response"
-                control={control}
-                defaultChecked
-                label={t("Respuestas en varios mensajes")}
-                description={t(
-                  "Desactivar para modelos de razonamiento que no permiten forzar herramientas",
-                )}
-              />
-
-              {provider === "custom" && (
-                <div className="instructions">
-                  <p>
-                    {t(
-                      "Se envían los siguientes encabezados HTTP con cada solicitud:",
-                    )}
-                  </p>
-                  <ul>
-                    <li>
-                      <code>organization-id</code>
-                    </li>
-                    <li>
-                      <code>organization-address</code>
-                    </li>
-                    <li>
-                      <code>conversation-id</code>
-                    </li>
-                    <li>
-                      <code>agent-id</code>
-                    </li>
-                    <li>
-                      <code>contact-id</code>
-                    </li>
-                    <li>
-                      <code>contact-address</code>
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </SectionField>
+            {/* T2: what the agent runs on. Three levels instead of the
+                seven fields this used to ask for (D12). */}
+            <ModelSection control={control} register={register} />
           </fieldset>
         </form>
       </SectionBody>
