@@ -10,6 +10,7 @@ import {
   Bot,
   BarChart3,
   Languages,
+  LayoutTemplate,
   Plus,
   NotebookTabs,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { LinkButton } from "./LinkButton";
 import { resetAuthorizedCache } from "@/utils/IdbUtils";
 import { useCurrentAgent } from "@/queries/useAgents";
+import { useIsPlatformAdmin } from "@/queries/useErrorIssues";
 import { Dropdown } from "antd";
 import { useOrganizations } from "@/queries/useOrganizations";
 
@@ -28,6 +30,9 @@ export default function Menu() {
     | undefined;
 
   const { data: agent } = useCurrentAgent();
+  // T7: the template panel crosses organizations, so its entry exists only for
+  // a platform admin. Not a permission — RLS is — just what is worth drawing.
+  const { data: isPlatformAdmin } = useIsPlatformAdmin();
 
   const setActiveOrg = useBoundStore((state) => state.ui.setActiveOrg);
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -102,6 +107,18 @@ export default function Menu() {
         >
           <BarChart3 className="w-[24px] h-[24px] stroke-[2]" />
         </LinkButton>
+
+        {/* Templates button — the platform's, not an organization's */}
+        {isPlatformAdmin && (
+          <LinkButton
+            to="/templates"
+            title={t("Plantillas")}
+            isActive={pathname.startsWith("/templates")}
+            className="mt-[10px]"
+          >
+            <LayoutTemplate className="w-[24px] h-[24px] stroke-[2]" />
+          </LinkButton>
+        )}
       </div>
 
       {/* Lower section */}

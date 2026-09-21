@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ErrorsRouteImport } from './routes/errors'
@@ -18,7 +17,9 @@ import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as OauthInstagramRouteImport } from './routes/oauth/instagram'
 import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
+import { Route as AuthTemplatesRouteImport } from './routes/_auth/templates'
 import { Route as AuthStatsRouteImport } from './routes/_auth/stats'
+import { Route as AuthTemplatesIndexRouteImport } from './routes/_auth/templates/index'
 import { Route as AuthStatsIndexRouteImport } from './routes/_auth/stats/index'
 import { Route as AuthSettingsIndexRouteImport } from './routes/_auth/settings/index'
 import { Route as AuthIntegrationsIndexRouteImport } from './routes/_auth/integrations/index'
@@ -28,6 +29,8 @@ import { Route as AuthAgentsIndexRouteImport } from './routes/_auth/agents/index
 import { Route as OnboardWhatsappTokenRouteImport } from './routes/onboard.whatsapp.$token'
 import { Route as OnboardInstagramCallbackRouteImport } from './routes/onboard.instagram.callback'
 import { Route as OnboardInstagramTokenRouteImport } from './routes/onboard.instagram.$token'
+import { Route as AuthTemplatesNewRouteImport } from './routes/_auth/templates/new'
+import { Route as AuthTemplatesTemplateIdRouteImport } from './routes/_auth/templates/$templateId'
 import { Route as AuthStatsUsageRouteImport } from './routes/_auth/stats/usage'
 import { Route as AuthStatsQuotasRouteImport } from './routes/_auth/stats/quotas'
 import { Route as AuthIntegrationsMediaPreprocessingRouteImport } from './routes/_auth/integrations/media-preprocessing'
@@ -67,11 +70,6 @@ import { Route as AuthIntegrationsWhatsappOrgAddressIdTemplatesIndexRouteImport 
 import { Route as AuthIntegrationsWhatsappOrgAddressIdTemplatesNewRouteImport } from './routes/_auth/integrations/whatsapp/$orgAddressId/templates/new'
 import { Route as AuthIntegrationsWhatsappOrgAddressIdTemplatesTemplateIdRouteImport } from './routes/_auth/integrations/whatsapp/$orgAddressId/templates/$templateId'
 
-const TemplatesRoute = TemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -111,10 +109,20 @@ const OauthCallbackRoute = OauthCallbackRouteImport.update({
   path: '/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthTemplatesRoute = AuthTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthStatsRoute = AuthStatsRouteImport.update({
   id: '/stats',
   path: '/stats',
   getParentRoute: () => AuthRoute,
+} as any)
+const AuthTemplatesIndexRoute = AuthTemplatesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthTemplatesRoute,
 } as any)
 const AuthStatsIndexRoute = AuthStatsIndexRouteImport.update({
   id: '/',
@@ -161,6 +169,16 @@ const OnboardInstagramTokenRoute = OnboardInstagramTokenRouteImport.update({
   id: '/onboard/instagram/$token',
   path: '/onboard/instagram/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthTemplatesNewRoute = AuthTemplatesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthTemplatesRoute,
+} as any)
+const AuthTemplatesTemplateIdRoute = AuthTemplatesTemplateIdRouteImport.update({
+  id: '/$templateId',
+  path: '/$templateId',
+  getParentRoute: () => AuthTemplatesRoute,
 } as any)
 const AuthStatsUsageRoute = AuthStatsUsageRouteImport.update({
   id: '/usage',
@@ -385,8 +403,8 @@ export interface FileRoutesByFullPath {
   '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/templates': typeof TemplatesRoute
   '/stats': typeof AuthStatsRouteWithChildren
+  '/templates': typeof AuthTemplatesRouteWithChildren
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -399,6 +417,8 @@ export interface FileRoutesByFullPath {
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
+  '/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/templates/new': typeof AuthTemplatesNewRoute
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
@@ -408,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/integrations': typeof AuthIntegrationsIndexRoute
   '/settings': typeof AuthSettingsIndexRoute
   '/stats/': typeof AuthStatsIndexRoute
+  '/templates/': typeof AuthTemplatesIndexRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
   '/integrations/whatsapp-web/new': typeof AuthIntegrationsWhatsappWebNewRoute
   '/integrations/whatsapp/new': typeof AuthIntegrationsWhatsappNewRoute
@@ -443,7 +464,6 @@ export interface FileRoutesByTo {
   '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/templates': typeof TemplatesRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -456,6 +476,8 @@ export interface FileRoutesByTo {
   '/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/stats/quotas': typeof AuthStatsQuotasRoute
   '/stats/usage': typeof AuthStatsUsageRoute
+  '/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/templates/new': typeof AuthTemplatesNewRoute
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
@@ -465,6 +487,7 @@ export interface FileRoutesByTo {
   '/integrations': typeof AuthIntegrationsIndexRoute
   '/settings': typeof AuthSettingsIndexRoute
   '/stats': typeof AuthStatsIndexRoute
+  '/templates': typeof AuthTemplatesIndexRoute
   '/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
   '/integrations/whatsapp-web/new': typeof AuthIntegrationsWhatsappWebNewRoute
   '/integrations/whatsapp/new': typeof AuthIntegrationsWhatsappNewRoute
@@ -502,8 +525,8 @@ export interface FileRoutesById {
   '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/templates': typeof TemplatesRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
+  '/_auth/templates': typeof AuthTemplatesRouteWithChildren
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -516,6 +539,8 @@ export interface FileRoutesById {
   '/_auth/integrations/media-preprocessing': typeof AuthIntegrationsMediaPreprocessingRoute
   '/_auth/stats/quotas': typeof AuthStatsQuotasRoute
   '/_auth/stats/usage': typeof AuthStatsUsageRoute
+  '/_auth/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/_auth/templates/new': typeof AuthTemplatesNewRoute
   '/onboard/instagram/$token': typeof OnboardInstagramTokenRoute
   '/onboard/instagram/callback': typeof OnboardInstagramCallbackRoute
   '/onboard/whatsapp/$token': typeof OnboardWhatsappTokenRoute
@@ -525,6 +550,7 @@ export interface FileRoutesById {
   '/_auth/integrations/': typeof AuthIntegrationsIndexRoute
   '/_auth/settings/': typeof AuthSettingsIndexRoute
   '/_auth/stats/': typeof AuthStatsIndexRoute
+  '/_auth/templates/': typeof AuthTemplatesIndexRoute
   '/_auth/integrations/instagram/new': typeof AuthIntegrationsInstagramNewRoute
   '/_auth/integrations/whatsapp-web/new': typeof AuthIntegrationsWhatsappWebNewRoute
   '/_auth/integrations/whatsapp/new': typeof AuthIntegrationsWhatsappNewRoute
@@ -562,8 +588,8 @@ export interface FileRouteTypes {
     | '/errors'
     | '/login'
     | '/privacy'
-    | '/templates'
     | '/stats'
+    | '/templates'
     | '/oauth/callback'
     | '/oauth/consent'
     | '/oauth/instagram'
@@ -576,6 +602,8 @@ export interface FileRouteTypes {
     | '/integrations/media-preprocessing'
     | '/stats/quotas'
     | '/stats/usage'
+    | '/templates/$templateId'
+    | '/templates/new'
     | '/onboard/instagram/$token'
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
@@ -585,6 +613,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/settings'
     | '/stats/'
+    | '/templates/'
     | '/integrations/instagram/new'
     | '/integrations/whatsapp-web/new'
     | '/integrations/whatsapp/new'
@@ -620,7 +649,6 @@ export interface FileRouteTypes {
     | '/errors'
     | '/login'
     | '/privacy'
-    | '/templates'
     | '/oauth/callback'
     | '/oauth/consent'
     | '/oauth/instagram'
@@ -633,6 +661,8 @@ export interface FileRouteTypes {
     | '/integrations/media-preprocessing'
     | '/stats/quotas'
     | '/stats/usage'
+    | '/templates/$templateId'
+    | '/templates/new'
     | '/onboard/instagram/$token'
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
@@ -642,6 +672,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/settings'
     | '/stats'
+    | '/templates'
     | '/integrations/instagram/new'
     | '/integrations/whatsapp-web/new'
     | '/integrations/whatsapp/new'
@@ -678,8 +709,8 @@ export interface FileRouteTypes {
     | '/errors'
     | '/login'
     | '/privacy'
-    | '/templates'
     | '/_auth/stats'
+    | '/_auth/templates'
     | '/oauth/callback'
     | '/oauth/consent'
     | '/oauth/instagram'
@@ -692,6 +723,8 @@ export interface FileRouteTypes {
     | '/_auth/integrations/media-preprocessing'
     | '/_auth/stats/quotas'
     | '/_auth/stats/usage'
+    | '/_auth/templates/$templateId'
+    | '/_auth/templates/new'
     | '/onboard/instagram/$token'
     | '/onboard/instagram/callback'
     | '/onboard/whatsapp/$token'
@@ -701,6 +734,7 @@ export interface FileRouteTypes {
     | '/_auth/integrations/'
     | '/_auth/settings/'
     | '/_auth/stats/'
+    | '/_auth/templates/'
     | '/_auth/integrations/instagram/new'
     | '/_auth/integrations/whatsapp-web/new'
     | '/_auth/integrations/whatsapp/new'
@@ -738,7 +772,6 @@ export interface RootRouteChildren {
   ErrorsRoute: typeof ErrorsRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
-  TemplatesRoute: typeof TemplatesRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthConsentRoute: typeof OauthConsentRoute
   OauthInstagramRoute: typeof OauthInstagramRoute
@@ -749,13 +782,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/templates': {
-      id: '/templates'
-      path: '/templates'
-      fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -812,12 +838,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/templates': {
+      id: '/_auth/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AuthTemplatesRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/stats': {
       id: '/_auth/stats'
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof AuthStatsRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_auth/templates/': {
+      id: '/_auth/templates/'
+      path: '/'
+      fullPath: '/templates/'
+      preLoaderRoute: typeof AuthTemplatesIndexRouteImport
+      parentRoute: typeof AuthTemplatesRoute
     }
     '/_auth/stats/': {
       id: '/_auth/stats/'
@@ -881,6 +921,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboard/instagram/$token'
       preLoaderRoute: typeof OnboardInstagramTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/templates/new': {
+      id: '/_auth/templates/new'
+      path: '/new'
+      fullPath: '/templates/new'
+      preLoaderRoute: typeof AuthTemplatesNewRouteImport
+      parentRoute: typeof AuthTemplatesRoute
+    }
+    '/_auth/templates/$templateId': {
+      id: '/_auth/templates/$templateId'
+      path: '/$templateId'
+      fullPath: '/templates/$templateId'
+      preLoaderRoute: typeof AuthTemplatesTemplateIdRouteImport
+      parentRoute: typeof AuthTemplatesRoute
     }
     '/_auth/stats/usage': {
       id: '/_auth/stats/usage'
@@ -1167,8 +1221,25 @@ const AuthStatsRouteWithChildren = AuthStatsRoute._addFileChildren(
   AuthStatsRouteChildren,
 )
 
+interface AuthTemplatesRouteChildren {
+  AuthTemplatesTemplateIdRoute: typeof AuthTemplatesTemplateIdRoute
+  AuthTemplatesNewRoute: typeof AuthTemplatesNewRoute
+  AuthTemplatesIndexRoute: typeof AuthTemplatesIndexRoute
+}
+
+const AuthTemplatesRouteChildren: AuthTemplatesRouteChildren = {
+  AuthTemplatesTemplateIdRoute: AuthTemplatesTemplateIdRoute,
+  AuthTemplatesNewRoute: AuthTemplatesNewRoute,
+  AuthTemplatesIndexRoute: AuthTemplatesIndexRoute,
+}
+
+const AuthTemplatesRouteWithChildren = AuthTemplatesRoute._addFileChildren(
+  AuthTemplatesRouteChildren,
+)
+
 interface AuthRouteChildren {
   AuthStatsRoute: typeof AuthStatsRouteWithChildren
+  AuthTemplatesRoute: typeof AuthTemplatesRouteWithChildren
   AuthIndexRoute: typeof AuthIndexRoute
   AuthAgentsAgentIdRoute: typeof AuthAgentsAgentIdRoute
   AuthAgentsNewRoute: typeof AuthAgentsNewRoute
@@ -1215,6 +1286,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthStatsRoute: AuthStatsRouteWithChildren,
+  AuthTemplatesRoute: AuthTemplatesRouteWithChildren,
   AuthIndexRoute: AuthIndexRoute,
   AuthAgentsAgentIdRoute: AuthAgentsAgentIdRoute,
   AuthAgentsNewRoute: AuthAgentsNewRoute,
@@ -1280,7 +1352,6 @@ const rootRouteChildren: RootRouteChildren = {
   ErrorsRoute: ErrorsRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
-  TemplatesRoute: TemplatesRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthConsentRoute: OauthConsentRoute,
   OauthInstagramRoute: OauthInstagramRoute,

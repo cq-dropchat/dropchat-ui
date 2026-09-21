@@ -133,6 +133,12 @@ describe("H6: assignment notes", () => {
 // The dispatch itself: before H6, an assignment note fell through to the
 // generic data branch of Message and rendered as raw JSON.
 describe("H6: the chat renders notes as notes", () => {
+  // The only case here that pulls in Message itself, and with it the whole
+  // renderer — remarkable, turndown, autolinker. Under coverage and the load
+  // of the full suite that import alone can pass five seconds, which turned
+  // this into an intermittent red: green on its own, red beside 46 other
+  // files. The work is an import, not a hang, so the timeout is what is the
+  // wrong size, not the test.
   it("does not render an assignment note as JSON", async () => {
     const { default: Message } = await import("./Message");
 
@@ -157,7 +163,7 @@ describe("H6: the chat renders notes as notes", () => {
     expect(
       container.querySelector('[data-testid="assignment-note"]'),
     ).not.toBeNull();
-  });
+  }, 30_000);
 });
 
 // H3's vocabulary is CLOSED — the agent-client enforces it as an enum, and

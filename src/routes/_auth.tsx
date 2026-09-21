@@ -10,6 +10,7 @@ import { useResizable } from "@/hooks/useResizable";
 import { useCurrentAgents } from "@/queries/useAgents";
 import RouteError from "@/components/RouteError";
 import { useEscalationNotices } from "@/hooks/useEscalationNotices";
+import { centerPanel } from "@/utils/centerPanel";
 
 // F22: this layout is on every signed-in screen, but the conversation panel
 // renders only once a conversation is open and the stats only on /stats.
@@ -22,6 +23,11 @@ const ChatFooter = lazy(() => import("@/components/ChatFooter"));
 const FilePicker = lazy(() => import("@/components/FileUploader/FilePicker"));
 const FilePreviewer = lazy(() => import("@/components/FilePreviewer"));
 const StatsCenter = lazy(() => import("@/components/stats/StatsCenter"));
+// T7: the platform's template panel. Lazy like the rest: a tenant never opens
+// it, so it has no business being in anybody's first screen.
+const TemplateCenter = lazy(
+  () => import("@/components/templates/TemplateCenter"),
+);
 
 export const Route = createFileRoute("/_auth")({
   component: AppLayout,
@@ -52,7 +58,8 @@ function AppLayout() {
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
   const pathname = location.pathname;
-  const isStatsRoute = pathname.startsWith("/stats");
+  // What the center column shows, and whether there is one at all.
+  const center = centerPanel(pathname, activeConvId);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
 
@@ -76,7 +83,7 @@ function AppLayout() {
   console.log("active org ", activeOrgId);
   console.log("active conv", activeConvId);
 
-  const showCenterPanel = activeConvId || isStatsRoute;
+  const showCenterPanel = center !== "actions";
 
   return (
     <div
@@ -108,22 +115,28 @@ function AppLayout() {
       <div
         className={
           "flex-col min-w-0 relative overflow-hidden col-span-full md:col-span-1" +
-          (isStatsRoute
+          (center === "stats" || center === "templates"
             ? " flex bg-muted"
-            : activeConvId
+            : center === "chat"
               ? " flex bg-chat"
               : " hidden md:flex bg-muted")
         }
         onDragEnter={() => setIsHoveringFiles(true)}
         onDrop={() => setIsHoveringFiles(false)}
       >
-        {isStatsRoute ? (
+        {center === "stats" ? (
           <div className="overflow-y-auto h-full">
             <Suspense fallback={null}>
               <StatsCenter />
             </Suspense>
           </div>
-        ) : activeConvId ? (
+        ) : center === "templates" ? (
+          // No wrapper with its own scroll: it has a header of its own that
+          // must not scroll away, like a conversation.
+          <Suspense fallback={null}>
+            <TemplateCenter />
+          </Suspense>
+        ) : center === "chat" ? (
           <Suspense fallback={null}>
             {isHoveringFiles && <FilePicker setHovering={setIsHoveringFiles} />}
             <FilePreviewer />

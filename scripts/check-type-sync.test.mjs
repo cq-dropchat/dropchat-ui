@@ -108,6 +108,12 @@ describe("F29: check-type-sync.sh --strict", () => {
     expect(run().code).toBe(0);
   });
 
+  // The only case here that runs the REAL check against the API repo beside
+  // this one: bash, then node over every mirrored file, twice. It takes ~4 s
+  // alone and over 5 under the load of the full suite, which is how it turned
+  // into an intermittent red — passing when run on its own and failing when
+  // run with the other 46 files. The work is I/O, not a hang; the default
+  // timeout is simply the wrong size for it.
   it("the real mirrors match the committed baseline", () => {
     const repo = path.resolve(here, "..");
     const api = [
@@ -126,5 +132,5 @@ describe("F29: check-type-sync.sh --strict", () => {
     });
     expect(result.stdout + result.stderr).toContain("types in sync");
     expect(result.status).toBe(0);
-  });
+  }, 30_000);
 });
