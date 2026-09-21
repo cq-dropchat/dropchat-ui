@@ -48,11 +48,36 @@ export const defaultModels: Record<string, string> = {
 };
 
 export const creditModels: Record<string, string[]> = {
-  openai: ["gpt-5-mini", "gpt-5.3-chat-latest"],
-  anthropic: ["claude-sonnet-4-6"],
+  // `gpt-5.3-chat-latest` was here and does not exist: OpenAI's models of that
+  // family are gpt-5.6-sol, -terra and -luna, and the API had it priced with
+  // gpt-5.3-codex's rates, which is a different model. Picking it produced an
+  // agent that failed against the provider. Not replaced by a flagship on
+  // purpose — see the note below.
+  openai: ["gpt-5-mini"],
+  // Sonnet 5 costs less than the 4.6 above ($2/$10 per million against $3/$15)
+  // and is newer. 4.6 stays priced and offered so no existing agent breaks.
+  anthropic: ["claude-sonnet-4-6", "claude-sonnet-5"],
   google: ["gemini-2.5-flash", "gemini-3-flash-preview"],
   groq: ["openai/gpt-oss-20b", "openai/gpt-oss-120b"],
 };
+
+// No flagship model is covered by credits, and that is a decision rather than
+// an omission. What the agent does — follow instructions, answer briefly in
+// Spanish, extract a field, call a tool, decide when to hand over — is not
+// reasoning-heavy, and the choice moves the cost per order by an order of
+// magnitude. With the cost model's own assumptions (4 turns, 3k in / 250 out
+// per turn, 30 % cache saving, 35 % of orders using AI), the AI cost per order
+// against the $0.03 overflow price a customer pays is:
+//
+//   groq/gpt-oss-20b     $0.0013     4 %
+//   openai/gpt-5-mini    $0.0024     8 %
+//   claude-sonnet-5      $0.0104    35 %
+//   claude-sonnet-4-6    $0.0151    50 %
+//   a flagship (~$10/$50) $0.048    160 %  — a loss on every overflow order
+//
+// Whether a stronger model is worth it is a question about TOOL CALLING, not
+// about conversation, and it is empirical: measure it in the simulator (S1)
+// before paying for it.
 
 export const apiKeyInstructions: Record<
   string,
