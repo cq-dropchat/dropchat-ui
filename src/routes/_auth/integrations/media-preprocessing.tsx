@@ -130,6 +130,7 @@ function MediaPreprocessingSettings() {
           </label>
 
           <TextAreaField
+            plain
             control={control}
             name="extra.media_preprocessing.extra_prompt"
             label={t("Instrucciones adicionales")}

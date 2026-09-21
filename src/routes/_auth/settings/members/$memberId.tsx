@@ -121,6 +121,7 @@ function EditMember() {
               up on their screen. */}
           {isMe && (
             <SwitchField
+              plain
               name="extra.notifications.escalation"
               control={control}
               defaultChecked

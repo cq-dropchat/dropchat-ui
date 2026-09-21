@@ -432,6 +432,7 @@ function TemplateDetail({ template }: { template: TemplateWithVersions }) {
                 n: nextVersion,
               })}
               value={audience}
+              className="self-start"
               onChange={setAudience}
               options={[
                 { value: "all", label: t("Todas las organizaciones") },

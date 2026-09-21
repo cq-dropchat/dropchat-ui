@@ -1,4 +1,7 @@
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import DrillPanel from "@/components/ui/DrillPanel";
+import Field from "@/components/ui/Field";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type Control,
@@ -6,7 +9,6 @@ import {
   useWatch,
   type UseFormSetValue,
 } from "react-hook-form";
-import SectionBody from "@/components/SectionBody";
 import SelectField from "@/components/SelectField";
 import type { SQLToolConfig } from "@/supabase/client";
 import type { ToolsForm } from "./types";
@@ -77,49 +79,43 @@ export default function SQLClientEditor({
   };
 
   return (
-    <div className="absolute inset-0 bottom-[80px] z-50 bg-background flex flex-col">
-      <div className="header items-center truncate shrink-0">
+    <DrillPanel
+      title={label ? t("Editar cliente SQL") : t("Agregar cliente SQL")}
+      onBack={handleBack}
+      backDisabledReason={
+        canGoBack ? undefined : t("Completa los campos requeridos")
+      }
+      action={
         <button
           type="button"
-          className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px] disabled:opacity-30 disabled:hover:bg-transparent"
-          title={
-            canGoBack
-              ? t("Volver")
-              : t("Volver") + " - " + t("Completa los campos requeridos")
-          }
-          onClick={handleBack}
-          disabled={!canGoBack}
-        >
-          <ArrowLeft className="w-[24px] h-[24px]" />
-        </button>
-        <div className="text-[16px]">
-          {label ? t("Editar cliente SQL") : t("Agregar cliente SQL")}
-        </div>
-
-        <button
-          type="button"
-          className="p-[8px] rounded-full hover:bg-muted ml-auto"
+          className="hover:bg-muted flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full"
           title={t("Eliminar")}
+          aria-label={t("Eliminar")}
           onClick={onDelete}
         >
-          <Trash2 className="w-[24px] h-[24px]" />
+          <Trash2 className="h-[20px] w-[20px]" aria-hidden />
         </button>
-      </div>
-
-      <SectionBody className="gap-[24px] pl-[10px]">
-        <label>
-          <div className="label">{t("Nombre")}</div>
-          <input
-            type="text"
-            className="text"
-            placeholder={t("Mi base de datos")}
-            maxLength={32}
-            {...register(`extra.tools.${index}.label`, {
-              required: true,
-              maxLength: 40,
-            })}
-          />
-        </label>
+      }
+    >
+      <Card title={t("Conexión")}>
+        <Field
+          label={t("Nombre")}
+          hint={t("Cómo lo ves en la lista de herramientas del agente.")}
+        >
+          {(field) => (
+            <input
+              {...field}
+              type="text"
+              className="text"
+              placeholder={t("Mi base de datos")}
+              maxLength={32}
+              {...register(`extra.tools.${index}.label`, {
+                required: true,
+                maxLength: 40,
+              })}
+            />
+          )}
+        </Field>
 
         <SelectField
           label={t("Driver")}
@@ -130,15 +126,16 @@ export default function SQLClientEditor({
             { value: "postgres", label: "PostgreSQL" },
             { value: "mysql", label: "MySQL" },
           ]}
-          modalClassName="bottom-0"
         />
+      </Card>
 
-        {/* LibSQL-specific fields */}
-        {isLibSQL && (
-          <>
-            <label>
-              <div className="label">{t("URL")}</div>
+      {/* LibSQL-specific fields */}
+      {isLibSQL && (
+        <Card title={t("Base de datos")}>
+          <Field label={t("URL")}>
+            {(field) => (
               <input
+                {...field}
                 type="url"
                 className="text"
                 placeholder="libsql://your-database.turso.io"
@@ -146,28 +143,30 @@ export default function SQLClientEditor({
                   required: true,
                 })}
               />
-            </label>
+            )}
+          </Field>
 
-            <label>
-              <div className="label">
-                {t("Token")} ({t("opcional")})
-              </div>
+          <Field label={t("Token")} optional={t("opcional")}>
+            {(field) => (
               <input
+                {...field}
                 type="text"
                 className="text"
                 placeholder="eyJhbGciOiJFZ..."
                 {...register(`extra.tools.${index}.config.token`)}
               />
-            </label>
-          </>
-        )}
+            )}
+          </Field>
+        </Card>
+      )}
 
-        {/* Postgres/MySQL-specific fields */}
-        {!isLibSQL && (
-          <>
-            <label>
-              <div className="label">{t("Host")}</div>
+      {/* Postgres/MySQL-specific fields */}
+      {!isLibSQL && (
+        <Card title={t("Base de datos")}>
+          <Field label={t("Host")}>
+            {(field) => (
               <input
+                {...field}
                 type="text"
                 className="text"
                 placeholder="localhost"
@@ -175,60 +174,60 @@ export default function SQLClientEditor({
                   required: true,
                 })}
               />
-            </label>
+            )}
+          </Field>
 
-            <label>
-              <div className="label">
-                {t("Puerto")} ({t("opcional")})
-              </div>
+          <Field label={t("Puerto")} optional={t("opcional")}>
+            {(field) => (
               <input
+                {...field}
                 type="number"
-                className="text"
+                className="text font-mono tabular-nums"
                 placeholder={driver === "postgres" ? "5432" : "3306"}
                 {...register(`extra.tools.${index}.config.port`, {
                   valueAsNumber: true,
                 })}
               />
-            </label>
+            )}
+          </Field>
 
-            <label>
-              <div className="label">
-                {t("Usuario")} ({t("opcional")})
-              </div>
+          <Field label={t("Usuario")} optional={t("opcional")}>
+            {(field) => (
               <input
+                {...field}
                 type="text"
                 className="text"
                 placeholder={driver === "postgres" ? "postgres" : "root"}
                 {...register(`extra.tools.${index}.config.user`)}
               />
-            </label>
+            )}
+          </Field>
 
-            <label>
-              <div className="label">
-                {t("Contraseña")} ({t("opcional")})
-              </div>
+          <Field label={t("Contraseña")} optional={t("opcional")}>
+            {(field) => (
               <input
+                {...field}
                 type="text"
                 className="text"
                 placeholder={t("Contraseña")}
                 {...register(`extra.tools.${index}.config.password`)}
               />
-            </label>
+            )}
+          </Field>
 
-            <label>
-              <div className="label">
-                {t("Base de datos")} ({t("opcional")})
-              </div>
+          <Field label={t("Base de datos")} optional={t("opcional")}>
+            {(field) => (
               <input
+                {...field}
                 type="text"
                 className="text"
                 placeholder="mydb"
                 {...register(`extra.tools.${index}.config.database`)}
               />
-            </label>
-          </>
-        )}
-      </SectionBody>
-    </div>
+            )}
+          </Field>
+        </Card>
+      )}
+    </DrillPanel>
   );
 }
