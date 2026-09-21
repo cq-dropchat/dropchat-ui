@@ -19,7 +19,13 @@ export type TemplateWithVersions = AgentTemplate & {
   agent_template_versions: AgentTemplateVersion[];
 };
 
-/** The newest version anybody can still install. */
+/**
+ * The newest version anybody can still install.
+ *
+ * T5's staged publication needs no filter here: a version staged for other
+ * organizations is not readable by this one, so it never arrives in the first
+ * place. What this list holds is already «what we may install».
+ */
 export function installableVersion(
   template: TemplateWithVersions,
 ): AgentTemplateVersion | undefined {
@@ -255,15 +261,43 @@ export function useArchiveAgentTemplate() {
   );
 }
 
-/** Publish the source agent's current configuration as the next version. */
+/**
+ * Publish the source agent's current configuration as the next version.
+ *
+ * T5: with `canary`, it goes to those organizations and nobody else until it
+ * is promoted. Without it, to everybody — which is what every version before
+ * staged publication existed did.
+ */
 export function usePublishAgentTemplateVersion() {
   return useCatalogueMutation(
-    async (args: { templateId: string; changelog: string }) =>
+    async (args: {
+      templateId: string;
+      changelog: string;
+      canary?: string[];
+    }) =>
       (
         await supabase
           .rpc("publish_agent_template_version", {
             _template_id: args.templateId,
             _changelog: args.changelog || undefined,
+            _canary_organizations: args.canary?.length
+              ? args.canary
+              : undefined,
+          })
+          .throwOnError()
+      ).data,
+  );
+}
+
+/** Promote a staged version: it stops being for two organizations. */
+export function usePromoteAgentTemplateVersion() {
+  return useCatalogueMutation(
+    async (args: { templateId: string; version: number }) =>
+      (
+        await supabase
+          .rpc("promote_agent_template_version", {
+            _template_id: args.templateId,
+            _version: args.version,
           })
           .throwOnError()
       ).data,

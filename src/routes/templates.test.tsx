@@ -69,11 +69,12 @@ const TEMPLATES = [
   },
 ];
 
-const calls: { published: unknown; retired: unknown; created: unknown } = {
-  published: null,
-  retired: null,
-  created: null,
-};
+const calls: {
+  published: unknown;
+  promoted: unknown;
+  retired: unknown;
+  created: unknown;
+} = { published: null, promoted: null, retired: null, created: null };
 
 const server = setupServer(
   http.get("http://127.0.0.1:54321/rest/v1/agent_templates", () =>
@@ -118,6 +119,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
   server.resetHandlers();
   calls.published = null;
+  calls.promoted = null;
   calls.retired = null;
   calls.created = null;
   mocks.isPlatformAdmin.mockReturnValue({ data: true, isPending: false });
@@ -165,6 +167,8 @@ describe("T7: the publishing panel", () => {
     expect(await screen.findByText("Ventas contra entrega")).toBeVisible();
     // The version, with the changelog that was published with it.
     expect(screen.getByText("v1 — primera")).toBeVisible();
+    // Generally available: there is nothing to promote it to.
+    expect(screen.queryByRole("button", { name: /Promover/ })).toBeNull();
   });
 
   it("publishes a new version with a changelog", async () => {
@@ -180,6 +184,65 @@ describe("T7: the publishing panel", () => {
     expect(calls.published).toMatchObject({
       _template_id: TEMPLATE_ID,
       _changelog: "Arregla el saludo",
+    });
+  });
+
+  it("publishes to two organizations first, when asked to", async () => {
+    // T5: a version that goes out to the whole customer base at once is a
+    // prompt change nobody piloted.
+    await renderPanel();
+
+    await userEvent.type(
+      await screen.findByLabelText(
+        "Publicar solo para (ids, separados por coma)",
+      ),
+      " 22222222-0000-4000-8000-000000000001 , 22222222-0000-4000-8000-000000000002 ",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Publicar" }));
+
+    await waitFor(() => expect(calls.published).not.toBeNull());
+    expect(calls.published).toMatchObject({
+      _canary_organizations: [
+        "22222222-0000-4000-8000-000000000001",
+        "22222222-0000-4000-8000-000000000002",
+      ],
+    });
+  });
+
+  it("promotes a staged version, and only a staged one", async () => {
+    server.use(
+      http.get("http://127.0.0.1:54321/rest/v1/agent_templates", () =>
+        HttpResponse.json([
+          {
+            ...TEMPLATES[0],
+            agent_template_versions: [
+              {
+                ...TEMPLATES[0].agent_template_versions[0],
+                canary_organizations: ["22222222-0000-4000-8000-000000000001"],
+              },
+            ],
+          },
+        ]),
+      ),
+      http.post(
+        "http://127.0.0.1:54321/rest/v1/rpc/promote_agent_template_version",
+        async ({ request }) => {
+          calls.promoted = await request.json();
+          return HttpResponse.json({ template_id: TEMPLATE_ID, version: 1 });
+        },
+      ),
+    );
+
+    await renderPanel();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Promover v1" }),
+    );
+
+    await waitFor(() => expect(calls.promoted).not.toBeNull());
+    expect(calls.promoted).toMatchObject({
+      _template_id: TEMPLATE_ID,
+      _version: 1,
     });
   });
 

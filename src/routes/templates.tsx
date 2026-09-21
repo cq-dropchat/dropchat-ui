@@ -22,6 +22,7 @@ import {
   useArchiveAgentTemplate,
   useCreateAgentTemplate,
   usePlatformSettings,
+  usePromoteAgentTemplateVersion,
   usePublishAgentTemplateVersion,
   useRetireAgentTemplateVersion,
   useTemplateSourceAgents,
@@ -184,9 +185,11 @@ function NewTemplate({ organizationId }: { organizationId: string }) {
 function TemplateCard({ template }: { template: TemplateWithVersions }) {
   const { translate: t } = useTranslation();
   const publish = usePublishAgentTemplateVersion();
+  const promote = usePromoteAgentTemplateVersion();
   const retire = useRetireAgentTemplateVersion();
   const archive = useArchiveAgentTemplate();
   const [changelog, setChangelog] = useState("");
+  const [canary, setCanary] = useState("");
 
   const versions = [...template.agent_template_versions].sort(
     (a, b) => b.version - a.version,
@@ -232,22 +235,47 @@ function TemplateCard({ template }: { template: TemplateWithVersions }) {
               v{version.version}
               {version.changelog ? ` — ${version.changelog}` : ""}
               {version.retired_at ? ` · ${t("Retirada")}` : ""}
+              {version.canary_organizations?.length
+                ? ` · ${t("En prueba")} (${version.canary_organizations.length})`
+                : ""}
             </span>
 
-            {!version.retired_at && (
-              <Button
-                type="button"
-                loading={retire.isPending}
-                onClick={() =>
-                  retire.mutate({
-                    templateId: template.id,
-                    version: version.version,
-                  })
-                }
-              >
-                {t("Retirar")} v{version.version}
-              </Button>
-            )}
+            <span className="flex gap-[8px]">
+              {/* T5: promoting is what ends a staged publication — the version
+                  stops being for two organizations and becomes the one
+                  everybody installs. */}
+              {!version.retired_at &&
+                !!version.canary_organizations?.length && (
+                  <Button
+                    type="button"
+                    className="primary"
+                    loading={promote.isPending}
+                    onClick={() =>
+                      promote.mutate({
+                        templateId: template.id,
+                        version: version.version,
+                      })
+                    }
+                  >
+                    {t("Promover")} v{version.version}
+                  </Button>
+                )}
+
+              {!version.retired_at && (
+                <Button
+                  type="button"
+                  loading={retire.isPending}
+                  onClick={() =>
+                    retire.mutate({
+                      templateId: template.id,
+                      version: version.version,
+                    })
+                  }
+                >
+                  {t("Retirar")} v{version.version}
+                </Button>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -269,6 +297,22 @@ function TemplateCard({ template }: { template: TemplateWithVersions }) {
         />
       </label>
 
+      {/* T5: two or three organizations first, watched, and then everybody.
+          Ids and not a picker on purpose — this panel crosses every tenant, so
+          there is no list of organizations to offer that would not be one
+          tenant's names shown to another. */}
+      <label>
+        <div className="label">
+          {t("Publicar solo para (ids, separados por coma)")}
+        </div>
+        <input
+          className="text"
+          placeholder={t("Vacío: para todas")}
+          value={canary}
+          onChange={(event) => setCanary(event.target.value)}
+        />
+      </label>
+
       <div>
         <Button
           type="button"
@@ -276,8 +320,20 @@ function TemplateCard({ template }: { template: TemplateWithVersions }) {
           loading={publish.isPending}
           onClick={() =>
             publish.mutate(
-              { templateId: template.id, changelog },
-              { onSuccess: () => setChangelog("") },
+              {
+                templateId: template.id,
+                changelog,
+                canary: canary
+                  .split(",")
+                  .map((id) => id.trim())
+                  .filter(Boolean),
+              },
+              {
+                onSuccess: () => {
+                  setChangelog("");
+                  setCanary("");
+                },
+              },
             )
           }
         >
