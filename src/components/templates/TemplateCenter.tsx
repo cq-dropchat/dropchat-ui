@@ -4,6 +4,7 @@ import { Archive, ArchiveRestore, LayoutTemplate, Upload } from "lucide-react";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useIsPlatformAdmin } from "@/queries/useErrorIssues";
 import {
   type TemplateWithVersions,
   useAgentTemplates,
@@ -26,7 +27,18 @@ import {
  */
 export default function TemplateCenter() {
   const pathname = useLocation({ select: (l) => l.pathname });
+  const { data: isAdmin, isPending: askingWho } = useIsPlatformAdmin();
   const { data: templates, isPending } = useAgentTemplates();
+
+  // The same check the list on the left makes, because the layout routes this
+  // half by pathname ALONE: without it, a tenant who typed the URL got «no
+  // tenés acceso» on the left and the publishing form on the right. Nothing
+  // could be written — every call raises 42501 — but drawing it at all is D12
+  // broken inside the panel D12 paid for.
+  //
+  // Nothing rather than a sentence: the sentence is already on the left, and
+  // two of them beside each other say it twice.
+  if (askingWho || !isAdmin) return null;
 
   if (pathname === "/templates/new") return <NewTemplate />;
 

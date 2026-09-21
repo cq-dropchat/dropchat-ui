@@ -14,9 +14,16 @@ export type CenterPanel = "chat" | "stats" | "templates" | "actions";
 export function centerPanel(
   pathname: string,
   activeConvId: string | null | undefined,
+  /**
+   * Whether the caller may see the template panel at all. The center is not
+   * handed over to somebody who may not have it: on a phone the panel takes
+   * the whole screen and hides the menu, so a tenant who typed the URL would
+   * be left on a blank column with no way back.
+   */
+  canSeeTemplates = false,
 ): CenterPanel {
   if (pathname.startsWith("/stats")) return "stats";
-  if (pathname.startsWith("/templates")) return "templates";
+  if (pathname.startsWith("/templates") && canSeeTemplates) return "templates";
   if (activeConvId) return "chat";
 
   return "actions";

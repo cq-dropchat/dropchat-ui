@@ -16,9 +16,24 @@ describe("the center panel", () => {
   });
 
   it("is the template panel on its own screens", () => {
-    expect(centerPanel("/templates", null)).toBe("templates");
-    expect(centerPanel("/templates/new", null)).toBe("templates");
-    expect(centerPanel("/templates/11111111-2222", null)).toBe("templates");
+    expect(centerPanel("/templates", null, true)).toBe("templates");
+    expect(centerPanel("/templates/new", null, true)).toBe("templates");
+    expect(centerPanel("/templates/11111111-2222", null, true)).toBe(
+      "templates",
+    );
+  });
+
+  // The center is not given away to somebody who may not have it. On a phone
+  // that is the difference between a blank column with no menu to leave by —
+  // the panel takes the whole screen once the layout hands it over — and the
+  // ordinary screen with «no tenés acceso» on it.
+  it("is not the template panel for somebody who is not a platform admin", () => {
+    expect(centerPanel("/templates", null, false)).toBe("actions");
+    expect(centerPanel("/templates/11111111-2222", null, false)).toBe(
+      "actions",
+    );
+    // And an open conversation still wins, as it does everywhere else.
+    expect(centerPanel("/templates", "conv-1", false)).toBe("chat");
   });
 
   // The trap. WhatsApp message templates are a different thing entirely, and
@@ -44,6 +59,6 @@ describe("the center panel", () => {
     // Except where the screen IS the center: stats and templates have no
     // conversation to show next to them.
     expect(centerPanel("/stats", "conv-1")).toBe("stats");
-    expect(centerPanel("/templates", "conv-1")).toBe("templates");
+    expect(centerPanel("/templates", "conv-1", true)).toBe("templates");
   });
 });

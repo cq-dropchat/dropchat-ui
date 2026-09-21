@@ -31,6 +31,11 @@ import TemplateCenter from "@/components/templates/TemplateCenter";
 
 const pathname = { value: `/templates/${TEMPLATE_ID}` };
 const navigate = vi.fn();
+const mocks = vi.hoisted(() => ({ isPlatformAdmin: vi.fn() }));
+
+vi.mock("@/queries/useErrorIssues", () => ({
+  useIsPlatformAdmin: mocks.isPlatformAdmin,
+}));
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
@@ -118,6 +123,10 @@ afterEach(() => {
 afterAll(() => server.close());
 
 beforeEach(() => {
+  mocks.isPlatformAdmin.mockReturnValue({ data: true, isPending: false });
+});
+
+beforeEach(() => {
   useBoundStore.setState((state) => ({
     ui: {
       ...state.ui,
@@ -137,6 +146,40 @@ function show() {
 }
 
 describe("T7: the template that is open", () => {
+  // The left panel says «no tenés acceso» and the center is a SEPARATE
+  // component that the layout routes by pathname alone — so without this it
+  // drew the publishing form beside that sentence for anybody who typed the
+  // URL. Nothing could be written (every call raises 42501 and
+  // platform_settings comes back empty), but a tenant being shown a form that
+  // is not theirs is D12 broken inside the panel D12 paid for.
+  it("draws nothing for somebody who is not a platform admin", async () => {
+    mocks.isPlatformAdmin.mockReturnValue({ data: false, isPending: false });
+
+    const { container } = render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TemplateCenter />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+    expect(screen.queryByText("Publicar")).toBeNull();
+    expect(screen.queryByLabelText("Qué cambió")).toBeNull();
+  });
+
+  it("draws nothing while it is still finding out", async () => {
+    // The answer is a round trip away, and flashing the form for that long is
+    // the same mistake with a shorter fuse.
+    mocks.isPlatformAdmin.mockReturnValue({ data: undefined, isPending: true });
+
+    const { container } = render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TemplateCenter />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+  });
+
   it("asks you to pick one when none is open", async () => {
     pathname.value = "/templates";
 

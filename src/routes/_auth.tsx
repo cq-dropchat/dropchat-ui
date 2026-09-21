@@ -11,6 +11,7 @@ import { useCurrentAgents } from "@/queries/useAgents";
 import RouteError from "@/components/RouteError";
 import { useEscalationNotices } from "@/hooks/useEscalationNotices";
 import { centerPanel } from "@/utils/centerPanel";
+import { useIsPlatformAdmin } from "@/queries/useErrorIssues";
 
 // F22: this layout is on every signed-in screen, but the conversation panel
 // renders only once a conversation is open and the stats only on /stats.
@@ -58,8 +59,13 @@ function AppLayout() {
   const setActiveConv = useBoundStore((state) => state.ui.setActiveConv);
   const location = useLocation();
   const pathname = location.pathname;
+  // T7: the template panel is the platform's, and the center is not handed
+  // over to somebody who may not have it — on a phone that would be a blank
+  // column with the menu hidden behind it.
+  const { data: isPlatformAdmin } = useIsPlatformAdmin();
+
   // What the center column shows, and whether there is one at all.
-  const center = centerPanel(pathname, activeConvId);
+  const center = centerPanel(pathname, activeConvId, isPlatformAdmin);
 
   const [isHoveringFiles, setIsHoveringFiles] = useState(false);
 
