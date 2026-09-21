@@ -198,42 +198,31 @@ export default function AgentEditor({ agentId }: { agentId: string }) {
 
   return (
     <>
-      <div className="border-border bg-background flex shrink-0 flex-col gap-[10px] border-b px-[14px] pt-[10px] pb-[12px]">
-        <div className="flex items-center gap-[10px]">
-          <LinkButton
-            to=".."
-            title={t("Volver")}
-            className="-ml-[8px] flex h-[28px] w-[28px] items-center justify-center"
-          >
-            <ArrowLeft className="h-[22px] w-[22px]" aria-hidden />
-          </LinkButton>
+      <div className="border-border bg-background flex shrink-0 items-center gap-[10px] border-b px-[14px] pt-[10px] pb-[12px]">
+        <LinkButton
+          to=".."
+          title={t("Volver")}
+          className="-ml-[8px] flex h-[28px] w-[28px] items-center justify-center"
+        >
+          <ArrowLeft className="h-[22px] w-[22px]" aria-hidden />
+        </LinkButton>
 
-          <Avatar
-            src={agent.picture}
-            fallback={agent.name?.substring(0, 2)}
-            size={36}
-            className="bg-secondary text-secondary-foreground shrink-0 font-mono text-[13px]"
-          />
+        <Avatar
+          src={agent.picture}
+          fallback={agent.name?.substring(0, 2)}
+          size={36}
+          className="bg-secondary text-secondary-foreground shrink-0 font-mono text-[13px]"
+        />
 
-          <h1 className="font-display grow truncate text-[19px] font-bold tracking-[-0.01em] [font-stretch:112%]">
+        {/* The badges sit beside the name and drop below it only when they
+            stop fitting. On their own row they were a near-empty band: most
+            agents carry one short chip, and the panel is 340px of height
+            nobody has to spare. */}
+        <div className="flex min-w-0 grow flex-wrap items-center gap-x-[8px] gap-y-[6px]">
+          <h1 className="font-display max-w-full min-w-0 truncate text-[19px] font-bold tracking-[-0.01em] [font-stretch:112%]">
             {agent.name}
           </h1>
 
-          <Button
-            type="button"
-            aria-label={t("Eliminar este agente")}
-            title={t("Eliminar")}
-            disabled={!isAdmin}
-            disabledReason={adminOnly}
-            loading={deleteAgent.isPending}
-            onClick={() => setDeleting(true)}
-            className="hover:bg-muted text-secondary-foreground -mr-[8px] h-[44px] w-[44px] shrink-0 rounded-full"
-          >
-            <Trash2 className="h-[20px] w-[20px]" aria-hidden />
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-[6px] pl-[46px]">
           <Badge tone={state.tone}>{state.label}</Badge>
 
           {isEntry && (
@@ -254,6 +243,19 @@ export default function AgentEditor({ agentId }: { agentId: string }) {
             </Badge>
           )}
         </div>
+
+        <Button
+          type="button"
+          aria-label={t("Eliminar este agente")}
+          title={t("Eliminar")}
+          disabled={!isAdmin}
+          disabledReason={adminOnly}
+          loading={deleteAgent.isPending}
+          onClick={() => setDeleting(true)}
+          className="hover:bg-muted text-secondary-foreground -mr-[8px] h-[44px] w-[44px] shrink-0 rounded-full"
+        >
+          <Trash2 className="h-[20px] w-[20px]" aria-hidden />
+        </Button>
       </div>
 
       <div className="flex grow flex-col gap-[14px] overflow-y-auto px-[12px] py-[14px] [scrollbar-gutter:stable]">
