@@ -118,6 +118,37 @@ describe("E1: the baseline banner", () => {
 
     expect(screen.queryByText("Modo aprendizaje")).toBeNull();
   });
+
+  // The count is the reason to trust the banner, and it shipped reading
+  // "1 huellas catalogadas" — the app's i18n has no plurals, so the only way
+  // to get this right is a whole sentence per case, and the only way to keep
+  // it right is to pin all three.
+  it("counts nothing, one and many without breaking grammar", () => {
+    mocks.errorSettings.mockReturnValue({ data: { baseline_open: true } });
+
+    mocks.errorIssues.mockReturnValue({ data: [], isLoading: false });
+    const { unmount } = render(<Panel />, { wrapper });
+    expect(
+      screen.getByText("Todavía no se ha catalogado ningún error."),
+    ).toBeInTheDocument();
+    unmount();
+
+    mocks.errorIssues.mockReturnValue({ data: [issue()], isLoading: false });
+    const one = render(<Panel />, { wrapper });
+    expect(
+      screen.getByText("1 huella catalogada hasta ahora."),
+    ).toBeInTheDocument();
+    one.unmount();
+
+    mocks.errorIssues.mockReturnValue({
+      data: [issue(), issue({ id: "22222222-2222-4222-8222-222222222222" })],
+      isLoading: false,
+    });
+    render(<Panel />, { wrapper });
+    expect(
+      screen.getByText("2 huellas catalogadas hasta ahora."),
+    ).toBeInTheDocument();
+  });
 });
 
 // The other half of the baseline — that an absent settings row reads as open,

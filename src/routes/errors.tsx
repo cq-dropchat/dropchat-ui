@@ -131,9 +131,15 @@ function BaselineBanner() {
         )}
       </p>
       <p className="text-[14px] text-muted-foreground">
+        {/* Tres ramas y no una plantilla con un contador: la fuente es el
+            español y el i18n del repo no tiene plurales ni ICU, así que la
+            única forma de que "1" no diga "huellas" es escribir la frase
+            entera para cada caso. */}
         {catalogued === 0
           ? t("Todavía no se ha catalogado ningún error.")
-          : `${catalogued} ${t("huellas catalogadas hasta ahora.")}`}
+          : catalogued === 1
+            ? t("1 huella catalogada hasta ahora.")
+            : `${catalogued} ${t("huellas catalogadas hasta ahora.")}`}
       </p>
       <button
         type="button"
