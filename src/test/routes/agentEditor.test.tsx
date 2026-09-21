@@ -72,6 +72,9 @@ const organization = {
   updated_at: "2026-09-01T10:00:00.000Z",
 };
 
+/** T7 backwards: whether the catalogue publishes from THIS agent. */
+const sourceOf: { rows: Record<string, unknown>[] } = { rows: [] };
+
 const wrote = {
   agent: null as Record<string, unknown> | null,
   organization: null as Record<string, unknown> | null,
@@ -124,8 +127,12 @@ const server = setupServer(
       },
     ]),
   ),
-  http.get("http://127.0.0.1:54321/rest/v1/agent_templates", () =>
-    HttpResponse.json([]),
+  http.get("http://127.0.0.1:54321/rest/v1/agent_templates", ({ request }) =>
+    HttpResponse.json(
+      new URL(request.url).searchParams.has("source_agent_id")
+        ? sourceOf.rows
+        : [],
+    ),
   ),
 );
 
@@ -137,6 +144,7 @@ afterEach(() => {
   wrote.deleted = false;
   wrote.fail = false;
   organization.entry_agent_id = null;
+  sourceOf.rows = [];
   navigate.mockClear();
   role.value = "admin";
   useToasts.getState().clear();
@@ -292,6 +300,51 @@ describe("the agent's screen", () => {
     expect(
       screen.getByRole("button", { name: /Probar como cliente/ }),
     ).toBeEnabled();
+  });
+
+  it("says when the catalogue publishes from this agent, and what deleting it costs", async () => {
+    // The pointer read backwards: until now the link existed only in the
+    // template panel, so the source agent had no idea it was one — and
+    // `source_agent_id` is `on delete set null`.
+    sourceOf.rows = [
+      {
+        id: "11111111-0000-4000-8000-000000000001",
+        name: "Ventas contra entrega",
+        slug: "ventas-contra-entrega",
+      },
+    ];
+
+    await open();
+
+    expect(
+      await screen.findByText("Origen de «Ventas contra entrega»"),
+    ).toBeVisible();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Eliminar este agente/ }),
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByText("Una plantilla se queda sin origen"),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByText(/no va a poder publicar versiones nuevas/),
+    ).toBeVisible();
+  });
+
+  it("says nothing about the catalogue for an agent that is not a source", async () => {
+    await open();
+
+    expect(screen.queryByText(/Origen de/)).toBeNull();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Eliminar este agente/ }),
+    );
+
+    expect(
+      within(screen.getByRole("dialog")).queryByText(/sin origen/),
+    ).toBeNull();
   });
 
   it("names the unit and what the delay is for, outside the label", async () => {

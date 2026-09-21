@@ -9,6 +9,7 @@ import {
   Pencil,
   Play,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import Avatar from "@/components/Avatar";
@@ -38,6 +39,7 @@ import {
   useUpdateAgent,
   useCurrentAgent,
 } from "@/queries/useAgents";
+import { useTemplateOfSource } from "@/queries/useAgentTemplates";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
 import useBoundStore from "@/stores/useBoundStore";
@@ -100,6 +102,8 @@ export default function AgentEditor({ agentId }: { agentId: string }) {
   const { data: agent, isPending } = useAgent<AIAgentRow>(agentId);
   const { data: currentAgent } = useCurrentAgent();
   const { data: organization } = useCurrentOrganization();
+  // T7, backwards: whether the catalogue publishes FROM this agent.
+  const { data: sourceOf } = useTemplateOfSource(agentId);
   const isAdmin = ["admin", "owner"].includes(currentAgent?.role || "");
   const deleteAgent = useDeleteAgent();
   const updateAgent = useUpdateAgent();
@@ -234,6 +238,12 @@ export default function AgentEditor({ agentId }: { agentId: string }) {
           {fromTemplate && (
             <Badge tone="kraft" icon={LayoutTemplate}>
               {fill(t("De plantilla · v{n}"), { n: agent.template_version! })}
+            </Badge>
+          )}
+
+          {sourceOf && (
+            <Badge tone="kraft" icon={Upload}>
+              {fill(t("Origen de «{plantilla}»"), { plantilla: sourceOf.name })}
             </Badge>
           )}
 
@@ -597,9 +607,30 @@ export default function AgentEditor({ agentId }: { agentId: string }) {
           })
         }
       >
-        {t(
-          "Deja de contestar en el acto. Las conversaciones que atendió siguen donde estaban, con lo que ya dijo.",
-        )}
+        <div className="flex flex-col gap-[12px]">
+          <p>
+            {t(
+              "Deja de contestar en el acto. Las conversaciones que atendió siguen donde estaban, con lo que ya dijo.",
+            )}
+          </p>
+
+          {/* The consequence nobody could see: `source_agent_id` is
+              `on delete set null`, so the catalogue entry survives with
+              nowhere to publish from, and says so at the next publish. */}
+          {sourceOf && (
+            <Alert
+              tone="warning"
+              title={t("Una plantilla se queda sin origen")}
+            >
+              {fill(
+                t(
+                  "«{plantilla}» no va a poder publicar versiones nuevas hasta que le asignes otro agente de origen.",
+                ),
+                { plantilla: sourceOf.name },
+              )}
+            </Alert>
+          )}
+        </div>
       </ConfirmDialog>
     </>
   );
