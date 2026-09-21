@@ -21,6 +21,7 @@ import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
 import ToolsSection from "@/components/ToolsSection";
 import ModelSection from "@/components/ModelSection";
+import TemplateSection from "@/components/TemplateSection";
 import SwitchField from "@/components/SwitchField";
 import EntryAgentSwitch from "@/components/EntryAgentSwitch";
 
@@ -175,10 +176,17 @@ function AgentDetail() {
 
             <div className="border-t border-border" />
 
+            {/* T6/T7: for an agent installed from a template this field is the
+                OVERRIDE, not the configuration — the template's own block is
+                read-only, further down. Naming it differently is the only
+                warning somebody gets before they wonder why the agent still
+                says something they did not write. */}
             <TextAreaField
               name="extra.instructions"
               control={control}
-              label={t("Instrucciones")}
+              label={
+                agent?.template_id ? t("Tus instrucciones") : t("Instrucciones")
+              }
               placeholder={t("Eres un asistente útil...")}
             />
 
@@ -218,6 +226,12 @@ function AgentDetail() {
                 seven fields this used to ask for (D12). */}
             <ModelSection control={control} register={register} />
           </form>
+
+          {/* T7: outside the form on purpose. Everything here saves on its
+              own — updating a version, switching automatic updates, unlinking
+              — because none of it is a field of the agent, it is what the
+              agent is based on. */}
+          {agent && <TemplateSection agent={agent} isAdmin={isAdmin} />}
         </SectionBody>
 
         <SectionFooter>

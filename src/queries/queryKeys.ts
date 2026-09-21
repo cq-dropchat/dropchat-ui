@@ -28,6 +28,14 @@ export const queryKeys = {
   contacts: {
     all: (orgId: NullableId) => [orgId, "contacts_addresses"] as const,
   },
+  // T7: the template catalogue is global too — every organization reads the
+  // same rows. An installed agent's version belongs to the agent, so it is
+  // read under the agents key, not here.
+  agentTemplates: {
+    all: () => ["agent_templates"] as const,
+    versions: (templateId: NullableId) =>
+      ["agent_templates", templateId, "versions"] as const,
+  },
   // T2: global, like the tiers themselves — three rows that are the same for
   // every organization, so the key carries no org id.
   modelTiers: {
