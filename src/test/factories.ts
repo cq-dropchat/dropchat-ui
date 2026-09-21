@@ -119,6 +119,11 @@ export function agentRow(
     picture: null,
     role: "member",
     extra: null,
+    // T6: a person's row is never based on a template, but the columns are on
+    // the table, so a factory that omits them stops being a row.
+    template_id: null,
+    template_version: null,
+    template_auto_update: false,
     deleted_at: null,
     created_at: "2026-09-01T10:00:00.000Z",
     updated_at: "2026-09-01T10:00:00.000Z",
@@ -135,6 +140,11 @@ export function aiAgentRow(overrides: Partial<AIAgentRow> = {}): AIAgentRow {
     picture: null,
     role: "member",
     extra: { mode: "active", protocol: "chat_completions" },
+    // T6: an AI agent CAN be based on a template; the default factory is the
+    // one that is not, which is what every case written before T6 assumes.
+    template_id: null,
+    template_version: null,
+    template_auto_update: false,
     deleted_at: null,
     created_at: "2026-09-01T10:00:00.000Z",
     updated_at: "2026-09-01T10:00:00.000Z",
