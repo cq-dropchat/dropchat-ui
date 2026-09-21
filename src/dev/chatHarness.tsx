@@ -10,6 +10,7 @@ import "@/global.css";
 import Chat from "@/components/Chat";
 import useBoundStore from "@/stores/useBoundStore";
 import type { ConversationRow, MessageRow } from "@/supabase/client";
+import { queryKeys } from "@/queries/queryKeys";
 
 const ORG = "aaaaaaaa-0000-4000-8000-000000000001";
 const CONV = "c0000000-0000-4000-8000-00000000da7a";
@@ -72,6 +73,32 @@ function assignmentNote(timestamp: number, data: Record<string, unknown>) {
 }
 
 /**
+ * A tool trace, as the agent writes it. Here for the same reason as the note
+ * above: these used to render as their payload, and the fix is a visual one,
+ * so it needs somewhere a person can look at it without signing in.
+ */
+function toolTrace(
+  timestamp: number,
+  tool: Record<string, unknown>,
+  text = "",
+) {
+  const row = message(timestamp, true);
+
+  return {
+    ...row,
+    status: {},
+    content: {
+      version: "1",
+      type: "text",
+      kind: "text",
+      internal: true,
+      tool,
+      text,
+    },
+  } as unknown as MessageRow;
+}
+
+/**
  * A structured part a contact can send — a place, a cart, a contact card.
  * Same reason as the note above: these render as cards now, and the harness
  * is where a card can be looked at without a real conversation carrying one.
@@ -103,6 +130,44 @@ const rows = [
     by: null,
     cause: "entry",
   }),
+  // A tool that worked, one that failed, and the handover whose trace is
+  // suppressed because the note below it already says the same thing better.
+  toolTrace(
+    Date.now() - 95_000,
+    {
+      provider: "local",
+      type: "sql",
+      label: "catalogo",
+      name: "execute_sql",
+      use_id: "u1",
+      event: "use",
+    },
+    'select stock from precios where sku = "A-1"',
+  ),
+  toolTrace(
+    Date.now() - 90_000,
+    {
+      provider: "local",
+      type: "http",
+      label: "erp",
+      name: "request",
+      use_id: "u2",
+      event: "result",
+      is_error: true,
+    },
+    "ECONNREFUSED 10.0.0.5:443",
+  ),
+  toolTrace(
+    Date.now() - 70_000,
+    {
+      provider: "local",
+      type: "function",
+      name: "escalate_to_human",
+      use_id: "u3",
+      event: "use",
+    },
+    '{"category":"reclamo","reason":"el pedido llegó dañado"}',
+  ),
   assignmentNote(Date.now() - 60_000, {
     from: ME,
     to: null,
@@ -208,13 +273,31 @@ function Harness() {
   );
 }
 
+const client = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
+
+// The viewer is an owner, because that is who sees the internal half of a
+// conversation — tool traces and agent errors are hidden from members
+// (Chat.tsx). Without this the harness signs in as nobody, `isAdmin` is
+// false, and the rows this file exists to look at are filtered out before
+// they reach the screen.
+// Seeded in the PostgREST response shape, not as the row: the query unwraps
+// `data.data` in its `select`, so a bare row reads back as undefined.
+client.setQueryData(queryKeys.agents.current(ORG), {
+  data: {
+    id: ME,
+    organization_id: ORG,
+    user_id: "user-dev",
+    name: "Yo",
+    role: "owner",
+    extra: null,
+  },
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
+    <QueryClientProvider client={client}>
       <Harness />
     </QueryClientProvider>
   </StrictMode>,

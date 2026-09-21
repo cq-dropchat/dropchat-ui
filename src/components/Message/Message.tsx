@@ -1,7 +1,6 @@
 import {
   type MessageRow,
   type OutgoingStatus,
-  type ToolInfo,
   type Direction,
   contactName,
   isTeamChat,
@@ -24,6 +23,8 @@ import AvatarComponent from "@/components/Avatar";
 import { useAgentProfile } from "@/queries/useAgents";
 import useBoundStore from "@/stores/useBoundStore";
 import AssignmentNote, { isAssignmentNote } from "./AssignmentNote";
+import ToolNote from "./ToolNote";
+import { isToolTrace } from "@/supabase/types/message_types";
 import ContactsMessage from "./ContactsMessage";
 import LocationMessage from "./LocationMessage";
 import OrderMessage from "./OrderMessage";
@@ -468,30 +469,20 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
     return <AssignmentNote message={props.message} />;
   }
 
+  // What the agent did, in words. These used to fall through to the generic
+  // `data` branch below and render as the payload they are, headed
+  // `Uso: escalate_to_human` — the same defect the line above fixed for
+  // assignment notes, left standing for its neighbours. The people reading
+  // this run shops, not servers.
+  if (isToolTrace(props.message)) {
+    return <ToolNote message={props.message} />;
+  }
+
   let content;
   let text = false;
-  let fixedWidth = false;
+  const fixedWidth = false;
 
-  let headerText: string | undefined = undefined;
-
-  if ("tool" in props.message.content && props.message.content.tool) {
-    const toolInfo = (props.message.content.tool as ToolInfo["tool"])!;
-
-    const toolName = [
-      "label" in toolInfo && toolInfo.label,
-      "name" in toolInfo && toolInfo.name,
-    ]
-      .filter(Boolean)
-      .join("__");
-
-    if (toolInfo.event === "use") {
-      headerText = `${t("Uso")}: ${toolName}`;
-    } else if (toolInfo.event === "result") {
-      headerText = `${t("Resultado")}: ${toolName}`;
-    }
-
-    fixedWidth = true;
-  }
+  const headerText: string | undefined = undefined;
 
   if (props.message.content.type === "text") {
     content = (
