@@ -38,6 +38,8 @@ export const queryKeys = {
     platformSettings: () => ["platform_settings"] as const,
     sources: (orgId: NullableId) =>
       ["agent_templates", "sources", orgId] as const,
+    ofSource: (agentId: NullableId) =>
+      ["agent_templates", "of-source", agentId] as const,
   },
   // T2: global, like the tiers themselves — three rows that are the same for
   // every organization, so the key carries no org id.

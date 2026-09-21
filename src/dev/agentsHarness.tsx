@@ -6,7 +6,8 @@
 // there is no way to look at it — or at what the redesign did to it — without
 // one. The panel it is drawn in is the real left panel: 380px, the app's grid.
 //
-// ?state=blank|template|member|empty|loading picks which situation to draw,
+// ?state=blank|template|origen|member|empty|loading picks which situation to
+// draw,
 // ?width=<px> resizes the panel the way the handle does.
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -33,6 +34,9 @@ const state = params.get("state") || "blank";
 const width = Number(params.get("width") || 380);
 
 const fromTemplate = state === "template";
+// The agent the catalogue publishes FROM, which lives in the template
+// organization and looked like any other agent until it said so.
+const isSource = state === "origen";
 const empty = state === "empty";
 
 const agent = {
@@ -221,7 +225,22 @@ globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     );
   if (url.includes("/rest/v1/agent_template_versions"))
     return Promise.resolve(json(fromTemplate ? versions : []));
-  if (url.includes("/rest/v1/agent_templates"))
+  if (url.includes("/rest/v1/agent_templates")) {
+    if (url.includes("source_agent_id="))
+      return Promise.resolve(
+        json(
+          isSource
+            ? [
+                {
+                  id: TEMPLATE,
+                  name: "Ventas contra entrega",
+                  slug: "ventas-contra-entrega",
+                },
+              ]
+            : [],
+        ),
+      );
+
     return Promise.resolve(
       json(
         fromTemplate
@@ -242,6 +261,7 @@ globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
           : [],
       ),
     );
+  }
   if (url.includes("/rest/v1/rpc/")) return Promise.resolve(json(agent));
 
   return realFetch(input, init);

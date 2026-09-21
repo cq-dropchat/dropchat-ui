@@ -51,6 +51,37 @@ export function useAgentTemplates() {
 }
 
 /**
+ * The template this agent is the SOURCE of, when it is the source of one.
+ *
+ * The pointer read backwards. `agent_templates.source_agent_id` is what
+ * `publish_agent_template_version` freezes into a version, and until now the
+ * link only existed in one direction: the template panel offers «abrir el
+ * agente de origen», and the agent had no idea it was one. Which is how
+ * somebody deletes it — `on delete set null` — and finds out at the next
+ * publish, with «template X has no source agent».
+ *
+ * Its own query and not a `find` over `useAgentTemplates`: that one carries
+ * every version of every template with its whole config, and this runs on an
+ * agent screen that has no other reason to want it. Here it is one row of
+ * three columns, or none at all, which is the answer for every tenant.
+ */
+export function useTemplateOfSource(agentId: string) {
+  const userId = useBoundStore((state) => state.ui.user?.id);
+
+  return useQuery({
+    queryKey: queryKeys.agentTemplates.ofSource(agentId),
+    queryFn: async () =>
+      await supabase
+        .from("agent_templates")
+        .select("id,name,slug")
+        .eq("source_agent_id", agentId)
+        .throwOnError(),
+    enabled: !!userId && !!agentId,
+    select: (data) => data.data?.[0],
+  });
+}
+
+/**
  * The versions of ONE template, newest first — what the update notice reads to
  * show a changelog, and what the publishing panel lists.
  */
