@@ -153,3 +153,134 @@ export function useUnlinkAgentTemplate() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// The publishing panel (T7). Everything below is a platform admin's, and RLS
+// is what says so — for anybody else these queries come back empty and the
+// mutations raise 42501.
+// ---------------------------------------------------------------------------
+
+/**
+ * Which organization templates are built in (D12/D6). Readable by platform
+ * admins alone, so an empty answer means either "not an admin" or "nobody
+ * configured it yet" — the panel says the second only when it knows the first.
+ */
+export function usePlatformSettings() {
+  return useQuery({
+    queryKey: queryKeys.agentTemplates.platformSettings(),
+    queryFn: async () =>
+      await supabase
+        .from("platform_settings")
+        .select()
+        .maybeSingle()
+        .throwOnError(),
+    select: (data) => data.data,
+  });
+}
+
+/** The AI agents of the template organization: what a template is built FROM. */
+export function useTemplateSourceAgents(organizationId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.agentTemplates.sources(organizationId),
+    queryFn: async () =>
+      await supabase
+        .from("agents")
+        .select("id, name")
+        .eq("organization_id", organizationId!)
+        .is("user_id", null)
+        .is("deleted_at", null)
+        .order("name")
+        .throwOnError(),
+    enabled: !!organizationId,
+    select: (data) => data.data,
+  });
+}
+
+function useCatalogueMutation<TArgs>(
+  mutationFn: (args: TArgs) => Promise<unknown>,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.agentTemplates.all(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.agentTemplates.versions(null).slice(0, 1),
+      });
+    },
+  });
+}
+
+export function useCreateAgentTemplate() {
+  return useCatalogueMutation(
+    async (args: {
+      slug: string;
+      name: string;
+      description: string;
+      category: string;
+      source_agent_id: string;
+    }) =>
+      (
+        await supabase
+          .from("agent_templates")
+          .insert(args)
+          .select()
+          .single()
+          .throwOnError()
+      ).data,
+  );
+}
+
+/**
+ * Archiving, not deleting: the organizations that installed a version keep
+ * pointing at it, and deleting the row would make their agent unexplainable.
+ */
+export function useArchiveAgentTemplate() {
+  return useCatalogueMutation(
+    async (args: { id: string; archived: boolean }) =>
+      (
+        await supabase
+          .from("agent_templates")
+          .update({
+            archived_at: args.archived ? new Date().toISOString() : null,
+          })
+          .eq("id", args.id)
+          .select()
+          .single()
+          .throwOnError()
+      ).data,
+  );
+}
+
+/** Publish the source agent's current configuration as the next version. */
+export function usePublishAgentTemplateVersion() {
+  return useCatalogueMutation(
+    async (args: { templateId: string; changelog: string }) =>
+      (
+        await supabase
+          .rpc("publish_agent_template_version", {
+            _template_id: args.templateId,
+            _changelog: args.changelog || undefined,
+          })
+          .throwOnError()
+      ).data,
+  );
+}
+
+/** Pull one version. Agents already on it keep running (T6). */
+export function useRetireAgentTemplateVersion() {
+  return useCatalogueMutation(
+    async (args: { templateId: string; version: number }) =>
+      (
+        await supabase
+          .rpc("retire_agent_template_version", {
+            _template_id: args.templateId,
+            _version: args.version,
+          })
+          .throwOnError()
+      ).data,
+  );
+}

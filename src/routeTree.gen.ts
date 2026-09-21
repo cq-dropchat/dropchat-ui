@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ErrorsRouteImport } from './routes/errors'
@@ -66,6 +67,11 @@ import { Route as AuthIntegrationsWhatsappOrgAddressIdTemplatesIndexRouteImport 
 import { Route as AuthIntegrationsWhatsappOrgAddressIdTemplatesNewRouteImport } from './routes/_auth/integrations/whatsapp/$orgAddressId/templates/new'
 import { Route as AuthIntegrationsWhatsappOrgAddressIdTemplatesTemplateIdRouteImport } from './routes/_auth/integrations/whatsapp/$orgAddressId/templates/$templateId'
 
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -379,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/templates': typeof TemplatesRoute
   '/stats': typeof AuthStatsRouteWithChildren
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
@@ -436,6 +443,7 @@ export interface FileRoutesByTo {
   '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/templates': typeof TemplatesRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/instagram': typeof OauthInstagramRoute
@@ -494,6 +502,7 @@ export interface FileRoutesById {
   '/errors': typeof ErrorsRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/templates': typeof TemplatesRoute
   '/_auth/stats': typeof AuthStatsRouteWithChildren
   '/oauth/callback': typeof OauthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
@@ -553,6 +562,7 @@ export interface FileRouteTypes {
     | '/errors'
     | '/login'
     | '/privacy'
+    | '/templates'
     | '/stats'
     | '/oauth/callback'
     | '/oauth/consent'
@@ -610,6 +620,7 @@ export interface FileRouteTypes {
     | '/errors'
     | '/login'
     | '/privacy'
+    | '/templates'
     | '/oauth/callback'
     | '/oauth/consent'
     | '/oauth/instagram'
@@ -667,6 +678,7 @@ export interface FileRouteTypes {
     | '/errors'
     | '/login'
     | '/privacy'
+    | '/templates'
     | '/_auth/stats'
     | '/oauth/callback'
     | '/oauth/consent'
@@ -726,6 +738,7 @@ export interface RootRouteChildren {
   ErrorsRoute: typeof ErrorsRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  TemplatesRoute: typeof TemplatesRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   OauthConsentRoute: typeof OauthConsentRoute
   OauthInstagramRoute: typeof OauthInstagramRoute
@@ -736,6 +749,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -1260,6 +1280,7 @@ const rootRouteChildren: RootRouteChildren = {
   ErrorsRoute: ErrorsRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  TemplatesRoute: TemplatesRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   OauthConsentRoute: OauthConsentRoute,
   OauthInstagramRoute: OauthInstagramRoute,
