@@ -15,6 +15,7 @@ import useBoundStore from "@/stores/useBoundStore";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import TextAreaField from "@/components/TextAreaField";
+import BusinessProfileFields from "@/components/BusinessProfileFields";
 import { type OrganizationUpdate } from "@/supabase/client";
 import {
   isExportInProgress,
@@ -56,6 +57,13 @@ function EditOrganization() {
         ...org.extra,
         error_messages_direction:
           org.extra?.error_messages_direction || "internal",
+        // T1: the market is Chile (§21). Defaulted here rather than asked for,
+        // because a selector with one option is a question with one answer —
+        // and without it the agent never learns what the prices are in.
+        business_profile: {
+          currency: "CLP" as const,
+          ...org.extra?.business_profile,
+        },
       },
     };
   }, [org]);
@@ -109,6 +117,14 @@ function EditOrganization() {
             placeholder={t(
               "Tutea al cliente, sé breve y cálido, firma como «el equipo».",
             )}
+            disabled={!isAdmin}
+          />
+
+          {/* T1: what the business sells, ships and charges. Slot 2 of the
+              system prompt, right after the voice it is said in. */}
+          <BusinessProfileFields
+            register={register}
+            control={control}
             disabled={!isAdmin}
           />
 

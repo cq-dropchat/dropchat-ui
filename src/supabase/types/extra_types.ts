@@ -9,6 +9,8 @@
 // @ui-divergence: declare SQLToolConfig here instead of importing it. The API
 // infers it from a zod schema in a server-only module (agent-client/tools/sql)
 // that the UI does not vendor; this is that schema in plain TS.
+import type { BusinessProfile } from "./business_profile";
+
 export type SQLToolConfig =
   | { driver: "libsql"; url: string; token?: string }
   | {
@@ -82,6 +84,13 @@ export type OrganizationExtra = {
    * ahead of the agent's own instructions.
    */
   brand_voice?: string;
+  /**
+   * T1: what the business sells, ships and charges — slot 2 of the system
+   * prompt, ahead of the agent's own instructions. Read through
+   * `parseBusinessProfile`, never straight from here: nothing validates this
+   * column on the way in.
+   */
+  business_profile?: BusinessProfile;
 };
 
 export type WhatsAppOrganizationAddressExtra = {

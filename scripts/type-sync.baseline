@@ -1,7 +1,7 @@
 ## extra_types
-1c1,12
+1d0
 < import type { SQLToolConfig } from "../../agent-client/tools/sql";
----
+2a2,13
 > export type SQLToolConfig = {
 >     driver: "libsql";
 >     url: string;
@@ -14,7 +14,7 @@
 >     password?: string;
 >     database?: string;
 > };
-135c146
+137c148
 <         product?: "calendar" | "sheets";
 ---
 >         product?: "calendar" | "sheets" | "openbsp";
