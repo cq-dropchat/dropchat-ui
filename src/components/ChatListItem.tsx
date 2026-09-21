@@ -26,6 +26,7 @@ import { TickContext } from "@/contexts/useTick";
 import { useTranslation } from "@/hooks/useTranslation";
 import { AtSign } from "lucide-react";
 import { mediaCategory } from "./Message/media";
+import { dataPreview } from "./Message/preview";
 
 import { useCurrentAgent, useCurrentAgents } from "@/queries/useAgents";
 import { useContactAddress } from "@/queries/useContactsAddresses";
@@ -240,6 +241,11 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
       ? preview.agent_id
       : undefined;
 
+  // Members by id, for the preview of an assignment note — the same roster
+  // the attribution prefix above reads.
+  const agentName = (id: string | null) =>
+    (id && agents?.find((a) => a.id === id)?.name) || undefined;
+
   const unread = (() => {
     let count = 0;
     let notification = false;
@@ -428,7 +434,7 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
                   {preview?.content.type === "text" && preview.content.text}
                   {preview?.content.type === "data" &&
                     preview.content.kind !== "media_placeholder" &&
-                    JSON.stringify(preview.content.data)}
+                    dataPreview(preview, t, agentName)}
                   {(preview?.content.type === "file" ||
                     (preview?.content.type === "data" &&
                       preview.content.kind === "media_placeholder")) &&

@@ -59,17 +59,21 @@ export function isAssignmentNote(
   );
 }
 
-export default function AssignmentNote({ message }: { message: MessageRow }) {
-  const { translate: t } = useTranslation();
-  const { data: agents } = useCurrentAgents();
-
-  if (!isAssignmentNote(message)) return null;
-
-  const data = message.content.data;
-
-  const name = (id: string | null) =>
-    (id && agents?.find((agent) => agent.id === id)?.name) || undefined;
-
+/**
+ * The note as one line of prose: the sentence, plus the escalation detail
+ * when the row carries one.
+ *
+ * Pulled out of the component because the conversation list needs the same
+ * line — H6's rule is that these rows read as the record rather than as the
+ * JSON they are stored as, and the list preview was the one place left
+ * showing the JSON. `name` is the caller's agent lookup: the list already
+ * holds the roster, and this file should not decide how it is fetched.
+ */
+export function assignmentLine(
+  data: AssignmentData,
+  t: (key: string) => string,
+  name: (id: string | null) => string | undefined,
+): string {
   const actor = name(data.by);
   const target = data.awaiting_human
     ? t("Equipo humano")
@@ -106,11 +110,22 @@ export default function AssignmentNote({ message }: { message: MessageRow }) {
     .filter(Boolean)
     .join(" — ");
 
+  return detail ? `${sentence}: ${detail}` : sentence;
+}
+
+export default function AssignmentNote({ message }: { message: MessageRow }) {
+  const { translate: t } = useTranslation();
+  const { data: agents } = useCurrentAgents();
+
+  if (!isAssignmentNote(message)) return null;
+
+  const name = (id: string | null) =>
+    (id && agents?.find((agent) => agent.id === id)?.name) || undefined;
+
   return (
     <div className="flex justify-center my-[8px]" data-testid="assignment-note">
       <div className="max-w-[80%] rounded-[8px] bg-accent px-[12px] py-[6px] text-[13px] text-muted-foreground text-center">
-        {sentence}
-        {detail && `: ${detail}`}
+        {assignmentLine(message.content.data, t, name)}
       </div>
     </div>
   );
