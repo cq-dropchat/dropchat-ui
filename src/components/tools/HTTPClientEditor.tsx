@@ -1,9 +1,12 @@
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import DrillPanel from "@/components/ui/DrillPanel";
+import Field from "@/components/ui/Field";
 import { useTranslation } from "@/hooks/useTranslation";
 import { type Control, type UseFormRegister, useWatch } from "react-hook-form";
-import SectionBody from "@/components/SectionBody";
 import SelectField from "@/components/SelectField";
 import type { ToolsForm } from "./types";
+import CallHeaders from "./CallHeaders";
 
 // HTTP Client Editor
 export default function HTTPClientEditor({
@@ -42,50 +45,76 @@ export default function HTTPClientEditor({
   };
 
   return (
-    <div className="absolute inset-0 bottom-[80px] z-50 bg-background flex flex-col">
-      <div className="header items-center truncate shrink-0">
+    <DrillPanel
+      title={label ? t("Editar cliente HTTP") : t("Agregar cliente HTTP")}
+      onBack={handleBack}
+      backDisabledReason={
+        canGoBack ? undefined : t("Completa los campos requeridos")
+      }
+      action={
         <button
           type="button"
-          className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px] disabled:opacity-30 disabled:hover:bg-transparent"
-          title={
-            canGoBack
-              ? t("Volver")
-              : t("Volver") + " - " + t("Completa los campos requeridos")
-          }
-          onClick={handleBack}
-          disabled={!canGoBack}
-        >
-          <ArrowLeft className="w-[24px] h-[24px]" />
-        </button>
-        <div className="text-[16px]">
-          {label ? t("Editar cliente HTTP") : t("Agregar cliente HTTP")}
-        </div>
-
-        <button
-          type="button"
-          className="p-[8px] rounded-full hover:bg-muted ml-auto"
+          className="hover:bg-muted flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full"
           title={t("Eliminar")}
+          aria-label={t("Eliminar")}
           onClick={onDelete}
         >
-          <Trash2 className="w-[24px] h-[24px]" />
+          <Trash2 className="h-[20px] w-[20px]" aria-hidden />
         </button>
-      </div>
+      }
+    >
+      <Card title={t("Conexión")}>
+        <Field
+          label={t("Nombre")}
+          hint={t("Cómo lo ves en la lista de herramientas del agente.")}
+        >
+          {(field) => (
+            <input
+              {...field}
+              type="text"
+              className="text"
+              placeholder={t("Mi cliente HTTP")}
+              maxLength={32}
+              {...register(`extra.tools.${index}.label`, {
+                required: true,
+                maxLength: 40,
+              })}
+            />
+          )}
+        </Field>
 
-      <SectionBody className="gap-[24px] pl-[10px]">
-        <label>
-          <div className="label">{t("Nombre")}</div>
-          <input
-            type="text"
-            className="text"
-            placeholder={t("Mi cliente HTTP")}
-            maxLength={32}
-            {...register(`extra.tools.${index}.label`, {
-              required: true,
-              maxLength: 40,
-            })}
-          />
-        </label>
+        <Field
+          label={t("URL")}
+          optional={t("opcional")}
+          hint={t(
+            "Si termina en /*, solo se permiten URLs que comiencen con esa base. De lo contrario, debe coincidir exactamente.",
+          )}
+        >
+          {(field) => (
+            <input
+              {...field}
+              type="url"
+              className="text"
+              placeholder="https://api.example.com/*"
+              {...register(`extra.tools.${index}.config.url`)}
+            />
+          )}
+        </Field>
 
+        <Field label={t("Token")} optional={t("opcional")}>
+          {(field) => (
+            <input
+              {...field}
+              type="text"
+              className="text"
+              placeholder="Bearer sk-..."
+              {...register(`extra.tools.${index}.config.headers.authorization`)}
+            />
+          )}
+        </Field>
+      </Card>
+
+      <Card title={t("Qué puede hacer")}>
         <SelectField
           name={`extra.tools.${index}.config.methods`}
           control={control}
@@ -99,62 +128,9 @@ export default function HTTPClientEditor({
             { value: "DELETE", label: "DELETE" },
           ]}
         />
+      </Card>
 
-        <label>
-          <div className="label">
-            {t("URL")} ({t("opcional")})
-          </div>
-          <input
-            type="url"
-            className="text"
-            placeholder="https://api.example.com/*"
-            {...register(`extra.tools.${index}.config.url`)}
-          />
-        </label>
-        <p>
-          {t(
-            "Si termina en /*, solo se permiten URLs que comiencen con esa base. De lo contrario, debe coincidir exactamente.",
-          )}
-        </p>
-
-        <label>
-          <div className="label">
-            {t("Token")} ({t("opcional")})
-          </div>
-          <input
-            type="text"
-            className="text"
-            placeholder="Bearer sk-..."
-            {...register(`extra.tools.${index}.config.headers.authorization`)}
-          />
-        </label>
-
-        <div className="instructions">
-          <p>
-            {t("Se envían los siguientes encabezados HTTP con cada solicitud:")}
-          </p>
-          <ul>
-            <li>
-              <code>organization-id</code>
-            </li>
-            <li>
-              <code>organization-address</code>
-            </li>
-            <li>
-              <code>conversation-id</code>
-            </li>
-            <li>
-              <code>agent-id</code>
-            </li>
-            <li>
-              <code>contact-id</code>
-            </li>
-            <li>
-              <code>contact-address</code>
-            </li>
-          </ul>
-        </div>
-      </SectionBody>
-    </div>
+      <CallHeaders />
+    </DrillPanel>
   );
 }

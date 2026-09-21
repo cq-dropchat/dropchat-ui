@@ -1,8 +1,6 @@
 import { useState } from "react";
 import {
-  ArrowLeft,
   Calendar,
-  ChevronRight,
   Database,
   FileSpreadsheet,
   Globe,
@@ -19,10 +17,15 @@ import {
   useWatch,
   type UseFormSetValue,
 } from "react-hook-form";
-import SectionBody from "@/components/SectionBody";
 import SectionItem from "@/components/SectionItem";
-import Switch from "@/components/Switch";
+import Badge from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
+import SwitchRow from "@/components/ui/SwitchRow";
+import DrillPanel from "@/components/ui/DrillPanel";
+import DrillRow, { RowPreview } from "@/components/ui/DrillRow";
+import { fill } from "@/i18n/translations";
 import type {
+  ToolConfig,
   LocalMCPToolConfig,
   LocalHTTPToolConfig,
   LocalSQLToolConfig,
@@ -53,11 +56,41 @@ type EditorState =
   | { type: "http"; index: number }
   | { type: "sql"; index: number };
 
+/**
+ * What to call a tool when there is room for two words and not for a URL.
+ *
+ * The list inside the panel shows the URL, which is what you need while you
+ * are wiring one up. The row outside it shows this, which is what you need
+ * when you are looking at an agent and asking what it can do.
+ */
+function toolName(tool: ToolConfig, t: (text: string) => string): string {
+  if ("label" in tool && tool.label) return tool.label;
+
+  if (tool.type === "mcp") {
+    if (tool.config.product === "calendar") return t("Agenda");
+    if (tool.config.product === "sheets") return t("Planilla");
+    if (tool.config.product === "openbsp") return "WhatsApp";
+    return t("Cliente MCP");
+  }
+
+  if (tool.type === "http") return t("Cliente HTTP");
+  if (tool.type === "sql") return t("Base de datos");
+
+  return t("Calculadora");
+}
+
 export default function ToolsSection<T extends FieldValues & ToolsForm>(props: {
   control: Control<T>;
   register: UseFormRegister<T>;
   setValue: UseFormSetValue<T>;
+  /** The name of the agent these tools belong to. */
+  owner?: string;
+  disabled?: boolean;
+  disabledReason?: string;
+  plain?: boolean;
+  last?: boolean;
 }) {
+  const { owner, disabled, disabledReason, plain, last } = props;
   // RHF's handles are invariant in the form type, so a `Control<AIAgentUpdate>`
   // is not a `Control<ToolsForm>` even though the shapes agree. The constraint
   // above is what checks the caller; this is the only cast in the file.
@@ -242,165 +275,169 @@ export default function ToolsSection<T extends FieldValues & ToolsForm>(props: {
 
   return (
     <>
-      {/* Trigger - navigation style */}
-      <button
-        type="button"
-        className="text w-full flex justify-between items-center text-left"
+      <DrillRow
+        label={t("Herramientas")}
+        plain={plain}
+        last={last}
+        disabled={disabled}
+        disabledReason={disabledReason}
         onClick={() => setIsOpen(true)}
       >
-        <div className="flex flex-col gap-[2px]">
-          <span className="text-foreground">{t("Herramientas")}</span>
-          <span className="text-muted-foreground text-[14px]">
-            {allTools.length > 0
-              ? `${allTools.length} ${allTools.length === 1 ? t("herramienta") : t("herramientas")}`
-              : t("Ninguna")}
+        {allTools.length === 0 ? (
+          <RowPreview>{t("Ninguna: el agente solo conversa")}</RowPreview>
+        ) : (
+          <span className="flex flex-wrap items-center gap-[6px]">
+            {allTools.slice(0, 3).map((tool) => (
+              <Badge key={tool.id}>{toolName(tool, t)}</Badge>
+            ))}
+            {allTools.length > 3 && (
+              <span className="text-muted-foreground text-[12px]">
+                {fill(t("+{n} más"), { n: allTools.length - 3 })}
+              </span>
+            )}
           </span>
-        </div>
-        <ChevronRight className="w-[20px] h-[20px] text-muted-foreground shrink-0" />
-      </button>
+        )}
+      </DrillRow>
 
       {/* Tools List Modal */}
       {isOpen && !isEditing && (
-        <div className="absolute inset-0 bottom-[80px] z-50 bg-background flex flex-col">
-          <div className="header items-center truncate shrink-0">
-            <button
-              type="button"
-              className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px]"
-              title={t("Volver")}
-              onClick={handleBack}
-            >
-              <ArrowLeft className="w-[24px] h-[24px]" />
+        <DrillPanel
+          title={t("Herramientas")}
+          subtitle={owner}
+          onBack={handleBack}
+          className="gap-[4px] p-[10px]"
+          footer={
+            <button type="button" className="primary" onClick={handleBack}>
+              {t("Listo")}
             </button>
-            <div className="text-[16px]">{t("Herramientas")}</div>
-          </div>
+          }
+        >
+          {/* Add button */}
+          <SectionItem
+            title={t("Agregar herramienta")}
+            aside={
+              <div className="p-[8px] bg-primary/10 rounded-full">
+                <Plus className="w-[24px] h-[24px] text-primary" />
+              </div>
+            }
+            onClick={() => setEditor({ type: "new-selection" })}
+          />
 
-          <SectionBody>
-            {/* Add button */}
+          {allTools.length === 0 && (
+            <p className="text-secondary-foreground px-[10px] py-[10px] text-[14px] leading-[1.5]">
+              {t(
+                "Sin herramientas el agente solo conversa: no mira stock, no anota en la planilla, no agenda un retiro.",
+              )}
+            </p>
+          )}
+
+          {/* Google Tools */}
+          {googleTools.map((tool) => (
             <SectionItem
-              title={t("Agregar herramienta")}
+              key={tool.id}
+              title={tool.label || t("Sin nombre")}
+              description={tool.config.url || t("Sin URL")}
               aside={
-                <div className="p-[8px] bg-primary/10 rounded-full">
-                  <Plus className="w-[24px] h-[24px] text-primary" />
+                <div className="p-[8px] bg-muted rounded-full">
+                  {tool.config.product === "calendar" ? (
+                    <Calendar className="w-[24px] h-[24px] text-muted-foreground" />
+                  ) : (
+                    <FileSpreadsheet className="w-[24px] h-[24px] text-muted-foreground" />
+                  )}
                 </div>
               }
-              onClick={() => setEditor({ type: "new-selection" })}
+              onClick={() =>
+                setEditor({ type: "google-mcp", index: tool._index })
+              }
             />
+          ))}
 
-            {/* Google Tools */}
-            {googleTools.map((tool) => (
-              <SectionItem
-                key={tool.id}
-                title={tool.label || t("Sin nombre")}
-                description={tool.config.url || t("Sin URL")}
-                aside={
-                  <div className="p-[8px] bg-muted rounded-full">
-                    {tool.config.product === "calendar" ? (
-                      <Calendar className="w-[24px] h-[24px] text-muted-foreground" />
-                    ) : (
-                      <FileSpreadsheet className="w-[24px] h-[24px] text-muted-foreground" />
-                    )}
-                  </div>
-                }
-                onClick={() =>
-                  setEditor({ type: "google-mcp", index: tool._index })
-                }
-              />
-            ))}
-
-            {/* OpenBSP Tools */}
-            {openbspTools.map((tool) => (
-              <SectionItem
-                key={tool.id}
-                title={tool.label || t("Sin nombre")}
-                description={tool.config.url || t("Sin URL")}
-                aside={
-                  <div className="p-[8px] bg-muted rounded-full">
-                    <MessageSquare className="w-[24px] h-[24px] text-muted-foreground" />
-                  </div>
-                }
-                onClick={() =>
-                  setEditor({ type: "openbsp-mcp", index: tool._index })
-                }
-              />
-            ))}
-
-            {/* Existing MCP Clients */}
-            {mcpTools.map((tool) => (
-              <SectionItem
-                key={tool.id}
-                title={tool.label || t("Sin nombre")}
-                description={tool.config.url || t("Sin URL")}
-                aside={
-                  <div className="p-[8px] bg-muted rounded-full">
-                    <Server className="w-[24px] h-[24px] text-muted-foreground" />
-                  </div>
-                }
-                onClick={() => setEditor({ type: "mcp", index: tool._index })}
-              />
-            ))}
-
-            {/* Existing HTTP Clients */}
-            {httpTools.map((tool) => (
-              <SectionItem
-                key={tool.id}
-                title={tool.label || t("Sin nombre")}
-                description={tool.config.url || t("Sin URL base")}
-                aside={
-                  <div className="p-[8px] bg-muted rounded-full">
-                    <Globe className="w-[24px] h-[24px] text-muted-foreground" />
-                  </div>
-                }
-                onClick={() => setEditor({ type: "http", index: tool._index })}
-              />
-            ))}
-
-            {/* Existing SQL Clients */}
-            {sqlTools.map((tool) => {
-              // Format: driver://host/db
-              const { config } = tool;
-              const desc =
-                "url" in config
-                  ? `libsql://${config.url.replace(/^.*:\/\//, "")}`
-                  : `${config.driver}://${config.host || "localhost"}/${config.database || ""}`;
-
-              return (
-                <SectionItem
-                  key={tool.id}
-                  title={tool.label || t("Sin nombre")}
-                  description={desc}
-                  aside={
-                    <div className="p-[8px] bg-muted rounded-full">
-                      <Database className="w-[24px] h-[24px] text-muted-foreground" />
-                    </div>
-                  }
-                  onClick={() => setEditor({ type: "sql", index: tool._index })}
-                />
-              );
-            })}
-
-            {/* Simple Tools (Toggles) */}
-
-            <div className="flex flex-col gap-[24px] pl-[10px] mt-[6px]">
-              <div className="border-t border-border" />
-
-              {/* Calculator */}
-              {/* Calculator */}
-              <label className="flex items-center gap-[12px] cursor-pointer justify-between">
-                <div className="flex flex-col gap-[2px]">
-                  <div className="text-foreground">{t("Calculadora")}</div>
-                  <p className="text-muted-foreground text-[14px]">
-                    {t("Evita errores de cálculo en LLMs")}
-                  </p>
+          {/* OpenBSP Tools */}
+          {openbspTools.map((tool) => (
+            <SectionItem
+              key={tool.id}
+              title={tool.label || t("Sin nombre")}
+              description={tool.config.url || t("Sin URL")}
+              aside={
+                <div className="p-[8px] bg-muted rounded-full">
+                  <MessageSquare className="w-[24px] h-[24px] text-muted-foreground" />
                 </div>
-                <Switch
-                  checked={hasSimpleTool("calculator")}
-                  onCheckedChange={() => toggleSimpleTool("calculator")}
-                  className="mt-[4px]"
-                />
-              </label>
-            </div>
-          </SectionBody>
-        </div>
+              }
+              onClick={() =>
+                setEditor({ type: "openbsp-mcp", index: tool._index })
+              }
+            />
+          ))}
+
+          {/* Existing MCP Clients */}
+          {mcpTools.map((tool) => (
+            <SectionItem
+              key={tool.id}
+              title={tool.label || t("Sin nombre")}
+              description={tool.config.url || t("Sin URL")}
+              aside={
+                <div className="p-[8px] bg-muted rounded-full">
+                  <Server className="w-[24px] h-[24px] text-muted-foreground" />
+                </div>
+              }
+              onClick={() => setEditor({ type: "mcp", index: tool._index })}
+            />
+          ))}
+
+          {/* Existing HTTP Clients */}
+          {httpTools.map((tool) => (
+            <SectionItem
+              key={tool.id}
+              title={tool.label || t("Sin nombre")}
+              description={tool.config.url || t("Sin URL base")}
+              aside={
+                <div className="p-[8px] bg-muted rounded-full">
+                  <Globe className="w-[24px] h-[24px] text-muted-foreground" />
+                </div>
+              }
+              onClick={() => setEditor({ type: "http", index: tool._index })}
+            />
+          ))}
+
+          {/* Existing SQL Clients */}
+          {sqlTools.map((tool) => {
+            // Format: driver://host/db
+            const { config } = tool;
+            const desc =
+              "url" in config
+                ? `libsql://${config.url.replace(/^.*:\/\//, "")}`
+                : `${config.driver}://${config.host || "localhost"}/${config.database || ""}`;
+
+            return (
+              <SectionItem
+                key={tool.id}
+                title={tool.label || t("Sin nombre")}
+                description={desc}
+                aside={
+                  <div className="p-[8px] bg-muted rounded-full">
+                    <Database className="w-[24px] h-[24px] text-muted-foreground" />
+                  </div>
+                }
+                onClick={() => setEditor({ type: "sql", index: tool._index })}
+              />
+            );
+          })}
+
+          <Card title={t("Incluidas")} padded={false} className="mt-[10px]">
+            <p className="text-muted-foreground px-[20px] pb-[12px] text-[13px] leading-[1.5]">
+              {t("No hay nada que configurar: se prenden y listo.")}
+            </p>
+            <SwitchRow
+              label={t("Calculadora")}
+              description={t(
+                "Para que no se equivoque sumando el total de un pedido.",
+              )}
+              checked={hasSimpleTool("calculator")}
+              onCheckedChange={() => toggleSimpleTool("calculator")}
+              last
+            />
+          </Card>
+        </DrillPanel>
       )}
 
       {/* New Tool Selection */}

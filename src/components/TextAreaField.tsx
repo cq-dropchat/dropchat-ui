@@ -1,28 +1,58 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { fill } from "@/i18n/translations";
 import {
   Controller,
   type Control,
   type FieldValues,
   type Path,
 } from "react-hook-form";
-import SectionBody from "@/components/SectionBody";
+import type { ReactNode } from "react";
+import DrillPanel from "@/components/ui/DrillPanel";
+import DrillRow, { RowPreview } from "@/components/ui/DrillRow";
 
 interface TextAreaFieldProps<T extends FieldValues> {
   name: Path<T>;
   control: Control<T>;
   label: string;
+  /** The name of the thing being edited, carried into the sub-panel. */
+  owner?: string;
+  /** What the label cannot say in three words, shown above the box. */
+  hint?: string;
+  /** A chip beside the row's name. */
+  badge?: ReactNode;
   placeholder?: string;
+  /** For text a machine reads back: instructions, mostly. */
+  mono?: boolean;
+  /** The boxed trigger, for a form that is not made of cards. */
+  plain?: boolean;
   disabled?: boolean;
+  disabledReason?: string;
+  last?: boolean;
 }
 
+/**
+ * A long text, edited in a panel of its own.
+ *
+ * What changed is the row you press to get there: it used to be a box
+ * pretending to be an input, whose second line said «Ninguna» or «412
+ * caracteres». Neither tells you what the agent is going to say. The row now
+ * shows the beginning of the text itself, which is the only summary of a
+ * prompt worth having.
+ */
 export default function TextAreaField<T extends FieldValues>({
   name,
   control,
   label,
+  owner,
+  hint,
+  badge,
   placeholder,
+  mono,
+  plain,
   disabled,
+  disabledReason,
+  last,
 }: TextAreaFieldProps<T>) {
   const { translate: t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -32,53 +62,71 @@ export default function TextAreaField<T extends FieldValues>({
       name={name}
       control={control}
       render={({ field }) => {
-        const charCount = (field.value || "").length;
+        const value = (field.value as string | null | undefined) || "";
+        const preview = value.trim().split("\n")[0];
+
         return (
           <>
-            {/* Trigger - navigation style, shows label text */}
-            <button
-              type="button"
-              className="text w-full flex justify-between items-center text-left"
-              onClick={() => !disabled && setIsOpen(true)}
+            <DrillRow
+              label={label}
+              badge={badge}
+              plain={plain}
+              onClick={() => setIsOpen(true)}
               disabled={disabled}
+              disabledReason={disabledReason}
+              last={last}
             >
-              <div className="flex flex-col gap-[2px]">
-                <span className="text-foreground">{label}</span>
-                <span className="text-muted-foreground text-[14px]">
-                  {charCount > 0
-                    ? `${charCount} ${t("caracteres")}`
-                    : t("Ninguna")}
-                </span>
-              </div>
-              <ChevronRight className="w-[20px] h-[20px] text-muted-foreground shrink-0" />
-            </button>
+              {preview ? (
+                <>
+                  <RowPreview mono={mono}>{preview}</RowPreview>
+                  <span className="text-muted-foreground font-mono text-[11px] tabular-nums">
+                    {fill(t("{n} caracteres"), { n: value.length })}
+                  </span>
+                </>
+              ) : (
+                <RowPreview>{placeholder || t("Sin escribir")}</RowPreview>
+              )}
+            </DrillRow>
 
-            {/* Modal with textarea */}
             {isOpen && (
-              <div className="absolute inset-0 bottom-[80px] z-50 bg-background flex flex-col">
-                {/* Header */}
-                <div className="header items-center truncate shrink-0">
-                  <button
-                    className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px]"
-                    title={t("Volver")}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <ArrowLeft className="w-[24px] h-[24px]" />
-                  </button>
-                  <div className="text-[16px]">{label}</div>
-                </div>
+              <DrillPanel
+                title={label}
+                subtitle={owner}
+                onBack={() => setIsOpen(false)}
+                footer={
+                  <>
+                    <span className="hint">
+                      {t("Se guarda cuando guardes el agente.")}
+                    </span>
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {t("Listo")}
+                    </button>
+                  </>
+                }
+              >
+                {hint && <span className="hint">{hint}</span>}
 
-                {/* Textarea wrapped in SectionBody for consistent scrollbar */}
-                <SectionBody className="pl-[10px]">
-                  <textarea
-                    className="text grow font-mono text-[14px] "
-                    value={field.value || ""}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    placeholder={placeholder}
-                    autoFocus
-                  />
-                </SectionBody>
-              </div>
+                <label htmlFor={`${name}-drill`} className="sr-only">
+                  {label}
+                </label>
+                <textarea
+                  id={`${name}-drill`}
+                  className={`text grow ${mono ? "font-mono text-[14px] leading-[1.6]" : ""}`}
+                  value={value}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  autoFocus
+                />
+
+                <span className="text-muted-foreground self-end font-mono text-[12px] tabular-nums">
+                  {fill(t("{n} caracteres"), { n: value.length })}
+                </span>
+              </DrillPanel>
             )}
           </>
         );

@@ -141,6 +141,7 @@ function AddAgent() {
             <div className="border-t border-border" />
 
             <TextAreaField
+              plain
               name="extra.instructions"
               control={control}
               label={t("Instrucciones")}
@@ -149,6 +150,7 @@ function AddAgent() {
 
             {/* Tools Section */}
             <ToolsSection
+              plain
               control={control}
               register={register}
               setValue={setValue}
@@ -156,7 +158,7 @@ function AddAgent() {
 
             {/* T2: what the agent runs on. Three levels instead of the
                 seven fields this used to ask for (D12). */}
-            <ModelSection control={control} register={register} />
+            <ModelSection plain control={control} register={register} />
           </fieldset>
         </form>
       </SectionBody>

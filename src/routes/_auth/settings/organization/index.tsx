@@ -111,6 +111,7 @@ function EditOrganization() {
               agent of the organization, ahead of the agent's own
               instructions. */}
           <TextAreaField
+            plain
             name="extra.brand_voice"
             control={control}
             label={t("Voz de marca")}

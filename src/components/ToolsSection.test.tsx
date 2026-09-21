@@ -104,7 +104,9 @@ describe("F29: ToolsSection (characterization)", () => {
   for (const label of ["erp", "agenda", "whatsapp", "api", "db"]) {
     it(`opens the editor of ${label}`, async () => {
       await openList();
-      await click(screen.getByText(label));
+      // By title and not by text: the row outside the panel now names the
+      // first tools as chips, so «erp» is on the screen twice.
+      await click(byTitle(label));
       expect(document.body.innerHTML).toMatchSnapshot();
     });
   }
@@ -152,7 +154,7 @@ describe("F29: ToolsSection (characterization)", () => {
 
   it("deletes a tool from its editor", async () => {
     await openList();
-    await click(screen.getByText("api"));
+    await click(byTitle("api"));
     await click(byTitle("Eliminar"));
     expect(getValues("extra.tools")?.map((t) => t.type)).toMatchSnapshot();
     expect(document.body.innerHTML).toMatchSnapshot();

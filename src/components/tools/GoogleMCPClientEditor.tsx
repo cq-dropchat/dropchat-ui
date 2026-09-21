@@ -1,5 +1,8 @@
 import { useRef } from "react";
-import { ArrowLeft, Check, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Check, FileSpreadsheet, Trash2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import DrillPanel from "@/components/ui/DrillPanel";
+import Field from "@/components/ui/Field";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type Control,
@@ -7,7 +10,6 @@ import {
   useWatch,
   type UseFormSetValue,
 } from "react-hook-form";
-import SectionBody from "@/components/SectionBody";
 import SelectField from "@/components/SelectField";
 import type { LocalMCPToolConfig, ToolConfig } from "@/supabase/client";
 import type { OAuthCallbackMessage } from "@/routes/oauth/callback";
@@ -190,98 +192,98 @@ export default function GoogleMCPClientEditor({
         ];
 
   return (
-    <div className="absolute inset-0 bottom-[80px] z-50 bg-background flex flex-col">
-      <div className="header items-center truncate shrink-0">
+    <DrillPanel
+      title={product === "calendar" ? t("Google Calendar") : t("Google Sheets")}
+      onBack={handleBack}
+      backDisabledReason={
+        canGoBack ? undefined : t("Completa los campos requeridos")
+      }
+      action={
         <button
           type="button"
-          className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px] disabled:opacity-30 disabled:hover:bg-transparent"
-          title={
-            canGoBack
-              ? t("Volver")
-              : t("Volver") + " - " + t("Completa los campos requeridos")
-          }
-          onClick={handleBack}
-          disabled={!canGoBack}
-        >
-          <ArrowLeft className="w-[24px] h-[24px]" />
-        </button>
-        <div className="text-[16px]">
-          {product === "calendar" ? t("Google Calendar") : t("Google Sheets")}
-        </div>
-
-        <button
-          type="button"
-          className="p-[8px] rounded-full hover:bg-muted ml-auto"
+          className="hover:bg-muted flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full"
           title={t("Eliminar")}
+          aria-label={t("Eliminar")}
           onClick={onDelete}
         >
-          <Trash2 className="w-[24px] h-[24px]" />
+          <Trash2 className="h-[20px] w-[20px]" aria-hidden />
         </button>
-      </div>
+      }
+    >
+      <Card title={t("Conexión")}>
+        <Field
+          label={t("Nombre")}
+          hint={t("Cómo lo ves en la lista de herramientas del agente.")}
+        >
+          {(field) => (
+            <input
+              {...field}
+              type="text"
+              className="text"
+              placeholder={
+                product === "calendar"
+                  ? t("Mi calendario")
+                  : t("Mi hoja de cálculo")
+              }
+              maxLength={32}
+              {...register(`extra.tools.${index}.label`, {
+                required: true,
+                maxLength: 40,
+              })}
+            />
+          )}
+        </Field>
 
-      <SectionBody className="gap-[24px] pl-[10px]">
-        <label>
-          <div className="label">{t("Nombre")}</div>
+        <div className="flex flex-col items-start gap-[10px]">
+          {/* One sentence per product, not one sentence glued to a product:
+              a key that ends mid-phrase cannot be translated into a language
+              whose word order is not Spanish's. */}
+          <span className="hint">
+            {product === "calendar"
+              ? t(
+                  "Autorizá tu cuenta de Google para que el agente pueda ver y crear eventos en tu calendario.",
+                )
+              : t(
+                  "Autorizá tu cuenta de Google para que el agente pueda leer y escribir en tus hojas de cálculo.",
+                )}
+          </span>
+
+          <button type="button" className="secondary" onClick={handleGetToken}>
+            {token && <Check className="h-[16px] w-[16px]" aria-hidden />}
+            {token ? email || t("Autorizado") : t("Autorizar")}
+          </button>
+
+          {/* Hidden input to register field for setValue to work */}
           <input
-            type="text"
-            className="text"
-            placeholder={
-              product === "calendar"
-                ? t("Mi calendario")
-                : t("Mi hoja de cálculo")
-            }
-            maxLength={32}
-            {...register(`extra.tools.${index}.label`, {
+            type="hidden"
+            {...register(`extra.tools.${index}.config.headers.authorization`, {
               required: true,
-              maxLength: 40,
             })}
           />
-        </label>
-
-        <p>
-          {t(
-            "Autoriza el acceso a tu cuenta de Google para que el agente pueda interactuar con",
-          )}{" "}
-          {product === "calendar"
-            ? t("tu calendario")
-            : t("tus hojas de cálculo")}
-          .
-        </p>
-
-        <button
-          type="button"
-          className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-full font-medium transition-colors w-fit text-[14px] flex items-center gap-2"
-          onClick={handleGetToken}
-        >
-          {token && <Check className="w-4 h-4" />}
-          {token ? email || t("Autorizado") : t("Autorizar")}
-        </button>
-
-        {/* Hidden input to register field for setValue to work */}
-        <input
-          type="hidden"
-          {...register(`extra.tools.${index}.config.headers.authorization`, {
-            required: true,
-          })}
-        />
+        </div>
 
         {product === "sheets" && files.length > 0 && (
-          <div>
-            <div className="label mb-2">{t("Archivos compartidos")}</div>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-[8px]">
+            <span className="label mb-0">{t("Archivos compartidos")}</span>
+            <div className="flex flex-wrap gap-[6px]">
               {files.map((file, i) => (
-                <div
+                <span
                   key={i}
-                  className="bg-muted px-3 py-1 rounded-full text-sm text-foreground flex items-center gap-2"
+                  className="bg-secondary text-secondary-foreground flex items-center gap-[6px] rounded-full px-[10px] py-[4px] text-[13px]"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-muted-foreground" />
+                  <FileSpreadsheet
+                    className="h-[14px] w-[14px] shrink-0"
+                    aria-hidden
+                  />
                   {file}
-                </div>
+                </span>
               ))}
             </div>
           </div>
         )}
+      </Card>
 
+      <Card title={t("Qué puede hacer")}>
         <SelectField
           name={`extra.tools.${index}.config.allowed_tools`}
           control={control}
@@ -289,9 +291,8 @@ export default function GoogleMCPClientEditor({
           multiple
           options={allowedToolsOptions}
           placeholder={t("Ninguna")}
-          modalClassName="bottom-0"
         />
-      </SectionBody>
-    </div>
+      </Card>
+    </DrillPanel>
   );
 }

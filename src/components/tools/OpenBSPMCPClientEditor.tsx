@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Check, Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import DrillPanel from "@/components/ui/DrillPanel";
+import Field from "@/components/ui/Field";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   type Control,
@@ -7,7 +10,6 @@ import {
   useWatch,
   type UseFormSetValue,
 } from "react-hook-form";
-import SectionBody from "@/components/SectionBody";
 import SelectField from "@/components/SelectField";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { useCreateApiKey } from "@/queries/useApiKeys";
@@ -97,54 +99,56 @@ export default function OpenBSPMCPClientEditor({
   ];
 
   return (
-    <div className="absolute inset-0 bottom-[80px] z-50 bg-background flex flex-col">
-      <div className="header items-center truncate shrink-0">
+    <DrillPanel
+      title="WhatsApp"
+      onBack={handleBack}
+      backDisabledReason={
+        canGoBack ? undefined : t("Completa los campos requeridos")
+      }
+      action={
         <button
           type="button"
-          className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px] disabled:opacity-30 disabled:hover:bg-transparent"
-          title={
-            canGoBack
-              ? t("Volver")
-              : t("Volver") + " - " + t("Completa los campos requeridos")
-          }
-          onClick={handleBack}
-          disabled={!canGoBack}
-        >
-          <ArrowLeft className="w-[24px] h-[24px]" />
-        </button>
-        <div className="text-[16px]">WhatsApp</div>
-
-        <button
-          type="button"
-          className="p-[8px] rounded-full hover:bg-muted ml-auto"
+          className="hover:bg-muted flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full"
           title={t("Eliminar")}
+          aria-label={t("Eliminar")}
           onClick={onDelete}
         >
-          <Trash2 className="w-[24px] h-[24px]" />
+          <Trash2 className="h-[20px] w-[20px]" aria-hidden />
         </button>
-      </div>
-
-      <SectionBody className="gap-[24px] pl-[10px]">
-        <label>
-          <div className="label">{t("Nombre")}</div>
-          <input
-            type="text"
-            className="text"
-            placeholder="Mis chats"
-            maxLength={32}
-            {...register(`extra.tools.${index}.label`, {
-              required: true,
-              maxLength: 32,
-            })}
-          />
-        </label>
+      }
+    >
+      <Card title={t("Conexión")}>
+        <Field
+          label={t("Nombre")}
+          hint={t("Cómo lo ves en la lista de herramientas del agente.")}
+        >
+          {(field) => (
+            <input
+              {...field}
+              type="text"
+              className="text"
+              placeholder="Mis chats"
+              maxLength={32}
+              {...register(`extra.tools.${index}.label`, {
+                required: true,
+                maxLength: 32,
+              })}
+            />
+          )}
+        </Field>
 
         {isOwner ? (
-          <div className="flex items-center gap-[8px] text-[14px]">
+          <div
+            role="status"
+            className="flex items-center gap-[8px] text-[14px]"
+          >
             {hasToken ? (
               <>
-                <Check className="w-[16px] h-[16px] text-primary" />
-                <span className="text-muted-foreground">
+                <Check
+                  className="text-success h-[16px] w-[16px] shrink-0"
+                  aria-hidden
+                />
+                <span className="text-secondary-foreground">
                   {t("Autenticación configurada automáticamente")}
                 </span>
               </>
@@ -155,21 +159,23 @@ export default function OpenBSPMCPClientEditor({
             )}
           </div>
         ) : (
-          <label>
-            <div className="label">{t("Token")}</div>
-            <input
-              type="text"
-              className="text"
-              placeholder="Bearer sk_..."
-              {...register(
-                `extra.tools.${index}.config.headers.authorization`,
-                { required: true },
-              )}
-            />
-            <p className="text-muted-foreground text-[14px] mt-[4px]">
-              {t("Obtén una API key en Configuración > API Keys")}
-            </p>
-          </label>
+          <Field
+            label={t("Token")}
+            hint={t("Obtén una API key en Configuración > API Keys")}
+          >
+            {(field) => (
+              <input
+                {...field}
+                type="text"
+                className="text"
+                placeholder="Bearer sk_..."
+                {...register(
+                  `extra.tools.${index}.config.headers.authorization`,
+                  { required: true },
+                )}
+              />
+            )}
+          </Field>
         )}
 
         {/* Hidden input for owner auth */}
@@ -181,7 +187,9 @@ export default function OpenBSPMCPClientEditor({
             })}
           />
         )}
+      </Card>
 
+      <Card title={t("Qué puede hacer")}>
         <SelectField
           name={`extra.tools.${index}.config.allowed_tools`}
           control={control}
@@ -189,9 +197,8 @@ export default function OpenBSPMCPClientEditor({
           multiple
           options={allowedToolsOptions}
           placeholder={t("Ninguna")}
-          modalClassName="bottom-0"
         />
-      </SectionBody>
-    </div>
+      </Card>
+    </DrillPanel>
   );
 }

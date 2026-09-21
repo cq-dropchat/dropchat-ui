@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronRight, Check } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import DrillPanel from "@/components/ui/DrillPanel";
 import {
   Controller,
   type Control,
@@ -20,7 +21,8 @@ interface BaseSelectProps {
   placeholder?: string;
   options: SelectOption[];
   disabled?: boolean;
-  modalClassName?: string;
+  /** The name of the thing being edited, carried into the sub-panel. */
+  owner?: string;
 }
 
 // Single Select
@@ -125,72 +127,59 @@ export default function SelectField<T extends FieldValues>(
           </button>
         </label>
 
-        {/* Options Modal */}
+        {/* The options, in a panel of their own */}
         {isOpen && (
-          <div
-            className={`absolute inset-0 z-50 bg-background flex flex-col ${props.modalClassName ?? "bottom-[80px]"}`}
+          <DrillPanel
+            title={label}
+            subtitle={props.owner}
+            onBack={() => setIsOpen(false)}
+            className="gap-0 p-[10px]"
           >
-            {/* Header */}
-            <div className="header items-center truncate">
-              <button
-                className="p-[8px] rounded-full hover:bg-muted mr-[8px] ml-[-8px]"
-                title={t("Volver")}
-                onClick={() => setIsOpen(false)}
-              >
-                <ArrowLeft className="w-[24px] h-[24px]" />
-              </button>
-              <div className="text-[16px]">{label}</div>
-            </div>
+            {options.map((option) => {
+              const isSelected = multiple
+                ? Array.isArray(value) && value.includes(option.value)
+                : value === option.value;
 
-            {/* Options */}
-            <div className="flex flex-col overflow-y-auto grow px-[10px]">
-              {options.map((option) => {
-                const isSelected = multiple
-                  ? Array.isArray(value) && value.includes(option.value)
-                  : value === option.value;
-
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className="flex items-center gap-[12px] w-full py-[16px] text-left rounded-xl px-[10px]"
-                    onClick={() => {
-                      if (multiple) {
-                        const currentRef = Array.isArray(value) ? value : [];
-                        const newValue = currentRef.includes(option.value)
-                          ? currentRef.filter((v) => v !== option.value)
-                          : [...currentRef, option.value];
-                        // we know handleChange expects string | string[]
-                        handleChange(newValue);
-                      } else {
-                        handleChange(option.value);
-                        setIsOpen(false);
-                      }
-                    }}
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role={multiple ? "checkbox" : "radio"}
+                  aria-checked={isSelected}
+                  className="hover:bg-accent flex min-h-[48px] w-full items-center gap-[12px] rounded-xl px-[10px] py-[12px] text-left"
+                  onClick={() => {
+                    if (multiple) {
+                      const currentRef = Array.isArray(value) ? value : [];
+                      const newValue = currentRef.includes(option.value)
+                        ? currentRef.filter((v) => v !== option.value)
+                        : [...currentRef, option.value];
+                      handleChange(newValue);
+                    } else {
+                      handleChange(option.value);
+                      setIsOpen(false);
+                    }
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className={`flex h-[20px] w-[20px] shrink-0 items-center justify-center border-[2px] ${
+                      isSelected ? "border-primary bg-primary" : "border-input"
+                    } ${multiple ? "rounded-[4px]" : "rounded-full"}`}
                   >
-                    {/* Indicator */}
-                    <span
-                      className={`w-[20px] h-[20px] border-[2px] flex items-center justify-center shrink-0 ${
-                        isSelected
-                          ? "border-primary bg-primary"
-                          : "border-muted-foreground"
-                      } ${multiple ? "rounded-[4px]" : "rounded-full"}`}
-                    >
-                      {isSelected &&
-                        (multiple ? (
-                          <Check className="w-[14px] h-[14px] text-primary-foreground" />
-                        ) : (
-                          <span className="w-[8px] h-[8px] rounded-full bg-primary-foreground" />
-                        ))}
-                    </span>
-                    <span className="text-[16px] text-foreground">
-                      {option.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    {isSelected &&
+                      (multiple ? (
+                        <Check className="text-primary-foreground h-[14px] w-[14px]" />
+                      ) : (
+                        <span className="bg-primary-foreground h-[8px] w-[8px] rounded-full" />
+                      ))}
+                  </span>
+                  <span className="text-foreground text-[16px]">
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
+          </DrillPanel>
         )}
       </>
     );

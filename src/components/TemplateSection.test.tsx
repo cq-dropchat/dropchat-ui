@@ -10,7 +10,7 @@
 // about: an update to a field the organization has overridden changes NOTHING
 // for them, and saying "actualizá" without saying that is how somebody updates
 // and then wonders why nothing moved.
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -28,7 +28,9 @@ import {
 import { createQueryClient } from "@/queryClient";
 import useBoundStore from "@/stores/useBoundStore";
 import { aiAgentRow, ORG_A } from "@/test/factories";
-import TemplateSection from "@/components/TemplateSection";
+import TemplateSection, {
+  TemplateInstructionsRow,
+} from "@/components/TemplateSection";
 import type { AIAgentRow } from "@/supabase/client";
 
 const TEMPLATE_ID = "11111111-0000-4000-8000-000000000001";
@@ -143,20 +145,23 @@ describe("T7: an agent based on a template", () => {
     show(agent());
 
     expect(
-      await screen.findByText("Basado en Ventas contra entrega v1"),
+      await screen.findByText("Este agente viene de «Ventas contra entrega»."),
     ).toBeVisible();
+    expect(screen.getByText("v1")).toBeVisible();
   });
 
   it("shows nothing at all for an agent that is not based on one", () => {
     show(agent({ template_id: null, template_version: null }));
 
-    expect(screen.queryByText(/Basado en/)).toBeNull();
+    expect(screen.queryByText(/viene de/)).toBeNull();
   });
 
   it("offers the newer version with its changelog", async () => {
     show(agent());
 
-    expect(await screen.findByText("Actualización disponible")).toBeVisible();
+    expect(
+      await screen.findByText("Hay una versión nueva: la v2"),
+    ).toBeVisible();
     expect(screen.getByText("Cambios de la v2")).toBeVisible();
   });
 
@@ -170,15 +175,19 @@ describe("T7: an agent based on a template", () => {
 
     show(agent({ extra: { mode: "draft", instructions: "las mías" } }));
 
-    expect(await screen.findByText("Actualización disponible")).toBeVisible();
-    expect(screen.getByText(/Instrucciones/, { selector: "li" })).toBeVisible();
+    expect(
+      await screen.findByText("Hay una versión nueva: la v2"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Instrucciones", { selector: "strong" }),
+    ).toBeVisible();
   });
 
   it("takes the update", async () => {
     show(agent());
 
     await userEvent.click(
-      await screen.findByRole("button", { name: "Actualizar" }),
+      await screen.findByRole("button", { name: "Actualizar a la v2" }),
     );
 
     await waitFor(() => expect(state.rpc).not.toBeNull());
@@ -209,10 +218,20 @@ describe("T7: an agent based on a template", () => {
     expect(state.patched).toMatchObject({ template_auto_update: true });
   });
 
-  it("shows the base instructions read-only", async () => {
-    show(agent());
+  it("shows the base instructions read-only, beside the ones you write", async () => {
+    // B3: the row lives in the card that holds «Tus instrucciones», not in
+    // the template block — which is why it is its own component.
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TemplateInstructionsRow agent={agent()} />
+      </QueryClientProvider>,
+    );
 
-    const base = await screen.findByLabelText("Instrucciones de la plantilla");
+    await userEvent.click(
+      screen.getByRole("button", { name: /Instrucciones de la plantilla/ }),
+    );
+
+    const base = screen.getByLabelText("Instrucciones de la plantilla");
 
     // It arrives with the version, which is a round trip away.
     await waitFor(() => expect(base).toHaveValue("Instrucciones base v1"));
@@ -223,14 +242,21 @@ describe("T7: an agent based on a template", () => {
     show(agent());
 
     await userEvent.click(
-      await screen.findByRole("button", { name: "Desvincular" }),
+      await screen.findByRole("button", {
+        name: "Desvincular de la plantilla",
+      }),
     );
 
-    // Not a confirm() — a sentence on the page, and then the button.
-    expect(screen.getByText(/deja de recibir versiones nuevas/)).toBeVisible();
+    // Not a confirm() — a dialog whose body is the consequence, and whose
+    // focus lands on the way out.
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByText(/deja de recibir versiones nuevas/),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toHaveFocus();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Desvincular de todos modos" }),
+      within(dialog).getByRole("button", { name: "Desvincular" }),
     );
 
     await waitFor(() => expect(state.rpc).not.toBeNull());
@@ -247,9 +273,11 @@ describe("T7: an agent based on a template", () => {
     );
 
     expect(
-      await screen.findByText("Basado en Ventas contra entrega v1"),
+      await screen.findByText("Este agente viene de «Ventas contra entrega»."),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Actualizar" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Actualizar a la v2" }),
+    ).toBeDisabled();
     expect(screen.getByLabelText("Actualizar automáticamente")).toBeDisabled();
   });
 });
