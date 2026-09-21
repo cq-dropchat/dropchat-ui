@@ -24,6 +24,9 @@ import AvatarComponent from "@/components/Avatar";
 import { useAgentProfile } from "@/queries/useAgents";
 import useBoundStore from "@/stores/useBoundStore";
 import AssignmentNote, { isAssignmentNote } from "./AssignmentNote";
+import ContactsMessage from "./ContactsMessage";
+import LocationMessage from "./LocationMessage";
+import OrderMessage from "./OrderMessage";
 import { useContactAddress } from "@/queries/useContactsAddresses";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import { AVATAR_BG_COLORS, AVATAR_TEXT_COLORS } from "@/utils/colors";
@@ -503,6 +506,26 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
       />
     );
     text = true;
+  } else if (
+    props.message.content.type === "data" &&
+    (props.message.content.kind === "location" ||
+      props.message.content.kind === "order" ||
+      props.message.content.kind === "contacts")
+  ) {
+    // The structured parts a contact can send, as cards rather than as the
+    // JSON they are stored as. Ahead of the `text` branch below on purpose:
+    // these carry their text as a caption (a buyer's note on an order), so
+    // the card renders both instead of the caption replacing it.
+    const kind = props.message.content.kind;
+
+    content =
+      kind === "location" ? (
+        <LocationMessage message={props.message} direction={direction} />
+      ) : kind === "order" ? (
+        <OrderMessage message={props.message} direction={direction} />
+      ) : (
+        <ContactsMessage message={props.message} direction={direction} />
+      );
   } else if (
     props.message.content.type === "data" &&
     props.message.content.text

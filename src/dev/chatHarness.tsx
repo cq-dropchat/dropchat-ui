@@ -71,6 +71,25 @@ function assignmentNote(timestamp: number, data: Record<string, unknown>) {
   } as unknown as MessageRow;
 }
 
+/**
+ * A structured part a contact can send — a place, a cart, a contact card.
+ * Same reason as the note above: these render as cards now, and the harness
+ * is where a card can be looked at without a real conversation carrying one.
+ */
+function dataRow(
+  timestamp: number,
+  kind: string,
+  data: unknown,
+  text?: string,
+) {
+  const row = message(timestamp, false);
+
+  return {
+    ...row,
+    content: { version: "1", type: "data", kind, data, text },
+  } as unknown as MessageRow;
+}
+
 const count = Number(new URLSearchParams(location.search).get("count")) || 3000;
 const start = Date.now() - count * 60_000;
 const rows = [
@@ -93,6 +112,42 @@ const rows = [
     category: "reclamo",
     reason: "el pedido llegó dañado",
   }),
+  dataRow(Date.now() - 50_000, "location", {
+    name: "Bodega Providencia",
+    address: "Av. Providencia 1234, Santiago",
+    latitude: -33.4264,
+    longitude: -70.6199,
+  }),
+  dataRow(
+    Date.now() - 40_000,
+    "order",
+    {
+      catalog_id: "cat-1",
+      product_items: [
+        {
+          product_retailer_id: "POLERA-M-NEGRA",
+          quantity: "2",
+          item_price: "12990",
+          currency: "CLP",
+        },
+        {
+          product_retailer_id: "JOCKEY-AZUL",
+          quantity: "1",
+          item_price: "8990",
+          currency: "CLP",
+        },
+      ],
+      text: "",
+    },
+    "Lo necesito para el viernes",
+  ),
+  dataRow(Date.now() - 30_000, "contacts", [
+    {
+      name: { formatted_name: "Ana Pérez" },
+      phones: [{ phone: "56912345678", type: "CELL" }],
+    },
+    { name: { formatted_name: "Beto Soto" } },
+  ]),
 ].reverse();
 
 useBoundStore.setState((state) => ({
