@@ -42,3 +42,22 @@ export function getTranslation(key: string, lang: string): string {
   if (lang === "es") return key;
   return cache.get(lang)?.[key] || key;
 }
+
+/**
+ * A translated sentence with something of ours in it.
+ *
+ * Without this the only way to write «Publicar la v4» was to translate
+ * «Publicar la» and glue a number to it, which produces a key nobody can
+ * translate (word order is not Spanish's everywhere) and a locale full of
+ * fragments. One key with a hole in it survives translation:
+ *
+ *   fill(t("Publicar la v{n}"), { n: 4 })
+ */
+export function fill(
+  text: string,
+  values: Record<string, string | number>,
+): string {
+  return text.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in values ? String(values[key]) : match,
+  );
+}

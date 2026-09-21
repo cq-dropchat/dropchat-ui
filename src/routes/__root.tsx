@@ -7,6 +7,7 @@ import { redirect } from "@tanstack/react-router";
 import { supabase } from "@/supabase/client";
 import { useSetActiveOrg } from "@/hooks/useSetActiveOrg";
 import RouteError from "@/components/RouteError";
+import Toaster from "@/components/ui/Toaster";
 
 function RootLayout() {
   useAuth();
@@ -14,7 +15,13 @@ function RootLayout() {
   useRealtimeSubscription();
   useInitialDataFetch();
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      {/* Every «salió bien» in the app comes out here (src/stores/useToasts). */}
+      <Toaster />
+    </>
+  );
 }
 
 export const Route = createRootRoute({

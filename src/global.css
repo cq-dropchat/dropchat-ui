@@ -35,6 +35,19 @@
 
   --brand-tag: #1d4ed8;
   --brand-check: #ffffff;
+
+  /* Status pairs from the brandbook: a fill («velo») to sit a chip or an
+     alert on, and a text colour that reaches AA on it and on --background.
+     A state is never colour alone — every use carries a word or an icon. */
+  --primary-veil: #e8eeff; /* azul-velo */
+  --success: #16794a; /* entregado */
+  --success-veil: #e3f3ea;
+  --warning: #8a5800; /* pendiente */
+  --warning-veil: #fcf0d6;
+  --destructive-veil: #fbe5e1; /* devolución-velo */
+  --kraft: #d8b98a; /* el cartón: material, no decoración */
+  --kraft-veil: #f1e6d3;
+  --kraft-foreground: #7a5a2e;
 }
 
 .dark {
@@ -73,6 +86,16 @@
 
   --brand-tag: #f6f5f1;
   --brand-check: #1d4ed8;
+
+  --primary-veil: #18233f;
+  --success: #5fd39a;
+  --success-veil: #12301f;
+  --warning: #f5b53d;
+  --warning-veil: #2e2410;
+  --destructive-veil: #3a1712;
+  --kraft: #c9a878;
+  --kraft-veil: #2a2218;
+  --kraft-foreground: #e5cfa8;
 }
 
 @theme inline {
@@ -103,8 +126,27 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* The headline voice: screen and card titles (brandbook «título» /
+     «subtítulo»). Use it with [font-stretch:112%], as BrandMark does. */
+  --font-display: "Archivo", "Arial Black", system-ui, sans-serif;
+
+  /* The data voice of the brandbook: ids, version numbers, counters and
+     amounts, with tabular figures so columns of them line up. */
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
   --color-incoming-chat-bubble: var(--chat-in);
   --color-outgoing-chat-bubble: var(--chat-out);
+
+  --color-primary-veil: var(--primary-veil);
+  --color-success: var(--success);
+  --color-success-veil: var(--success-veil);
+  --color-warning: var(--warning);
+  --color-warning-veil: var(--warning-veil);
+  --color-destructive-veil: var(--destructive-veil);
+  --color-kraft: var(--kraft);
+  --color-kraft-veil: var(--kraft-veil);
+  --color-kraft-foreground: var(--kraft-foreground);
 }
 
 html,
@@ -140,9 +182,30 @@ button:disabled {
   cursor: default;
 }
 
+/* The focus ring the brandbook asks for — 2px solid in --ring with 2px of
+   separation — on everything you can reach with Tab. It used to exist for
+   inputs only, so a keyboard never saw where it was among the buttons. */
+:where(button, [role="button"], a[href], summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 @layer components {
+  /* A field's name, the darkest thing in the field: at 12px in niebla it
+     weighed less than the value it named, and the same class titled whole
+     sections, so nothing had a rank. Sections use .section-title now. */
   .label {
-    @apply text-[12px] text-muted-foreground mb-[8px];
+    @apply text-[14px] font-semibold text-foreground mb-[6px];
+  }
+
+  /* What the label cannot say in three words. Always tied to its control
+     with aria-describedby (see Field), never left in a title attribute. */
+  .hint {
+    @apply text-[13px] leading-[1.45] text-muted-foreground;
+  }
+
+  .section-title {
+    @apply text-[16px] font-semibold text-foreground;
   }
 
   form {
@@ -163,20 +226,41 @@ button:disabled {
     resize: none;
   }
 
-  input.text {
-    @apply w-full border-b-[2px] border-transparent hover:border-input pb-[2px] focus-visible:outline-none text-[16px] text-foreground placeholder:text-muted-foreground bg-transparent focus-visible:border-primary;
+  /* The control the brandbook describes: a box with a border that reaches
+     3:1 (--input), radius-md, 48px tall. The old one drew a transparent
+     underline that only appeared on hover — which on a touch screen never
+     happens, so the field was invisible until you guessed where it was. */
+  input.text,
+  textarea.text,
+  select {
+    @apply w-full bg-card border border-input rounded-[12px] px-[14px] py-[12px] min-h-[48px] text-[16px] text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none;
   }
 
-  input.text:disabled {
-    @apply hover:border-transparent focus-visible:border-transparent text-muted-foreground cursor-default;
+  input.text:hover,
+  textarea.text:hover,
+  select:hover {
+    @apply border-foreground;
   }
 
-  input.text:read-only {
-    @apply hover:border-transparent focus-visible:border-transparent cursor-default;
+  input.text:focus-visible,
+  textarea.text:focus-visible,
+  select:focus-visible {
+    @apply border-ring;
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
-  textarea.text {
-    @apply w-full focus-visible:outline-none text-[16px] text-foreground placeholder:text-muted-foreground bg-transparent focus-visible:border-primary;
+  input.text[aria-invalid="true"],
+  textarea.text[aria-invalid="true"] {
+    @apply border-destructive border-[2px] px-[13px];
+  }
+
+  input.text:disabled,
+  textarea.text:disabled,
+  select:disabled,
+  input.text:read-only,
+  textarea.text:read-only {
+    @apply bg-secondary border-border text-muted-foreground cursor-default hover:border-border;
   }
 
   .instructions {
@@ -195,16 +279,28 @@ button:disabled {
     @apply list-decimal ml-[16px] space-y-[6px];
   }
 
-  select {
-    @apply w-full pb-[2px] border-b-[2px] border-transparent hover:border-input focus-visible:outline-none text-[16px] text-foreground placeholder:text-muted-foreground bg-transparent focus-visible:border-primary;
+  /* Every action is a pill (brandbook), and every pill is at least 44px
+     tall. The padding lives here now: it used to come from two invisible
+     spinners Button drew on each side, so a button with no `loading` was
+     padded by accident. */
+  button.primary,
+  button.secondary,
+  button.destructive {
+    @apply rounded-full text-[15px] font-semibold min-h-[44px] px-[18px] disabled:opacity-50 transition-colors;
   }
 
   button.primary {
-    @apply bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-full text-[16px] py-[8px];
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground;
+  }
+
+  /* The quiet action beside a primary one: archive, cancel, retire. It is
+     an outline, not bare text — «Retirar» used to render as a word. */
+  button.secondary {
+    @apply bg-transparent border border-input hover:bg-accent text-foreground;
   }
 
   button.destructive {
-    @apply bg-transparent border border-destructive hover:bg-destructive/10 text-destructive rounded-full text-[16px] py-[8px];
+    @apply bg-transparent border border-destructive hover:bg-destructive/10 text-destructive;
   }
 
   .header {

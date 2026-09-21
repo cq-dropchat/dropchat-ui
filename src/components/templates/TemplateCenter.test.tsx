@@ -8,7 +8,7 @@
 // It is still the only thing that can publish: `publish_agent_template_version`
 // records `auth.uid()` and refuses a caller who is not a platform admin, so it
 // cannot be called from the SQL editor at all.
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -199,9 +199,21 @@ describe("T7: the template that is open", () => {
   it("lists its versions with the changelog they were published with", async () => {
     show();
 
-    expect(await screen.findByText("v1 — primera")).toBeVisible();
+    expect(await screen.findByText("primera")).toBeVisible();
+    expect(screen.getByText("v1")).toBeVisible();
     // Generally available: there is nothing to promote it to.
     expect(screen.queryByRole("button", { name: /Promover/ })).toBeNull();
+  });
+
+  // What the version is FOR whoever installs it: the newest one that is not
+  // retired is the one the catalogue hands out, and the panel says so instead
+  // of leaving it to be worked out from a list of numbers.
+  it("says which version the catalogue installs today", async () => {
+    show();
+
+    const header = await screen.findByTestId("template-header");
+
+    expect(header.textContent).toContain("v1 en catálogo");
   });
 
   it("publishes a new version with a changelog", async () => {
@@ -211,7 +223,9 @@ describe("T7: the template that is open", () => {
       await screen.findByLabelText("Qué cambió"),
       "Arregla el saludo",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Publicar" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Publicar la v2/ }),
+    );
 
     await waitFor(() => expect(state.published).not.toBeNull());
     expect(state.published).toMatchObject({
@@ -220,16 +234,23 @@ describe("T7: the template that is open", () => {
     });
   });
 
+  // T5, as a decision taken in the open: an empty field used to mean
+  // «everybody», which is not something anyone can read off a form.
   it("publishes to two organizations first, when asked to", async () => {
     show();
 
-    await userEvent.type(
-      await screen.findByLabelText(
-        "Publicar solo para (ids, separados por coma)",
-      ),
-      " 22222222-0000-4000-8000-000000000001 , 22222222-0000-4000-8000-000000000002 ",
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Solo algunas, en prueba" }),
     );
-    await userEvent.click(screen.getByRole("button", { name: "Publicar" }));
+
+    await userEvent.type(
+      screen.getByLabelText("Organizaciones de la prueba"),
+      "22222222-0000-4000-8000-000000000001, 22222222-0000-4000-8000-000000000002,",
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Publicar la v2 en prueba/ }),
+    );
 
     await waitFor(() => expect(state.published).not.toBeNull());
     expect(state.published).toMatchObject({
@@ -238,6 +259,25 @@ describe("T7: the template that is open", () => {
         "22222222-0000-4000-8000-000000000002",
       ],
     });
+  });
+
+  it("will not stage a version for nobody", async () => {
+    show();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Solo algunas, en prueba" }),
+    );
+
+    const publish = screen.getByRole("button", {
+      name: /Publicar la v2 en prueba/,
+    });
+
+    expect(publish).toBeDisabled();
+    // And it says why, where a pointer that cannot hover a disabled button
+    // will still find it.
+    expect(
+      screen.getByText("Agregá al menos una organización de prueba."),
+    ).toBeInTheDocument();
   });
 
   it("promotes a staged version, and only a staged one", async () => {
@@ -266,11 +306,25 @@ describe("T7: the template that is open", () => {
     });
   });
 
-  it("retires a version, saying what that does and does not do", async () => {
+  // Retiring used to happen on the first click, with the consequence in a
+  // grey sentence further down the panel. It is asked now, and the question
+  // carries the consequence.
+  it("asks before retiring a version, and says what it does not undo", async () => {
     show();
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Retirar v1" }),
+    );
+
+    const dialog = await screen.findByRole("dialog");
+
+    expect(
+      within(dialog).getByText(/siguen funcionando y ven un aviso/),
+    ).toBeVisible();
+    expect(state.retired).toBeNull();
+
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Retirar la v1" }),
     );
 
     await waitFor(() => expect(state.retired).not.toBeNull());
@@ -278,17 +332,35 @@ describe("T7: the template that is open", () => {
       _template_id: TEMPLATE_ID,
       _version: 1,
     });
-
-    expect(
-      screen.getByText(/Los agentes que ya la usan siguen funcionando/),
-    ).toBeVisible();
   });
 
-  it("archives the template from its own header", async () => {
+  it("lets you back out of retiring a version", async () => {
+    show();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Retirar v1" }),
+    );
+    await userEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Cancelar",
+      }),
+    );
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(state.retired).toBeNull();
+  });
+
+  it("archives the template from its own header, after asking", async () => {
     show();
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Archivar" }),
+    );
+
+    await userEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Archivar",
+      }),
     );
 
     await waitFor(() => expect(state.archived).not.toBeNull());
@@ -297,21 +369,72 @@ describe("T7: the template that is open", () => {
     });
   });
 
-  it("creates a template from an agent of the template organization", async () => {
+  // The publish guards raise English sentences with a slug in them. They are
+  // the useful part, so they stay — under a title that says what happened.
+  it("says in Spanish why a publish was refused, and keeps the original", async () => {
+    server.use(
+      http.post(
+        "http://127.0.0.1:54321/rest/v1/rpc/publish_agent_template_version",
+        () =>
+          HttpResponse.json(
+            {
+              message:
+                "nothing changed since the last published version of ventas-contra-entrega",
+            },
+            { status: 400 },
+          ),
+      ),
+    );
+
+    show();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Publicar la v2/ }),
+    );
+
+    expect(await screen.findByText("No hay nada que publicar")).toBeVisible();
+    expect(
+      screen.getByText(
+        /nothing changed since the last published version of ventas-contra-entrega/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("creates a template, taking the identifier from the name", async () => {
     pathname.value = "/templates/new";
 
     show();
 
-    await userEvent.type(await screen.findByLabelText("Nombre"), "Reservas");
-    await userEvent.type(screen.getByLabelText("Identificador"), "reservas");
-    await userEvent.click(screen.getByRole("button", { name: "Crear" }));
+    await userEvent.type(
+      await screen.findByLabelText("Nombre"),
+      "Reservas de hora",
+    );
+
+    expect(screen.getByLabelText("Identificador")).toHaveValue(
+      "reservas-de-hora",
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Crear plantilla/ }),
+    );
 
     await waitFor(() => expect(state.created).not.toBeNull());
     expect(state.created).toMatchObject({
-      name: "Reservas",
-      slug: "reservas",
+      name: "Reservas de hora",
+      slug: "reservas-de-hora",
       source_agent_id: "a0000000-0000-4000-8000-00000000000a",
     });
+  });
+
+  it("will not create one without a name, and says what is missing", async () => {
+    pathname.value = "/templates/new";
+
+    show();
+
+    expect(
+      await screen.findByRole("button", { name: /Crear plantilla/ }),
+    ).toBeDisabled();
+    expect(screen.getByText("Falta el nombre.")).toBeVisible();
   });
 
   it("sends you to the runbook when there is no template organization", async () => {

@@ -127,8 +127,9 @@ describe("T7: the template panel's list", () => {
 
     await renderList();
 
+    // The row is a real button now, so it is `.group` and not `div.group`.
     const item = (await screen.findByText("Ventas contra entrega")).closest(
-      "div.group",
+      ".group",
     );
 
     expect(item?.className).toContain("bg-accent");
