@@ -19,6 +19,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { AVATAR_COLORS } from "@/utils/colors";
+import { useConversationHistory } from "@/hooks/useConversationHistory";
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
 type SeparatorType = { text: string; first: true; last: true; key: string };
@@ -57,6 +58,7 @@ export default function Chat() {
   // Compiler would memoize reads of it and freeze the list.
   "use no memo";
   const activeConvId = useBoundStore((store) => store.ui.activeConvId);
+  const history = useConversationHistory();
   const messages = Array.from(
     useBoundStore((store) =>
       store.chat.messages.get(store.ui.activeConvId || ""),
@@ -335,6 +337,74 @@ export default function Chat() {
   // that was at the bottom stays there. Declared after the effect above, so
   // both judge against the same previous height.
   const totalSize = virtualizer.getTotalSize();
+  const prependAnchor = useRef<{
+    convId: string | null;
+    pageCount: number;
+    rowKey: string | number | bigint | undefined;
+    withinRow: number;
+    height: number;
+    top: number;
+  } | null>(null);
+  const historyRequest = useRef<object | null>(null);
+
+  const loadOlder = () => {
+    const el = scroller.current;
+    if (!el || !history.hasOlder || history.isLoading || historyRequest.current)
+      return;
+    const request = {};
+    historyRequest.current = request;
+    const visible = virtualizer
+      .getVirtualItems()
+      .find((item) => item.start <= el.scrollTop && item.end > el.scrollTop);
+    prependAnchor.current = {
+      convId: activeConvId,
+      pageCount: history.pageCount,
+      rowKey: visible?.key,
+      withinRow: visible ? el.scrollTop - visible.start : 0,
+      height: el.scrollHeight,
+      top: el.scrollTop,
+    };
+    void history
+      .loadOlder({ cancelRefetch: false })
+      .then((result) => {
+        if (historyRequest.current !== request) return;
+        if (
+          result.isError ||
+          result.data?.pages.at(-1)?.messages.length === 0
+        ) {
+          prependAnchor.current = null;
+        }
+      })
+      .finally(() => {
+        if (historyRequest.current === request) historyRequest.current = null;
+      });
+  };
+
+  useLayoutEffect(() => {
+    const anchor = prependAnchor.current;
+    const el = scroller.current;
+    if (!anchor || !el) return;
+    if (anchor.convId !== activeConvId) {
+      prependAnchor.current = null;
+      historyRequest.current = null;
+      return;
+    }
+    if (history.pageCount <= anchor.pageCount) return;
+    const index = rows.findIndex(
+      (row) => ("message" in row ? row.message.id : row.key) === anchor.rowKey,
+    );
+    const offset =
+      index >= 0
+        ? virtualizer.getOffsetForIndex(index, "start")?.[0]
+        : undefined;
+    el.scrollTop =
+      offset === undefined
+        ? anchor.top + el.scrollHeight - anchor.height
+        : offset + anchor.withinRow;
+    heightBefore.current = el.scrollHeight;
+    prependAnchor.current = null;
+  }, [activeConvId, rows, history.pageCount, totalSize, virtualizer]);
+
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
@@ -365,44 +435,70 @@ export default function Chat() {
 
   return (
     activeConvId && (
-      <div
-        ref={scroller}
-        className="grow overflow-y-auto [scrollbar-gutter:stable]"
-      >
+      <div className="grow min-h-0 flex flex-col">
+        {(history.hasOlder || history.isLoading || history.error) && (
+          <div className="shrink-0 flex justify-center gap-2 px-3 py-2 text-[13px] text-muted-foreground">
+            {history.error && (
+              <span>{t("No se pudo cargar el historial")}</span>
+            )}
+            <button
+              className="text-primary disabled:opacity-60"
+              disabled={history.isLoading}
+              onClick={() => {
+                if (history.error && !history.hasOlder) void history.retry();
+                else loadOlder();
+              }}
+            >
+              {history.isLoading
+                ? t("Cargando...")
+                : history.error
+                  ? t("Reintentar")
+                  : t("Cargar mensajes anteriores")}
+            </button>
+          </div>
+        )}
         <div
-          className="relative w-full"
-          style={{ height: virtualizer.getTotalSize() }}
+          ref={scroller}
+          className="grow min-h-0 overflow-y-auto [scrollbar-gutter:stable]"
+          onScroll={(event) => {
+            if (event.currentTarget.scrollTop < 120 && !history.error)
+              loadOlder();
+          }}
         >
-          {virtualizer.getVirtualItems().map((item) => {
-            const row = rows[item.index];
-            return (
-              <div
-                key={item.key}
-                data-index={item.index}
-                ref={virtualizer.measureElement}
-                // flex: a flex container holds its children's margins, so the
-                // measured height includes a bubble's bottom margin.
-                className="absolute top-0 left-0 w-full flex flex-col"
-                style={{ transform: `translateY(${item.start}px)` }}
-              >
-                {"message" in row ? (
-                  <Message
-                    message={row.message}
-                    first={row.first}
-                    last={row.last}
-                    orgName={orgName}
-                    convName={convName}
-                    multiParty={multiParty}
-                    avatar={getAgentAvatar(row.message)}
-                  />
-                ) : (
-                  <Separator text={row.text} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {/* (
+          <div
+            className="relative w-full"
+            style={{ height: virtualizer.getTotalSize() }}
+          >
+            {virtualizer.getVirtualItems().map((item) => {
+              const row = rows[item.index];
+              return (
+                <div
+                  key={item.key}
+                  data-index={item.index}
+                  ref={virtualizer.measureElement}
+                  // flex: a flex container holds its children's margins, so the
+                  // measured height includes a bubble's bottom margin.
+                  className="absolute top-0 left-0 w-full flex flex-col"
+                  style={{ transform: `translateY(${item.start}px)` }}
+                >
+                  {"message" in row ? (
+                    <Message
+                      message={row.message}
+                      first={row.first}
+                      last={row.last}
+                      orgName={orgName}
+                      convName={convName}
+                      multiParty={multiParty}
+                      avatar={getAgentAvatar(row.message)}
+                    />
+                  ) : (
+                    <Separator text={row.text} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* (
           <button
             style={{
               width: "42px",
@@ -419,6 +515,7 @@ export default function Chat() {
             <ChevronDown className="w-8 h-8 pt-1 text-foreground" />
           </button>
         ) */}
+        </div>
       </div>
     )
   );

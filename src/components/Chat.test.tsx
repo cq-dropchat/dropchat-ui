@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import Chat from "./Chat";
 import useBoundStore from "@/stores/useBoundStore";
 import { conversationRow, messageRow } from "@/test/factories";
@@ -18,6 +18,17 @@ vi.mock("@/queries/useOrganizations", () => ({
   useCurrentOrganization: () => ({ data: { name: "Org A" } }),
 }));
 const role = { value: "owner" };
+const history = {
+  hasOlder: false,
+  pageCount: 1,
+  isLoading: false,
+  error: null as Error | null,
+  loadOlder: vi.fn().mockResolvedValue({ hasNextPage: true }),
+  retry: vi.fn(),
+};
+vi.mock("@/hooks/useConversationHistory", () => ({
+  useConversationHistory: () => history,
+}));
 
 vi.mock("@/queries/useAgents", () => ({
   useCurrentAgent: () => ({ data: { role: role.value } }),
@@ -45,6 +56,12 @@ function thread(count: number) {
 }
 
 beforeEach(() => {
+  history.hasOlder = false;
+  history.pageCount = 1;
+  history.isLoading = false;
+  history.error = null;
+  history.loadOlder.mockClear();
+  history.retry.mockClear();
   // jsdom has no layout: a screenful for the scroller, a bubble's height for
   // each measured row.
   const heightOf = (el: HTMLElement) =>
@@ -126,6 +143,75 @@ describe("F10: Chat is virtualized", () => {
 
     const ids = screen.getAllByTestId("message").map((r) => r.textContent);
     expect(ids).toContain(msgId(5000));
+  });
+});
+
+describe("loading earlier conversation messages", () => {
+  it("requests an older page when the reader scrolls to the top", () => {
+    history.hasOlder = true;
+    const { container } = render(<Chat />);
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    fireEvent.scroll(scroller, { target: { scrollTop: 20 } });
+    fireEvent.scroll(scroller, { target: { scrollTop: 10 } });
+    // Repeated scroll events before React updates must not cancel and
+    // restart the same request.
+    expect(history.loadOlder).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves the reader's position when older messages are prepended", async () => {
+    history.hasOlder = true;
+    const { container } = render(<Chat />);
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    Object.defineProperty(scroller, "scrollHeight", {
+      get: () => useBoundStore.getState().chat.messages.get(CONV)!.size * ROW,
+    });
+    scroller.scrollTop = 200;
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cargar mensajes anteriores" }),
+    );
+    await act(async () => {
+      history.pageCount = 2;
+      const old = messageRow({
+        id: msgId(8000),
+        conversation_id: CONV,
+        timestamp: "2026-08-31T23:59:00.000Z",
+      });
+      useBoundStore.setState((state) => ({
+        chat: {
+          ...state.chat,
+          messages: new Map([
+            [CONV, new Map([...thread(5000), [old.id, old]])],
+          ]),
+        },
+      }));
+      await Promise.resolve();
+    });
+    expect(scroller.scrollTop).toBe(200 + ROW);
+  });
+
+  it("shows retry when history fails and suppresses automatic retries", () => {
+    history.error = new Error("unavailable");
+    const { container } = render(<Chat />);
+    expect(screen.getByText("No se pudo cargar el historial")).toBeVisible();
+    fireEvent.scroll(
+      container.querySelector<HTMLElement>(".overflow-y-auto")!,
+      { target: { scrollTop: 0 } },
+    );
+    expect(history.loadOlder).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(history.retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables history loading while a page is in flight", () => {
+    history.hasOlder = true;
+    history.isLoading = true;
+    const { container } = render(<Chat />);
+    expect(screen.getByRole("button", { name: "Cargando..." })).toBeDisabled();
+    fireEvent.scroll(
+      container.querySelector<HTMLElement>(".overflow-y-auto")!,
+      { target: { scrollTop: 0 } },
+    );
+    expect(history.loadOlder).not.toHaveBeenCalled();
   });
 });
 

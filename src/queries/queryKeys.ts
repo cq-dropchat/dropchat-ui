@@ -8,6 +8,11 @@ type NullableId = string | null | undefined;
 export type CachedResponse<T> = { data: T; error: null };
 
 export const queryKeys = {
+  conversationHistory: (
+    orgId: NullableId,
+    convId: NullableId,
+    userId: NullableId,
+  ) => [orgId, "conversation_history", convId, userId] as const,
   agents: {
     all: (orgId: NullableId) => [orgId, "agents"] as const,
     detail: (orgId: NullableId, id: NullableId) =>
