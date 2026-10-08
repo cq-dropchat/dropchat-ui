@@ -40,8 +40,9 @@ const server = setupServer(
     requests.push(url);
     const cursor = url.searchParams.get("or");
     const match = cursor?.match(
-      /timestamp\.lt\."([^"]+)",and\(timestamp\.eq\."[^"]+",id\.lt\.([\w-]+)\)/,
+      /timestamp\.(?:lt|gt)\."([^"]+)",and\(timestamp\.eq\."[^"]+",id\.(?:lt|gt)\.([\w-]+)\)/,
     );
+    const ascending = url.searchParams.get("order")?.includes("timestamp.asc");
     const ceiling = url.searchParams.get("timestamp")!.slice(4);
     return HttpResponse.json(
       rows
@@ -49,12 +50,15 @@ const server = setupServer(
         .filter(
           (m) =>
             !match ||
-            m.timestamp < match[1] ||
-            (m.timestamp === match[1] && m.id < match[2]),
+            (ascending ? m.timestamp > match[1] : m.timestamp < match[1]) ||
+            (m.timestamp === match[1] &&
+              (ascending ? m.id > match[2] : m.id < match[2])),
         )
         .sort(
           (a, b) =>
-            b.timestamp.localeCompare(a.timestamp) || b.id.localeCompare(a.id),
+            (ascending ? 1 : -1) *
+            (a.timestamp.localeCompare(b.timestamp) ||
+              a.id.localeCompare(b.id)),
         )
         .slice(0, HISTORY_PAGE_SIZE),
     );
@@ -219,4 +223,56 @@ describe("conversation history beyond the inbox preview", () => {
     );
     expect(requests).toHaveLength(1);
   });
+});
+
+it("keeps a bounded bidirectional history without losing the latest inbox preview", async () => {
+  rows = Array.from({ length: 1600 }, (_, i) =>
+    messageRow({ id: id(i), conversation_id: CONV }),
+  );
+  const { result, client } = setup();
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  for (let i = 0; i < 24; i++)
+    await act(async () => {
+      await result.current.loadOlder();
+    });
+  await waitFor(() => expect(result.current.hasNewer).toBe(true));
+  expect(useBoundStore.getState().chat.messages.get(CONV)?.size).toBe(1000);
+  expect(useBoundStore.getState().chat.messages.get(CONV)?.has(id(1599))).toBe(
+    false,
+  );
+  expect(useBoundStore.getState().chat.previews.get(CONV)?.has(id(1599))).toBe(
+    true,
+  );
+  expect(
+    client.getQueryData<{ pages: unknown[] }>([
+      ORG_A,
+      "conversation_history",
+      CONV,
+      "user-1",
+    ])?.pages,
+  ).toHaveLength(20);
+  server.use(
+    http.get(`${REST}/messages`, () =>
+      HttpResponse.json({ message: "unavailable" }, { status: 503 }),
+    ),
+  );
+  await act(async () => {
+    await result.current.loadNewer();
+  });
+  await waitFor(() => expect(result.current.error).toBeTruthy());
+  server.resetHandlers();
+  await act(async () => {
+    await result.current.retry();
+  });
+  expect(requests.at(-1)?.searchParams.get("order")).toBe(
+    "timestamp.asc,id.asc",
+  );
+  for (let i = 0; i < 4; i++)
+    await act(async () => {
+      await result.current.loadNewer();
+    });
+  expect(useBoundStore.getState().chat.messages.get(CONV)?.has(id(1599))).toBe(
+    true,
+  );
+  expect(useBoundStore.getState().chat.messages.get(CONV)?.size).toBe(1000);
 });

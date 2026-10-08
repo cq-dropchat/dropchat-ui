@@ -70,14 +70,34 @@ export const useRealtimeSubscription = (mode: RealtimeMode = REALTIME_MODE) => {
 
     const batcher = createNoticeBatcher({
       activeOrgId: () => useBoundStore.getState().ui.activeOrgId,
+      isCurrent: (notice) => {
+        const { chat } = useBoundStore.getState();
+        const cached =
+          notice.table === "messages"
+            ? (chat.messages.get(notice.conversation_id)?.get(notice.id) ??
+              chat.previews.get(notice.conversation_id)?.get(notice.id))
+            : chat.conversations.get(notice.id);
+        return (
+          !!cached &&
+          (cached.updated_at === notice.updated_at ||
+            +new Date(cached.updated_at) > +new Date(notice.updated_at))
+        );
+      },
       fetchMessages: async (ids) =>
-        (await supabase.from("messages").select().in("id", ids).throwOnError())
-          .data as MessageRow[],
+        (
+          await supabase
+            .from("messages")
+            .select()
+            .eq("organization_id", activeOrgId)
+            .in("id", ids)
+            .throwOnError()
+        ).data as MessageRow[],
       fetchConversations: async (ids) =>
         (
           await supabase
             .from("conversations")
             .select()
+            .eq("organization_id", activeOrgId)
             .in("id", ids)
             .throwOnError()
         ).data as ConversationRow[],

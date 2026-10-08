@@ -1,3 +1,4 @@
+import { IG_ONBOARD_REDIRECT_PATH } from "@/utils/instagramOAuth";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -11,7 +12,6 @@ export const Route = createFileRoute("/onboard/instagram/$token")({
 
 // Fixed public callback (must be registered in the Meta app dashboard); the
 // onboarding token rides in `state`, not the path.
-export const IG_ONBOARD_REDIRECT_PATH = "/onboard/instagram/callback";
 
 type TokenValidation =
   | { status: "loading" }

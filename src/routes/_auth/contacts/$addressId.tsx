@@ -11,7 +11,6 @@ import SectionBody from "@/components/SectionBody";
 import SectionFooter from "@/components/SectionFooter";
 import Button from "@/components/Button";
 import {
-  type ContactAddressRow,
   type WhatsAppContactAddressExtra,
   contactName,
 } from "@/supabase/client";
@@ -19,14 +18,6 @@ import { formatPhoneNumber } from "@/utils/FormatUtils";
 import type { Database } from "@/supabase/db_types";
 
 type Service = Database["public"]["Enums"]["service"];
-
-// The row's PK within the org, as one path segment. Safe to join on "~":
-// services are a closed set and no service mints addresses containing it.
-export function addressId(
-  row: Pick<ContactAddressRow, "service" | "organization_address" | "address">,
-): string {
-  return [row.service, row.organization_address, row.address].join("~");
-}
 
 export const Route = createFileRoute("/_auth/contacts/$addressId")({
   component: ContactDetail,

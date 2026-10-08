@@ -96,3 +96,36 @@ describe("F13: long absences reload instead of catching up", () => {
     ).toBe(true);
   });
 });
+
+describe("bounded catch-up", () => {
+  it("halts a burst at the budget so the caller can reload its window", async () => {
+    const { RecoveryBudgetExceeded } = await import("./recovery");
+    const fetchPage = source(changes(100), 10);
+    const seen: Row[] = [];
+    await expect(
+      collectChangesSince(
+        "2026-09-17T09:00:00Z",
+        fetchPage,
+        (rows) => seen.push(...rows),
+        10,
+        { maxPages: 3 },
+      ),
+    ).rejects.toBeInstanceOf(RecoveryBudgetExceeded);
+    expect(fetchPage).toHaveBeenCalledTimes(3);
+    expect(seen).toHaveLength(30);
+  });
+  it("does not apply a page after its request was superseded", async () => {
+    const controller = new AbortController();
+    const onPage = vi.fn();
+    const fetchPage = () => {
+      controller.abort();
+      return Promise.resolve(changes(10));
+    };
+    await expect(
+      collectChangesSince("2026-09-17T09:00:00Z", fetchPage, onPage, 10, {
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow();
+    expect(onPage).not.toHaveBeenCalled();
+  });
+});

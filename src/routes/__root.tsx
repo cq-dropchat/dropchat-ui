@@ -1,19 +1,13 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
-import { useInitialDataFetch } from "@/hooks/useInitalDataFetch";
 import useBoundStore from "@/stores/useBoundStore";
 import { redirect } from "@tanstack/react-router";
 import { supabase } from "@/supabase/client";
-import { useSetActiveOrg } from "@/hooks/useSetActiveOrg";
 import RouteError from "@/components/RouteError";
 import Toaster from "@/components/ui/Toaster";
 
 function RootLayout() {
   useAuth();
-  useSetActiveOrg();
-  useRealtimeSubscription();
-  useInitialDataFetch();
 
   return (
     <>

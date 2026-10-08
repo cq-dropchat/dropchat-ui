@@ -325,7 +325,7 @@ export default function Chat() {
     lastNewestId.current = newestMessage.id;
 
     const mine = !!activeAgentId && newestMessage.agent_id === activeAgentId;
-    if (mine || wasAtBottom()) {
+    if (!prependAnchor.current && (mine || wasAtBottom())) {
       scrollToBottom.current();
     }
   };
@@ -347,9 +347,14 @@ export default function Chat() {
   } | null>(null);
   const historyRequest = useRef<object | null>(null);
 
-  const loadOlder = () => {
+  const loadPage = (newer = false, retry = false) => {
     const el = scroller.current;
-    if (!el || !history.hasOlder || history.isLoading || historyRequest.current)
+    if (
+      !el ||
+      (!retry && !(newer ? history.hasNewer : history.hasOlder)) ||
+      history.isLoading ||
+      historyRequest.current
+    )
       return;
     const request = {};
     historyRequest.current = request;
@@ -364,13 +369,17 @@ export default function Chat() {
       height: el.scrollHeight,
       top: el.scrollTop,
     };
-    void history
-      .loadOlder({ cancelRefetch: false })
+    const loader = retry
+      ? history.retry
+      : newer
+        ? history.loadNewer
+        : history.loadOlder;
+    void Promise.resolve(loader({ cancelRefetch: false }))
       .then((result) => {
         if (historyRequest.current !== request) return;
         if (
-          result.isError ||
-          result.data?.pages.at(-1)?.messages.length === 0
+          result?.isError ||
+          result?.data?.pages.at(-1)?.messages.length === 0
         ) {
           prependAnchor.current = null;
         }
@@ -408,7 +417,7 @@ export default function Chat() {
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    if (wasAtBottom()) {
+    if (!prependAnchor.current && wasAtBottom()) {
       el.scrollTop = el.scrollHeight;
     }
     heightBefore.current = el.scrollHeight;
@@ -436,25 +445,38 @@ export default function Chat() {
   return (
     activeConvId && (
       <div className="grow min-h-0 flex flex-col">
-        {(history.hasOlder || history.isLoading || history.error) && (
+        {(history.hasOlder ||
+          history.hasNewer ||
+          history.isLoading ||
+          history.error) && (
           <div className="shrink-0 flex justify-center gap-2 px-3 py-2 text-[13px] text-muted-foreground">
             {history.error && (
               <span>{t("No se pudo cargar el historial")}</span>
             )}
-            <button
-              className="text-primary disabled:opacity-60"
-              disabled={history.isLoading}
-              onClick={() => {
-                if (history.error && !history.hasOlder) void history.retry();
-                else loadOlder();
-              }}
-            >
-              {history.isLoading
-                ? t("Cargando...")
-                : history.error
-                  ? t("Reintentar")
-                  : t("Cargar mensajes anteriores")}
-            </button>
+            {(history.hasOlder || history.error || history.isLoading) && (
+              <button
+                className="text-primary disabled:opacity-60"
+                disabled={history.isLoading}
+                onClick={() => {
+                  loadPage(false, !!history.error);
+                }}
+              >
+                {history.isLoading
+                  ? t("Cargando...")
+                  : history.error
+                    ? t("Reintentar")
+                    : t("Cargar mensajes anteriores")}
+              </button>
+            )}
+            {history.hasNewer && (
+              <button
+                className="text-primary disabled:opacity-60"
+                disabled={history.isLoading}
+                onClick={() => loadPage(true)}
+              >
+                {t("Cargar mensajes recientes")}
+              </button>
+            )}
           </div>
         )}
         <div
@@ -462,7 +484,15 @@ export default function Chat() {
           className="grow min-h-0 overflow-y-auto [scrollbar-gutter:stable]"
           onScroll={(event) => {
             if (event.currentTarget.scrollTop < 120 && !history.error)
-              loadOlder();
+              loadPage();
+            else if (
+              event.currentTarget.scrollHeight -
+                event.currentTarget.scrollTop -
+                event.currentTarget.clientHeight <
+                120 &&
+              !history.error
+            )
+              loadPage(true);
           }}
         >
           <div

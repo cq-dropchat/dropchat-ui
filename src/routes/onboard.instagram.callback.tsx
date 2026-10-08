@@ -1,7 +1,8 @@
+import { IG_ONBOARD_REDIRECT_PATH } from "@/utils/instagramOAuth";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { IG_ONBOARD_REDIRECT_PATH } from "./onboard.instagram.$token";
+
 import BrandMark from "@/components/BrandMark";
 
 export const Route = createFileRoute("/onboard/instagram/callback")({

@@ -9,9 +9,9 @@ import { Plus } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import SearchBar from "@/components/SearchBar";
-import Fuse from "fuse.js";
+
 import { contactName } from "@/supabase/client";
-import { addressId } from "./$addressId";
+import { addressId } from "@/utils/contactAddressId";
 
 export const Route = createFileRoute("/_auth/contacts/")({
   component: ListContacts,
@@ -20,8 +20,13 @@ export const Route = createFileRoute("/_auth/contacts/")({
 function ListContacts() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
-  const { data: rows } = useContactsAddresses();
   const [search, setSearch] = useState("");
+  const {
+    data: rows,
+    hasNextPage,
+    fetchNextPage,
+    isFetching,
+  } = useContactsAddresses(search);
 
   // An entry is one connection's address-book row; its name lives in extra
   // (saved name over push name, see contactName).
@@ -31,14 +36,7 @@ function ListContacts() {
       (a.name || a.row.address).localeCompare(b.name || b.row.address),
     );
 
-  let filtered = contacts;
-  if (search) {
-    const fuse = new Fuse(contacts, {
-      threshold: 0.4,
-      keys: ["name", "row.address"],
-    });
-    filtered = fuse.search(search).map((r) => r.item);
-  }
+  const filtered = contacts;
 
   return (
     <>
@@ -95,6 +93,15 @@ function ListContacts() {
             }
           />
         ))}
+        {hasNextPage && (
+          <button
+            className="w-full py-4 text-primary"
+            disabled={isFetching}
+            onClick={() => void fetchNextPage()}
+          >
+            {isFetching ? t("Cargando...") : t("Cargar más")}
+          </button>
+        )}
       </SectionBody>
     </>
   );

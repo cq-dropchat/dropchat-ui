@@ -185,8 +185,11 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
   const isAdmin = ["admin", "owner"].includes(agent?.role || "");
 
   const messages: MessageRow[] | undefined = Array.from(
-    useBoundStore((state) => state.chat.messages.get(itemId || ""))?.values() ||
-      [],
+    useBoundStore(
+      (state) =>
+        state.chat.previews.get(itemId || "") ??
+        state.chat.messages.get(itemId || ""),
+    )?.values() || [],
   );
 
   // If the role is not admin, then do not show internal messages.

@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import {
   supabase,
@@ -9,14 +9,17 @@ import useBoundStore from "@/stores/useBoundStore";
 import { queryKeys } from "@/queries/queryKeys";
 
 export const HISTORY_PAGE_SIZE = 50;
-type HistoryCursor = { timestamp: string; id: string };
+export const HISTORY_MAX_PAGES = 20;
+type HistoryCursor = { timestamp: string; id: string; newer?: boolean };
 type HistoryPage = {
   messages: MessageRow[];
   conversation: ConversationRow | null;
+  atLatest: boolean;
 };
 
 /** The inbox window is only a preview; opening a chat loads its own history. */
 export function useConversationHistory() {
+  const queryClient = useQueryClient();
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
   const convId = useBoundStore((state) => state.ui.activeConvId);
   const userId = useBoundStore((state) => state.ui.user?.id);
@@ -32,6 +35,8 @@ export function useConversationHistory() {
   const query = useInfiniteQuery({
     queryKey: queryKeys.conversationHistory(orgId, convId, userId),
     enabled,
+    maxPages: HISTORY_MAX_PAGES,
+    gcTime: 60_000,
     initialPageParam: null as HistoryCursor | null,
     queryFn: async ({ pageParam, signal }): Promise<HistoryPage> => {
       const request = supabase
@@ -40,16 +45,17 @@ export function useConversationHistory() {
         .eq("organization_id", orgId!)
         .eq("conversation_id", convId!)
         .lte("timestamp", new Date().toISOString())
-        .order("timestamp", { ascending: false })
-        .order("id", { ascending: false })
+        .order("timestamp", { ascending: !!pageParam?.newer })
+        .order("id", { ascending: !!pageParam?.newer })
         .limit(HISTORY_PAGE_SIZE)
         .abortSignal(signal);
 
       if (pageParam) {
         // Keep full database precision and include the ID: WhatsApp often
         // gives many messages the same whole-second timestamp.
+        const op = pageParam.newer ? "gt" : "lt";
         request.or(
-          `timestamp.lt."${pageParam.timestamp}",and(timestamp.eq."${pageParam.timestamp}",id.lt.${pageParam.id})`,
+          `timestamp.${op}."${pageParam.timestamp}",and(timestamp.eq."${pageParam.timestamp}",id.${op}.${pageParam.id})`,
         );
       }
 
@@ -68,9 +74,19 @@ export function useConversationHistory() {
       ]);
 
       return {
-        messages: messages.data as MessageRow[],
+        messages: (pageParam?.newer
+          ? messages.data.reverse()
+          : messages.data) as MessageRow[],
         conversation: conversation.data as ConversationRow | null,
+        atLatest:
+          !pageParam ||
+          (!!pageParam.newer && messages.data.length < HISTORY_PAGE_SIZE),
       };
+    },
+    getPreviousPageParam: (page) => {
+      if (page.atLatest || !page.messages.length) return undefined;
+      const newest = page.messages[0];
+      return { timestamp: newest.timestamp, id: newest.id, newer: true };
     },
     getNextPageParam: (page) => {
       if (page.messages.length < HISTORY_PAGE_SIZE) return undefined;
@@ -83,7 +99,23 @@ export function useConversationHistory() {
     // Revisiting a chat must reapply cached pages if the store was reset
     // while switching organizations or signing out.
     applied.current = new WeakSet();
-  }, [orgId, convId, userId]);
+    // Retain at most five recently opened histories in the query cache.
+    const histories = queryClient
+      .getQueryCache()
+      .findAll({
+        predicate: (query) =>
+          query.queryKey[1] === "conversation_history" &&
+          query.queryKey[2] !== convId,
+      })
+      .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt);
+    for (const old of histories.slice(4))
+      queryClient.removeQueries({ queryKey: old.queryKey, exact: true });
+    return () => {
+      const { ui, chat } = useBoundStore.getState();
+      if (convId && ui.activeOrgId === orgId && ui.user?.id === userId)
+        chat.releaseHistory(convId);
+    };
+  }, [orgId, convId, userId, queryClient]);
 
   useEffect(() => {
     const { ui } = useBoundStore.getState();
@@ -94,14 +126,21 @@ export function useConversationHistory() {
       pushMessages(page.messages);
       applied.current.add(page);
     }
+    if (query.data?.pages.length && convId)
+      useBoundStore.getState().chat.setHistoryWindow(
+        convId,
+        query.data.pages.flatMap((page) => page.messages),
+        query.hasPreviousPage,
+      );
     const count = query.data?.pages.length ?? 0;
     setAppliedPages((previous) =>
-      previous.scope === scope && previous.count === count
-        ? previous
+      previous.scope === scope
+        ? { scope, count: previous.count + (count ? 1 : 0) }
         : { scope, count },
     );
   }, [
     query.data,
+    query.hasPreviousPage,
     orgId,
     convId,
     userId,
@@ -112,10 +151,16 @@ export function useConversationHistory() {
 
   return {
     hasOlder: query.hasNextPage,
+    hasNewer: query.hasPreviousPage,
+    loadNewer: query.fetchPreviousPage,
     pageCount: appliedPages.scope === scope ? appliedPages.count : 0,
     isLoading: enabled && query.isFetching,
     error: query.error,
     loadOlder: query.fetchNextPage,
-    retry: query.hasNextPage ? query.fetchNextPage : query.refetch,
+    retry: query.isFetchPreviousPageError
+      ? query.fetchPreviousPage
+      : query.isFetchNextPageError
+        ? query.fetchNextPage
+        : query.refetch,
   };
 }

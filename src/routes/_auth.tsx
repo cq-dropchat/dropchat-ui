@@ -1,3 +1,6 @@
+import { useSetActiveOrg } from "@/hooks/useSetActiveOrg";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useInitialDataFetch } from "@/hooks/useInitalDataFetch";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
 import Menu from "@/components/Menu";
@@ -48,6 +51,9 @@ function getMaxPanelWidth() {
 }
 
 function AppLayout() {
+  useSetActiveOrg();
+  useRealtimeSubscription();
+  useInitialDataFetch();
   const { translate: t } = useTranslation();
   // H5: a conversation handed to a person has to reach somebody — the tab's
   // title counts them and, with permission, the browser says so.

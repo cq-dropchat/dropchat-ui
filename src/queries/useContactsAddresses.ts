@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import {
   type ContactAddressInsert,
   type ContactAddressRow,
@@ -6,73 +12,112 @@ import {
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { queryKeys } from "./queryKeys";
+import { createContactBatcher } from "./contactBatcher";
 import type { Database } from "@/supabase/db_types";
 
 type Service = Database["public"]["Enums"]["service"];
 
-async function fetchAllContactsAddresses(orgId: string) {
-  const PAGE_SIZE = 1000;
-  let allData: ContactAddressRow[] = [];
-  let offset = 0;
-
-  while (true) {
-    const { data: page } = await supabase
-      .from("contacts_addresses")
-      .select()
-      .eq("organization_id", orgId)
-      .order("address", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1)
-      .throwOnError();
-
-    allData = [...allData, ...page];
-    if (page.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
+const loaders = new WeakMap<
+  QueryClient,
+  Map<string, ReturnType<typeof createContactBatcher>>
+>();
+function loaderFor(client: QueryClient, orgId: string, userId: string) {
+  let scoped = loaders.get(client);
+  if (!scoped) {
+    scoped = new Map();
+    loaders.set(client, scoped);
   }
-
-  return { data: allData };
+  const scope = `${orgId}:${userId}`;
+  let loader = scoped.get(scope);
+  if (!loader) {
+    loader = createContactBatcher(orgId);
+    scoped.set(scope, loader);
+  }
+  return loader;
 }
 
-// A contacts_addresses row is an entry in ONE connection's address book: the
-// PK is (organization_id, organization_address, service, address), so every
-// lookup names the connection too. Its display name resolves from extra via
-// contactName() — there is no contacts table to join.
-//
-// F10: a selector over the organization's address book, not a query of its
-// own. Every ChatListItem and group message asks for its contact; one query
-// per caller was one request per conversation, and all of them again on
-// every window focus. They now share the single list query below.
 export function useContactAddress(
   orgAddress: string | null | undefined,
   service: Service | null | undefined,
   address: string | null | undefined,
 ) {
+  const client = useQueryClient();
   const userId = useBoundStore((state) => state.ui.user?.id);
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
-
   return useQuery({
-    queryKey: queryKeys.contacts.all(orgId),
-    queryFn: () => fetchAllContactsAddresses(orgId!),
+    // The client owns the loader; it does not change contact identity.
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: queryKeys.contacts.detail(
+      orgId,
+      orgAddress,
+      service,
+      address,
+      userId,
+    ),
+    queryFn: () =>
+      loaderFor(
+        client,
+        orgId!,
+        userId!,
+      )({
+        organization_address: orgAddress!,
+        service: service!,
+        address: address!,
+      }),
     enabled: !!userId && !!orgId && !!orgAddress && !!service && !!address,
-    select: (data) =>
-      data.data.find(
-        (row) =>
-          row.organization_address === orgAddress &&
-          row.service === service &&
-          row.address === address,
-      ) ?? null,
   });
 }
 
-export function useContactsAddresses() {
+const PAGE_SIZE = 100;
+export function useContactsAddresses(search = "") {
   const userId = useBoundStore((state) => state.ui.user?.id);
   const orgId = useBoundStore((state) => state.ui.activeOrgId);
-
-  return useQuery({
-    queryKey: queryKeys.contacts.all(orgId),
-    queryFn: () => fetchAllContactsAddresses(orgId!),
+  const query = useInfiniteQuery({
+    queryKey: [...queryKeys.contacts.all(orgId), "directory", userId, search],
     enabled: !!userId && !!orgId,
-    select: (data) => data.data,
+    initialPageParam: null as ContactAddressRow | null,
+    queryFn: async ({ pageParam, signal }) => {
+      const request = supabase
+        .from("contacts_addresses")
+        .select()
+        .eq("organization_id", orgId!)
+        .order("organization_address")
+        .order("service")
+        .order("address")
+        .limit(PAGE_SIZE)
+        .abortSignal(signal);
+      const quote = (value: string) =>
+        `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+      if (pageParam) {
+        const org = quote(pageParam.organization_address),
+          service = quote(pageParam.service),
+          address = quote(pageParam.address);
+        request.or(
+          `organization_address.gt.${org},and(organization_address.eq.${org},service.gt.${service}),and(organization_address.eq.${org},service.eq.${service},address.gt.${address})`,
+        );
+      }
+      if (search.trim()) {
+        const pattern = quote(
+          `*${search.trim().replaceAll("*", "").replaceAll("%", "")}*`,
+        );
+        // Separate AND group from the page's OR cursor.
+        request.or(
+          `address.ilike.${pattern},extra->>name.ilike.${pattern},extra->synced->>name.ilike.${pattern}`,
+        );
+      }
+      return (await request.throwOnError()).data as ContactAddressRow[];
+    },
+    getNextPageParam: (page) =>
+      page.length === PAGE_SIZE ? page.at(-1) : undefined,
   });
+  return {
+    data: query.data?.pages.flat(),
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    isFetching: query.isFetching,
+    error: query.error,
+    isLoading: query.isLoading,
+  };
 }
 
 export function useCreateContactAddress() {
@@ -135,20 +180,15 @@ export function useUpdateContactAddress() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.contacts.all(orgId),
       });
-      // Readers select from the list (F10): patch the row in place so the
-      // name changes before the refetch lands.
-      queryClient.setQueryData<{ data: ContactAddressRow[] }>(
-        queryKeys.contacts.all(orgId),
-        (old) =>
-          old && {
-            data: old.data.map((r) =>
-              r.organization_address === row.organization_address &&
-              r.service === row.service &&
-              r.address === row.address
-                ? row
-                : r,
-            ),
-          },
+      queryClient.setQueryData(
+        queryKeys.contacts.detail(
+          orgId,
+          row.organization_address,
+          row.service,
+          row.address,
+          useBoundStore.getState().ui.user?.id,
+        ),
+        row,
       );
     },
   });

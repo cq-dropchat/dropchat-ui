@@ -86,8 +86,17 @@ export function mergeSortedMessages(
     ) {
       continue;
     }
+    const cached = current?.get(msg.id);
+    if (
+      cached === msg ||
+      (cached?.updated_at === msg.updated_at &&
+        JSON.stringify(cached) === JSON.stringify(msg))
+    )
+      continue;
     accepted.push(msg);
   }
+
+  if (current && accepted.length === 0) return current;
 
   if (!current || current.size === 0) {
     const rows = [...new Map(accepted.map((m) => [m.id, m])).values()];
@@ -189,6 +198,8 @@ export type MediaLoad = {
 
 export type ChatState = {
   conversations: Map<string, ConversationRow>;
+  previews: Map<string, Map<string, MessageRow>>;
+  historyWindows: Map<string, boolean>;
   // The caller's own agent id in the active org, and their per-conversation
   // state (conversations_agents.extra rows): archived/pinned/draft.
   ownAgentId: string | null;
@@ -209,6 +220,9 @@ export type ChatState = {
    * this instead.
    */
   messagesVersion: number;
+  /** Only changes to a conversation preview invalidate inbox filtering. */
+  previewsVersion: number;
+  conversationMetadataVersion: number;
   textDrafts: Map<string, string>;
   fileDrafts: Map<string, FileDraft[]>;
   mediaLoads: Map<string, MediaLoad>;
@@ -225,6 +239,12 @@ export type ChatActions = {
     rows: { conversation_id: string; extra: ConversationAgentExtra | null }[],
   ) => void;
   pushMessages: (msgs: MessageRow[]) => void;
+  releaseHistory: (convId: string) => void;
+  setHistoryWindow: (
+    convId: string,
+    rows: MessageRow[],
+    hasNewer: boolean,
+  ) => void;
   /**
    * S1 — forgets conversations the server no longer has. The first thing in
    * this app that removes one: until the simulator's "Reiniciar" there was
@@ -253,10 +273,14 @@ export type ChatSlice = ChatState & ChatActions;
 export function emptyChatState(): ChatState {
   return {
     conversations: new Map(),
+    previews: new Map(),
+    historyWindows: new Map(),
     ownAgentId: null,
     membershipExtras: new Map(),
     messages: new Map(),
     messagesVersion: 0,
+    previewsVersion: 0,
+    conversationMetadataVersion: 0,
     convOrder: [],
     textDrafts: new Map(),
     fileDrafts: new Map(),
@@ -353,19 +377,24 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
     }),
   pushConversations: (convs: ConversationRow[]) =>
     set((state) => {
+      const accepted = ofActiveOrg(convs, state.ui.activeOrgId).filter(
+        (conv) => {
+          const cached = state.chat.conversations.get(conv.id);
+          return (
+            !cached ||
+            (+new Date(cached.updated_at) <= +new Date(conv.updated_at) &&
+              (cached.updated_at !== conv.updated_at ||
+                JSON.stringify(cached) !== JSON.stringify(conv)))
+          );
+        },
+      );
+      if (!accepted.length) return state;
       const conversations = new Map(state.chat.conversations);
-
-      for (const conv of ofActiveOrg(convs, state.ui.activeOrgId)) {
-        // skip push when the cached conv is more recent than the incoming conv
-        const cachedUpdatedAt = conversations.get(conv.id)?.updated_at;
-
-        if (
-          cachedUpdatedAt &&
-          +new Date(cachedUpdatedAt) > +new Date(conv.updated_at)
-        ) {
-          continue;
-        }
-
+      let metadataChanged = false;
+      for (const conv of accepted) {
+        const old = conversations.get(conv.id);
+        if (!old || old.name !== conv.name || old.address !== conv.address)
+          metadataChanged = true;
         conversations.set(conv.id, conv);
       }
 
@@ -373,6 +402,8 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
         chat: {
           ...state.chat,
           conversations,
+          conversationMetadataVersion:
+            state.chat.conversationMetadataVersion + (metadataChanged ? 1 : 0),
         },
       };
     }),
@@ -387,6 +418,8 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
       for (const id of ids) {
         conversations.delete(id);
         messages.delete(id);
+        state.chat.previews.delete(id);
+        state.chat.historyWindows.delete(id);
         membershipExtras.delete(id);
         textDrafts.delete(id);
         fileDrafts.delete(id);
@@ -404,6 +437,9 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
           // underneath it; without the bump a reset leaves the old rows on
           // screen until something else happens to write a message.
           messagesVersion: state.chat.messagesVersion + 1,
+          previewsVersion: state.chat.previewsVersion + 1,
+          conversationMetadataVersion:
+            state.chat.conversationMetadataVersion + 1,
         },
       };
     }),
@@ -432,34 +468,116 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
 
       // F10: conversations whose newest message moved, for convOrder.
       const changed = new Set<string>();
+      let mutated = false;
+      let previewChanged = false;
 
       for (const [convId, convMsgs] of Object.entries(msgsByConv)) {
-        const before = newestOf(messages.get(convId));
-        messages.set(
-          convId,
-          mergeSortedMessages(messages.get(convId), convMsgs!),
-        );
-        const after = newestOf(messages.get(convId));
+        const current = messages.get(convId);
+        const previousPreview = state.chat.previews.get(convId) ?? current;
+        const before = newestOf(previousPreview);
+        let preview = mergeSortedMessages(previousPreview, convMsgs!);
+        if (preview.size > 10)
+          preview = new Map(Array.from(preview).slice(0, 10));
+        if (
+          previousPreview &&
+          preview.size === previousPreview.size &&
+          [...preview].every(([id, row]) => previousPreview.get(id) === row)
+        )
+          preview = previousPreview;
+        state.chat.previews.set(convId, preview);
+        const after = newestOf(preview);
+        if (before !== after) previewChanged = true;
         if (
           !before ||
           !after ||
           before.id !== after.id ||
           !sameOrderingKey(before, after)
-        ) {
+        )
           changed.add(convId);
+        let relevant = convMsgs!;
+        if (state.chat.historyWindows.has(convId) && current?.size) {
+          const newest = newestOf(current)!;
+          const oldest = Array.from(current.values()).at(-1)!;
+          relevant = relevant.filter(
+            (row) =>
+              current.has(row.id) ||
+              (timestampDescending(row, oldest) <= 0 &&
+                (!state.chat.historyWindows.get(convId) ||
+                  timestampDescending(row, newest) >= 0)),
+          );
+        }
+        let merged =
+          convId === state.ui.activeConvId
+            ? mergeSortedMessages(current, relevant)
+            : preview;
+        if (state.chat.historyWindows.has(convId) && merged.size > 1000)
+          merged = new Map(Array.from(merged).slice(0, 1000));
+        if (merged !== current) {
+          messages.set(convId, merged);
+          mutated = true;
         }
       }
 
+      if (!mutated && !previewChanged) return state;
       return {
         chat: {
           ...state.chat,
           messages,
-          messagesVersion: state.chat.messagesVersion + 1,
+          messagesVersion: state.chat.messagesVersion + (mutated ? 1 : 0),
+          previewsVersion:
+            state.chat.previewsVersion + (previewChanged ? 1 : 0),
           convOrder: reorderConversations(
             state.chat.convOrder,
-            messages,
+            state.chat.previews,
             changed,
           ),
+        },
+      };
+    }),
+  setHistoryWindow: (convId: string, rows: MessageRow[], hasNewer: boolean) =>
+    set((state) => {
+      if (state.ui.activeConvId !== convId) return state;
+      const current = state.chat.messages.get(convId);
+      const scoped = ofActiveOrg(rows, state.ui.activeOrgId).filter(
+        (row) => row.content.version === "1",
+      );
+      const updated = scoped.map((row) => {
+        const cached = current?.get(row.id);
+        return cached &&
+          +new Date(cached.updated_at) > +new Date(row.updated_at)
+          ? cached
+          : row;
+      });
+      if (!hasNewer && updated.length) {
+        const newest = [...updated].sort(timestampDescending)[0];
+        for (const row of current?.values() ?? [])
+          if (timestampDescending(row, newest) < 0) updated.push(row);
+      }
+      let window = mergeSortedMessages(undefined, updated);
+      if (window.size > 1000)
+        window = new Map(Array.from(window).slice(0, 1000));
+      state.chat.messages.set(convId, window);
+      state.chat.historyWindows.set(convId, hasNewer);
+      return {
+        chat: {
+          ...state.chat,
+          messagesVersion: state.chat.messagesVersion + 1,
+        },
+      };
+    }),
+  releaseHistory: (convId: string) =>
+    set((state) => {
+      state.chat.historyWindows.delete(convId);
+      const current = state.chat.messages.get(convId);
+      const preview =
+        state.chat.previews.get(convId) ??
+        (current && new Map(Array.from(current).slice(0, 10)));
+      if (!preview || preview === current) return state;
+      state.chat.messages.set(convId, preview);
+      return {
+        chat: {
+          ...state.chat,
+          messagesVersion: state.chat.messagesVersion + 1,
         },
       };
     }),

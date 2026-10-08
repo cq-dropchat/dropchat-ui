@@ -18,7 +18,7 @@ import type {
   OrganizationAddressRow,
   WhatsAppOrganizationAddressExtra,
 } from "@/supabase/client";
-import { addressId } from "./$addressId";
+import { addressId } from "@/utils/contactAddressId";
 
 export const Route = createFileRoute("/_auth/contacts/new")({
   component: ContactNew,

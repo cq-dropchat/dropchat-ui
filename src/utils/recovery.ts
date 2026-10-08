@@ -34,11 +34,19 @@ export function afterCursorFilter(cursor: Cursor): string {
   return `updated_at.gt."${cursor.updated_at}",and(updated_at.eq."${cursor.updated_at}",id.gt."${cursor.id}")`;
 }
 
+export const RECOVERY_MAX_PAGES = 10;
+export class RecoveryBudgetExceeded extends Error {
+  constructor() {
+    super("Recovery page budget exceeded");
+  }
+}
+
 export async function collectChangesSince<T extends Cursor>(
   since: string,
   fetchPage: (cursor: Cursor) => Promise<T[]>,
   onPage: (rows: T[]) => void,
   pageSize: number = RECOVERY_PAGE_SIZE,
+  options: { signal?: AbortSignal; maxPages?: number } = {},
 ): Promise<number> {
   // The smallest uuid: every row at `since` itself is strictly after it only
   // by id, and `since` was the moment the tab was hidden, so those rows were
@@ -50,8 +58,14 @@ export async function collectChangesSince<T extends Cursor>(
   };
   let total = 0;
 
-  for (;;) {
+  for (
+    let pageNumber = 0;
+    pageNumber < (options.maxPages ?? RECOVERY_MAX_PAGES);
+    pageNumber++
+  ) {
+    options.signal?.throwIfAborted();
     const page = await fetchPage(cursor);
+    options.signal?.throwIfAborted();
     if (page.length > 0) {
       onPage(page);
       total += page.length;
@@ -60,4 +74,5 @@ export async function collectChangesSince<T extends Cursor>(
     }
     if (page.length < pageSize) return total;
   }
+  throw new RecoveryBudgetExceeded();
 }

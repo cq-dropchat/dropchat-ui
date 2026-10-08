@@ -31,6 +31,22 @@ export const queryKeys = {
       [orgId, "api_keys", id] as const,
   },
   contacts: {
+    detail: (
+      orgId: NullableId,
+      orgAddress: NullableId,
+      service: NullableId,
+      address: NullableId,
+      userId: NullableId,
+    ) =>
+      [
+        orgId,
+        "contacts_addresses",
+        "detail",
+        orgAddress,
+        service,
+        address,
+        userId,
+      ] as const,
     all: (orgId: NullableId) => [orgId, "contacts_addresses"] as const,
   },
   // T7: the template catalogue is global too — every organization reads the

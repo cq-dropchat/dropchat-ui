@@ -23,6 +23,14 @@ const DIST = path.resolve(import.meta.dirname, "../dist");
 const BUDGET = {
   initialKB: 165,
   firstScreenKB: 340,
+  // Baseline (ddb4bca): open chat 449.3 KiB JS and 12.93 KiB CSS; +5%.
+  openChatKB: 472,
+  cssKB: 13.6,
+  openChatEntries: [
+    "src/components/Chat.tsx",
+    "src/components/ChatHeader.tsx",
+    "src/components/ChatFooter.tsx",
+  ],
   firstScreenEntries: [
     "src/routes/_auth.tsx?tsr-split=component",
     "src/routes/_auth/conversations/index.tsx?tsr-split=component",
@@ -77,9 +85,11 @@ function gzipKB(file) {
 }
 
 function measure(manifest, keys) {
-  const files = [...keys].map((k) => manifest[k].file);
+  const files = [...new Set([...keys].map((k) => manifest[k].file))];
+  const css = [...new Set([...keys].flatMap((k) => manifest[k].css ?? []))];
   return {
     files,
+    cssKB: css.reduce((sum, file) => sum + gzipKB(file), 0),
     kb: files.reduce((sum, f) => sum + gzipKB(f), 0),
   };
 }
@@ -94,7 +104,7 @@ function main() {
   const sources = readSources();
   const failures = [];
 
-  for (const key of BUDGET.firstScreenEntries) {
+  for (const key of [...BUDGET.firstScreenEntries, ...BUDGET.openChatEntries]) {
     if (!manifest[key]) failures.push(`manifest has no entry ${key}`);
   }
 
@@ -103,6 +113,12 @@ function main() {
     "index.html",
     ...BUDGET.firstScreenEntries,
   ]);
+  const openKeys = closure(manifest, [
+    "index.html",
+    ...BUDGET.firstScreenEntries,
+    ...BUDGET.openChatEntries,
+  ]);
+  const opened = measure(manifest, openKeys);
   const initial = measure(manifest, initialKeys);
   const first = measure(manifest, firstKeys);
 
@@ -122,6 +138,15 @@ function main() {
     `first screen: ${first.kb.toFixed(1)} KB gzip in ${first.files.length} files (budget ${BUDGET.firstScreenKB})`,
   );
 
+  console.log(
+    `open chat:    ${opened.kb.toFixed(1)} KB gzip JS (budget ${BUDGET.openChatKB}), ${opened.cssKB.toFixed(2)} KB gzip CSS (budget ${BUDGET.cssKB})`,
+  );
+  if (opened.kb > BUDGET.openChatKB)
+    failures.push(
+      `open chat ${opened.kb.toFixed(1)} KB > ${BUDGET.openChatKB} KB`,
+    );
+  if (opened.cssKB > BUDGET.cssKB)
+    failures.push(`CSS ${opened.cssKB.toFixed(2)} KB > ${BUDGET.cssKB} KB`);
   if (initial.kb > BUDGET.initialKB) {
     failures.push(
       `initial ${initial.kb.toFixed(1)} KB > ${BUDGET.initialKB} KB`,

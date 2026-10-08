@@ -25,6 +25,7 @@ export type NoticeBatcherOptions = {
   /** Ids per request (keeps the `in (...)` URL short). */
   chunkSize?: number;
   activeOrgId: () => string | null;
+  isCurrent?: (notice: RealtimeNotice) => boolean;
   fetchMessages: (ids: string[]) => Promise<MessageRow[]>;
   fetchConversations: (ids: string[]) => Promise<ConversationRow[]>;
   onMessages: (rows: MessageRow[]) => void;
@@ -32,68 +33,87 @@ export type NoticeBatcherOptions = {
   onError?: (error: unknown) => void;
 };
 
-function chunks<T>(items: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    out.push(items.slice(i, i + size));
-  }
-  return out;
-}
-
-/**
- * Collects notices for `windowMs` and fetches the named rows in one request
- * per table (per chunk). A notice of another organization than the active one
- * is dropped (F20), and so are fetched rows if the organization changed while
- * the request was in flight.
- */
+/** A single flight, two bounded fetches per chunk, with retryable IDs retained. */
 export function createNoticeBatcher(options: NoticeBatcherOptions) {
   const windowMs = options.windowMs ?? 250;
-  const chunkSize = options.chunkSize ?? 200;
-  let messageIds = new Set<string>();
-  let conversationIds = new Set<string>();
+  const chunkSize = Math.max(1, options.chunkSize ?? 100);
+  const orgId = options.activeOrgId();
+  const pending = {
+    messages: new Map<string, RealtimeNotice>(),
+    conversations: new Map<string, RealtimeNotice>(),
+  };
   let timer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
-
-  async function flush() {
-    timer = undefined;
-    const org = options.activeOrgId();
-    const messages = [...messageIds];
-    const conversations = [...conversationIds];
-    messageIds = new Set();
-    conversationIds = new Set();
-
+  let inFlight = false;
+  let retryDelay = windowMs;
+  const active = () => !disposed && options.activeOrgId() === orgId;
+  const schedule = (delay = windowMs) => {
+    if (
+      active() &&
+      !inFlight &&
+      !timer &&
+      (pending.messages.size || pending.conversations.size)
+    )
+      timer = setTimeout(() => void flush(), delay);
+  };
+  async function fetchChunk(table: "messages" | "conversations") {
+    const entries = [...pending[table].values()].slice(0, chunkSize);
+    const needed = entries.filter((notice) => !options.isCurrent?.(notice));
+    for (const notice of entries) pending[table].delete(notice.id);
+    if (!needed.length) return true;
     try {
-      const [messageRows, conversationRows] = await Promise.all([
-        Promise.all(chunks(messages, chunkSize).map(options.fetchMessages)),
-        Promise.all(
-          chunks(conversations, chunkSize).map(options.fetchConversations),
-        ),
-      ]);
-      if (disposed || options.activeOrgId() !== org) return;
-      // Conversations first: a message's conversation may be new.
-      const convs = conversationRows.flat();
-      if (convs.length) options.onConversations(convs);
-      const rows = messageRows.flat();
-      if (rows.length) options.onMessages(rows);
+      const ids = needed.map((notice) => notice.id);
+      const rows =
+        table === "messages"
+          ? await options.fetchMessages(ids)
+          : await options.fetchConversations(ids);
+      if (active() && rows.length) {
+        if (table === "messages") options.onMessages(rows as MessageRow[]);
+        else options.onConversations(rows as ConversationRow[]);
+      }
+      return true;
     } catch (error) {
-      options.onError?.(error);
+      if (active()) {
+        for (const notice of needed)
+          if (!pending[table].has(notice.id))
+            pending[table].set(notice.id, notice);
+        options.onError?.(error);
+      }
+      return false;
     }
   }
-
+  async function flush() {
+    timer = undefined;
+    if (!active() || inFlight) return;
+    inFlight = true;
+    // Conversation rows arrive first, so a new message has context already.
+    const convOk = await fetchChunk("conversations");
+    const msgOk = active() ? await fetchChunk("messages") : true;
+    inFlight = false;
+    retryDelay =
+      convOk && msgOk
+        ? windowMs
+        : Math.min(Math.max(250, retryDelay * 2), 5000);
+    schedule(retryDelay);
+  }
   return {
     push(notice: RealtimeNotice) {
-      if (disposed || notice.organization_id !== options.activeOrgId()) {
+      if (
+        !active() ||
+        notice.organization_id !== orgId ||
+        options.isCurrent?.(notice)
+      )
         return;
-      }
-      if (notice.table === "messages") messageIds.add(notice.id);
-      else if (notice.table === "conversations") {
-        conversationIds.add(notice.id);
-      } else return;
-      timer ??= setTimeout(() => void flush(), windowMs);
+      if (notice.table !== "messages" && notice.table !== "conversations")
+        return;
+      pending[notice.table].set(notice.id, notice);
+      schedule();
     },
     dispose() {
       disposed = true;
       clearTimeout(timer);
+      pending.messages.clear();
+      pending.conversations.clear();
     },
   };
 }

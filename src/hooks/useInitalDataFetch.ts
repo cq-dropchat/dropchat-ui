@@ -1,11 +1,15 @@
-import { supabase } from "@/supabase/client";
-import type { ConversationRow, MessageRow } from "@/supabase/client";
+import {
+  supabase,
+  type ConversationRow,
+  type MessageRow,
+} from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
   afterCursorFilter,
   collectChangesSince,
   RECOVERY_PAGE_SIZE,
+  RecoveryBudgetExceeded,
   shouldReloadInsteadOfCatchUp,
 } from "@/utils/recovery";
 
@@ -15,167 +19,186 @@ type InitDataResponse = {
 };
 
 export const useInitialDataFetch = () => {
-  const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
   const userId = useBoundStore((state) => state.ui.user?.id);
 
-  const lastVisibleAt = useRef<Date | null>(null);
-
-  const pushConversations = useBoundStore(
-    (state) => state.chat.pushConversations,
-  );
-  const pushMessages = useBoundStore((state) => state.chat.pushMessages);
-  const setOwnAgentId = useBoundStore((state) => state.chat.setOwnAgentId);
-  const pushMembershipExtras = useBoundStore(
-    (state) => state.chat.pushMembershipExtras,
-  );
-
-  // The caller's own agent id and per-conversation state
-  // (conversations_agents.extra: archived/pinned/draft).
-  const loadMemberships = async () => {
-    if (!activeOrgId || !userId) return;
-
-    // F20: these rows carry no organization_id for the store to check, so a
-    // response that arrives after the user switched organization (or signed
-    // out) is dropped here.
-    const stillActive = () => {
-      const { ui } = useBoundStore.getState();
-      return ui.activeOrgId === activeOrgId && ui.user?.id === userId;
+  useEffect(() => {
+    if (!orgId || !userId) return;
+    let controller = new AbortController();
+    let lastVisibleAt = new Date();
+    let initialized = false;
+    const active = (signal: AbortSignal) =>
+      !signal.aborted &&
+      useBoundStore.getState().ui.activeOrgId === orgId &&
+      useBoundStore.getState().ui.user?.id === userId;
+    const report = (error: unknown) => {
+      if (!controller.signal.aborted) console.error(error);
     };
-
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("id")
-      .eq("organization_id", activeOrgId)
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .maybeSingle()
-      .throwOnError();
-
-    if (!stillActive()) return;
-    setOwnAgentId(agent?.id || null);
-
-    if (!agent) return;
-
-    const { data: memberships } = await supabase
-      .from("conversations_agents")
-      .select("conversation_id, extra")
-      .eq("organization_id", activeOrgId)
-      .eq("agent_id", agent.id)
-      .throwOnError();
-
-    if (!stillActive()) return;
-    pushMembershipExtras(memberships);
-  };
-
-  const PHASE1_LIMIT = 200;
-
-  // App init: windowed fetch via RPC (timestamp-based), returns convs + msgs
-  const initData = async () => {
-    if (!activeOrgId) return;
-
-    // Phase 1: recent messages with chat context
-    const { data: phase1 } = await supabase
-      .rpc("init_data", {
-        p_organization_id: activeOrgId,
-        p_limit: PHASE1_LIMIT,
-        p_per_conversation: 10,
-      })
-      .throwOnError();
-
-    const p1 = phase1 as unknown as InitDataResponse;
-    pushConversations(p1.conversations);
-    pushMessages(p1.messages);
-
-    // Phase 2: older conversations with preview messages
-    // Skip if phase 1 returned fewer than the limit (all messages fit)
-    if (p1.messages.length >= PHASE1_LIMIT) {
-      const oldest = p1.messages[p1.messages.length - 1].timestamp;
-      const { data: phase2 } = await supabase
+    const initData = async (signal: AbortSignal, refreshWindow = false) => {
+      // One window avoids splitting tied timestamps between two preview calls.
+      const { data } = await supabase
         .rpc("init_data", {
-          p_organization_id: activeOrgId,
-          p_limit: 100,
-          p_per_conversation: 5,
-          p_until: oldest,
+          p_organization_id: orgId,
+          p_limit: 300,
+          p_per_conversation: 10,
         })
+        .abortSignal(signal)
         .throwOnError();
-
-      const p2 = phase2 as unknown as InitDataResponse;
-      pushConversations(p2.conversations);
-      pushMessages(p2.messages);
-    }
-  };
-
-  // Tab-visibility recovery (F13): every change since the tab was hidden,
-  // paged by (updated_at, id) — see utils/recovery.ts.
-  const loadConvs = async (since: Date) => {
-    if (!activeOrgId) return;
-    await collectChangesSince(
-      since.toISOString(),
-      async (cursor) =>
-        (
-          await supabase
-            .from("conversations")
-            .select()
-            .eq("organization_id", activeOrgId)
-            .or(afterCursorFilter(cursor))
-            .order("updated_at", { ascending: true })
-            .order("id", { ascending: true })
-            .limit(RECOVERY_PAGE_SIZE)
-            .throwOnError()
-        ).data,
-      pushConversations,
-    );
-  };
-
-  const loadMsgs = async (since: Date) => {
-    if (!activeOrgId) return;
-    await collectChangesSince(
-      since.toISOString(),
-      async (cursor) =>
-        (
-          await supabase
+      if (!active(signal)) return;
+      const window = data as unknown as InitDataResponse;
+      const { chat } = useBoundStore.getState();
+      chat.pushConversations(window.conversations);
+      chat.pushMessages(window.messages);
+      initialized = true;
+      // A reload must refresh the open history too, even outside the inbox window.
+      const convId = useBoundStore.getState().ui.activeConvId;
+      if (refreshWindow && convId) {
+        const { data: messages } = await supabase
+          .from("messages")
+          .select()
+          .eq("organization_id", orgId)
+          .eq("conversation_id", convId)
+          .lte("timestamp", new Date().toISOString())
+          .order("timestamp", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(50)
+          .abortSignal(signal)
+          .throwOnError();
+        if (active(signal))
+          useBoundStore.getState().chat.pushMessages(messages as MessageRow[]);
+        // Refresh the bounded loaded window too: a burst may exceed catch-up
+        // even while the reader is looking at much older messages.
+        const ids = [
+          ...(useBoundStore.getState().chat.messages.get(convId)?.keys() ?? []),
+        ].slice(0, 1000);
+        for (let offset = 0; offset < ids.length; offset += 100) {
+          signal.throwIfAborted();
+          const { data: windowRows } = await supabase
             .from("messages")
             .select()
-            .eq("organization_id", activeOrgId)
-            .or(afterCursorFilter(cursor))
-            .order("updated_at", { ascending: true })
-            .order("id", { ascending: true })
-            .limit(RECOVERY_PAGE_SIZE)
-            .throwOnError()
-        ).data,
-      pushMessages,
-    );
-  };
-
-  useEffect(() => {
-    initData().catch(console.error);
-    loadMemberships().catch(console.error);
-
-    lastVisibleAt.current = new Date();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrgId, userId]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        lastVisibleAt.current = new Date();
-      } else if (
-        document.visibilityState === "visible" &&
-        lastVisibleAt.current
-      ) {
-        if (shouldReloadInsteadOfCatchUp(lastVisibleAt.current)) {
-          // A long absence: the init_data window is what the screen shows.
-          initData().catch(console.error);
-        } else {
-          loadConvs(lastVisibleAt.current).catch(console.error);
-          loadMsgs(lastVisibleAt.current).catch(console.error);
+            .eq("organization_id", orgId)
+            .eq("conversation_id", convId)
+            .in("id", ids.slice(offset, offset + 100))
+            .limit(100)
+            .abortSignal(signal)
+            .throwOnError();
+          if (active(signal))
+            useBoundStore
+              .getState()
+              .chat.pushMessages(windowRows as MessageRow[]);
         }
       }
     };
-
+    const loadMemberships = async (signal: AbortSignal) => {
+      const { data: agent } = await supabase
+        .from("agents")
+        .select("id")
+        .eq("organization_id", orgId)
+        .eq("user_id", userId)
+        .is("deleted_at", null)
+        .abortSignal(signal)
+        .maybeSingle()
+        .throwOnError();
+      if (!active(signal)) return;
+      useBoundStore.getState().chat.setOwnAgentId(agent?.id || null);
+      if (!agent) return;
+      const { data } = await supabase
+        .from("conversations_agents")
+        .select("conversation_id, extra")
+        .eq("organization_id", orgId)
+        .eq("agent_id", agent.id)
+        .abortSignal(signal)
+        .throwOnError();
+      if (active(signal))
+        useBoundStore.getState().chat.pushMembershipExtras(data);
+    };
+    const catchUp = async (since: Date, signal: AbortSignal) => {
+      try {
+        await Promise.all([
+          collectChangesSince(
+            since.toISOString(),
+            async (cursor) =>
+              (
+                await supabase
+                  .from("conversations")
+                  .select()
+                  .eq("organization_id", orgId)
+                  .or(afterCursorFilter(cursor))
+                  .order("updated_at", { ascending: true })
+                  .order("id", { ascending: true })
+                  .limit(RECOVERY_PAGE_SIZE)
+                  .abortSignal(signal)
+                  .throwOnError()
+              ).data,
+            (rows) => {
+              if (active(signal))
+                useBoundStore.getState().chat.pushConversations(rows);
+            },
+            RECOVERY_PAGE_SIZE,
+            { signal },
+          ),
+          collectChangesSince(
+            since.toISOString(),
+            async (cursor) =>
+              (
+                await supabase
+                  .from("messages")
+                  .select()
+                  .eq("organization_id", orgId)
+                  .or(afterCursorFilter(cursor))
+                  .order("updated_at", { ascending: true })
+                  .order("id", { ascending: true })
+                  .limit(RECOVERY_PAGE_SIZE)
+                  .abortSignal(signal)
+                  .throwOnError()
+              ).data,
+            (rows) => {
+              if (active(signal))
+                useBoundStore.getState().chat.pushMessages(rows);
+            },
+            RECOVERY_PAGE_SIZE,
+            { signal },
+          ),
+        ]);
+      } catch (error) {
+        if (error instanceof RecoveryBudgetExceeded && active(signal)) {
+          controller.abort();
+          controller = new AbortController();
+          await initData(controller.signal, true);
+        } else throw error;
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        controller.abort();
+        lastVisibleAt = new Date();
+      } else if (document.visibilityState === "visible") {
+        controller.abort();
+        controller = new AbortController();
+        const signal = controller.signal;
+        const operation =
+          !initialized || shouldReloadInsteadOfCatchUp(lastVisibleAt)
+            ? initData(signal, initialized)
+            : catchUp(lastVisibleAt, signal);
+        void operation.catch((error) => {
+          if (!signal.aborted) report(error);
+        });
+        void loadMemberships(signal).catch((error) => {
+          if (!signal.aborted) report(error);
+        });
+      }
+    };
+    const signal = controller.signal;
+    void initData(signal).catch((error) => {
+      if (!signal.aborted) report(error);
+    });
+    void loadMemberships(signal).catch((error) => {
+      if (!signal.aborted) report(error);
+    });
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
+    return () => {
+      controller.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+  }, [orgId, userId]);
 };

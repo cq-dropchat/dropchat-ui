@@ -1,3 +1,7 @@
+import {
+  IG_INAPP_REDIRECT_PATH,
+  IG_OAUTH_AGENT_KEY,
+} from "@/utils/instagramOAuth";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
@@ -17,11 +21,9 @@ export const Route = createFileRoute("/_auth/integrations/instagram/new")({
 // redirect URI registered in the Meta app dashboard. It's a standalone route
 // (not under `_auth`) so the return page is a bare "connecting" screen rather
 // than the whole app shell.
-export const IG_INAPP_REDIRECT_PATH = "/oauth/instagram";
 
 // The scope is chosen here but spent on the way back, after a round trip
 // through Instagram — so it waits in localStorage beside the CSRF state.
-export const IG_OAUTH_AGENT_KEY = "ig_oauth_agent_id";
 
 function InstagramNew() {
   const { translate: t } = useTranslation();

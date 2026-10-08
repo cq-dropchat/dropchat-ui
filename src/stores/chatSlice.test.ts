@@ -11,6 +11,8 @@ function resetStore() {
     chat: {
       ...state.chat,
       conversations: new Map(),
+      previews: new Map(),
+      historyWindows: new Map(),
       messages: new Map(),
       convOrder: [],
       membershipExtras: new Map(),
@@ -504,4 +506,80 @@ describe("removeConversations", () => {
 
     expect(store().conversations.has(kept.id)).toBe(true);
   });
+});
+
+describe("bounded history and preview invalidation", () => {
+  it("retains only previews in closed chats and the open chat's loaded history", () => {
+    const convId = "open-history";
+    useBoundStore.setState((state) => ({
+      ui: { ...state.ui, activeOrgId: ORG_A, activeConvId: convId },
+    }));
+    const rows = Array.from({ length: 100 }, (_, i) =>
+      messageRow({
+        conversation_id: convId,
+        timestamp: new Date(
+          Date.parse("2026-09-01T10:00:00Z") + i * 1000,
+        ).toISOString(),
+      }),
+    );
+    useBoundStore.getState().chat.pushMessages(rows);
+    expect(useBoundStore.getState().chat.messages.get(convId)?.size).toBe(100);
+    useBoundStore.getState().chat.releaseHistory(convId);
+    expect(useBoundStore.getState().chat.messages.get(convId)?.size).toBe(10);
+    expect(
+      [...useBoundStore.getState().chat.messages.get(convId)!.keys()][0],
+    ).toBe(rows.at(-1)!.id);
+  });
+  it("historical status changes and replayed rows do not invalidate inbox previews", () => {
+    const newest = messageRow({
+      conversation_id: "preview",
+      timestamp: "2026-09-02T10:00:00Z",
+    });
+    const older = messageRow({
+      conversation_id: "preview",
+      timestamp: "2026-09-01T10:00:00Z",
+    });
+    useBoundStore.getState().chat.pushMessages([newest, older]);
+    const before = useBoundStore.getState().chat;
+    useBoundStore.getState().chat.pushMessages([
+      {
+        ...older,
+        updated_at: "2026-09-03T10:00:00Z",
+        status: { read: "2026-09-03T10:00:00Z" },
+      },
+    ]);
+    expect(useBoundStore.getState().chat.previewsVersion).toBe(
+      before.previewsVersion,
+    );
+    const changed = useBoundStore.getState().chat;
+    useBoundStore.getState().chat.pushMessages([{ ...newest }]);
+    expect(useBoundStore.getState().chat.messagesVersion).toBe(
+      changed.messagesVersion,
+    );
+  });
+});
+
+it("keeps the search index version stable for assignment/memory updates and advances it for a rename", () => {
+  resetStore();
+  const row = conversationRow({ id: "search-metadata", name: "Before" });
+  useBoundStore.getState().chat.pushConversations([row]);
+  const version = useBoundStore.getState().chat.conversationMetadataVersion;
+  useBoundStore.getState().chat.pushConversations([
+    {
+      ...row,
+      extra: { memory: { test: "1" } },
+      updated_at: "2026-09-02T10:00:00Z",
+    },
+  ]);
+  expect(useBoundStore.getState().chat.conversationMetadataVersion).toBe(
+    version,
+  );
+  useBoundStore
+    .getState()
+    .chat.pushConversations([
+      { ...row, name: "After", updated_at: "2026-09-03T10:00:00Z" },
+    ]);
+  expect(useBoundStore.getState().chat.conversationMetadataVersion).toBe(
+    version + 1,
+  );
 });
