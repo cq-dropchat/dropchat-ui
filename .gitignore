@@ -29,3 +29,6 @@ test-results/
 
 # Salida de graphify: artefacto regenerable, pesado y sin valor en el historial.
 graphify-out/
+
+# Operational evidence generated per execution.
+artifacts/
