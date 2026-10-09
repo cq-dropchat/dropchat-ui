@@ -6,6 +6,7 @@ import {
   type MessageRow,
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
+import { observeClient } from "@/utils/telemetry";
 import { queryKeys } from "@/queries/queryKeys";
 
 export const HISTORY_PAGE_SIZE = 50;
@@ -39,49 +40,61 @@ export function useConversationHistory() {
     gcTime: 60_000,
     initialPageParam: null as HistoryCursor | null,
     queryFn: async ({ pageParam, signal }): Promise<HistoryPage> => {
-      const request = supabase
-        .from("messages")
-        .select()
-        .eq("organization_id", orgId!)
-        .eq("conversation_id", convId!)
-        .lte("timestamp", new Date().toISOString())
-        .order("timestamp", { ascending: !!pageParam?.newer })
-        .order("id", { ascending: !!pageParam?.newer })
-        .limit(HISTORY_PAGE_SIZE)
-        .abortSignal(signal);
+      const started = performance.now();
+      try {
+        const request = supabase
+          .from("messages")
+          .select()
+          .eq("organization_id", orgId!)
+          .eq("conversation_id", convId!)
+          .lte("timestamp", new Date().toISOString())
+          .order("timestamp", { ascending: !!pageParam?.newer })
+          .order("id", { ascending: !!pageParam?.newer })
+          .limit(HISTORY_PAGE_SIZE)
+          .abortSignal(signal);
 
-      if (pageParam) {
-        // Keep full database precision and include the ID: WhatsApp often
-        // gives many messages the same whole-second timestamp.
-        const op = pageParam.newer ? "gt" : "lt";
-        request.or(
-          `timestamp.${op}."${pageParam.timestamp}",and(timestamp.eq."${pageParam.timestamp}",id.${op}.${pageParam.id})`,
-        );
+        if (pageParam) {
+          // Keep full database precision and include the ID: WhatsApp often
+          // gives many messages the same whole-second timestamp.
+          const op = pageParam.newer ? "gt" : "lt";
+          request.or(
+            `timestamp.${op}."${pageParam.timestamp}",and(timestamp.eq."${pageParam.timestamp}",id.${op}.${pageParam.id})`,
+          );
+        }
+
+        const [messages, conversation] = await Promise.all([
+          request.throwOnError(),
+          pageParam
+            ? Promise.resolve({ data: null })
+            : supabase
+                .from("conversations")
+                .select()
+                .eq("organization_id", orgId!)
+                .eq("id", convId!)
+                .abortSignal(signal)
+                .maybeSingle()
+                .throwOnError(),
+        ]);
+
+        observeClient("client.history", "success", performance.now() - started);
+        return {
+          messages: (pageParam?.newer
+            ? messages.data.reverse()
+            : messages.data) as MessageRow[],
+          conversation: conversation.data as ConversationRow | null,
+          atLatest:
+            !pageParam ||
+            (!!pageParam.newer && messages.data.length < HISTORY_PAGE_SIZE),
+        };
+      } catch (error) {
+        if (!signal.aborted)
+          observeClient(
+            "client.history",
+            "failure",
+            performance.now() - started,
+          );
+        throw error;
       }
-
-      const [messages, conversation] = await Promise.all([
-        request.throwOnError(),
-        pageParam
-          ? Promise.resolve({ data: null })
-          : supabase
-              .from("conversations")
-              .select()
-              .eq("organization_id", orgId!)
-              .eq("id", convId!)
-              .abortSignal(signal)
-              .maybeSingle()
-              .throwOnError(),
-      ]);
-
-      return {
-        messages: (pageParam?.newer
-          ? messages.data.reverse()
-          : messages.data) as MessageRow[],
-        conversation: conversation.data as ConversationRow | null,
-        atLatest:
-          !pageParam ||
-          (!!pageParam.newer && messages.data.length < HISTORY_PAGE_SIZE),
-      };
     },
     getPreviousPageParam: (page) => {
       if (page.atLatest || !page.messages.length) return undefined;

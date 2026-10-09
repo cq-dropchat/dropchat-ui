@@ -131,6 +131,9 @@ const ChatList = () => {
   return (
     <div
       ref={scrollRef}
+      data-testid="inbox-list"
+      data-inbox-count={conversations.size}
+      data-search-pattern={searchPattern}
       className="overflow-y-auto [scrollbar-gutter:stable] w-full h-full pt-[10px] px-[10px]"
     >
       {itemIds.length ? (

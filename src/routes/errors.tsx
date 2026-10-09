@@ -1,3 +1,4 @@
+import { downloadClientDiagnostics } from "@/utils/telemetry";
 // E1. The error panel.
 //
 // Deliberately not under /settings and not in the menu: settings belong to an
@@ -327,6 +328,12 @@ function ErrorPanel() {
         <div className="text-[22px]">{t("Errores")}</div>
       </div>
 
+      <button
+        className="mx-[20px] text-primary"
+        onClick={downloadClientDiagnostics}
+      >
+        {t("Exportar datos")}
+      </button>
       <BaselineBanner />
 
       <div className="px-[20px] flex gap-[8px] flex-wrap mb-[16px]">

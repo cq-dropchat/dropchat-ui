@@ -112,4 +112,35 @@ describe("scoped initial window", () => {
     act(() => document.dispatchEvent(new Event("visibilitychange")));
     await waitFor(() => expect(recoveryOrgs).toEqual([`eq.${ORG_B}`]));
   });
+  it("recovers a visible tab on online and deduplicates concurrent triggers", async () => {
+    let inits = 0;
+    let changes = 0;
+    server.use(
+      http.post(`${endpoint}/rpc/init_data`, () => {
+        inits++;
+        return HttpResponse.json({ conversations: [], messages: [] });
+      }),
+      http.get(`${endpoint}/conversations`, () => {
+        changes++;
+        return HttpResponse.json([conversationRow({ id: "recovered" })]);
+      }),
+      http.get(`${endpoint}/messages`, () => HttpResponse.json([])),
+    );
+    const { unmount } = renderHook(useInitialDataFetch);
+    await waitFor(() => expect(inits).toBe(1));
+    // Wait for memberships too; recovery is one coordinated operation.
+    await act(() => Promise.resolve());
+    act(() => {
+      window.dispatchEvent(new Event("online"));
+      window.dispatchEvent(new Event("online"));
+    });
+    await waitFor(() =>
+      expect(useBoundStore.getState().chat.conversations.has("recovered")).toBe(
+        true,
+      ),
+    );
+    expect(changes).toBe(1);
+    expect(inits).toBe(1);
+    unmount();
+  });
 });

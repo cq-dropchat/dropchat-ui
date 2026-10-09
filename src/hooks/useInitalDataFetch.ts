@@ -5,6 +5,9 @@ import {
 } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { useEffect } from "react";
+import { onRecoverySignal } from "@/utils/recoverySignals";
+import { observeClient } from "@/utils/telemetry";
+import { reportError } from "@/errors/report";
 import {
   afterCursorFilter,
   collectChangesSince,
@@ -25,15 +28,17 @@ export const useInitialDataFetch = () => {
   useEffect(() => {
     if (!orgId || !userId) return;
     let controller = new AbortController();
-    let lastVisibleAt = new Date();
+    let checkpoint = new Date();
+    let running = false;
+    let disposed = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let attempt = 0;
     let initialized = false;
     const active = (signal: AbortSignal) =>
       !signal.aborted &&
       useBoundStore.getState().ui.activeOrgId === orgId &&
       useBoundStore.getState().ui.user?.id === userId;
-    const report = (error: unknown) => {
-      if (!controller.signal.aborted) console.error(error);
-    };
+
     const initData = async (signal: AbortSignal, refreshWindow = false) => {
       // One window avoids splitting tied timestamps between two preview calls.
       const { data } = await supabase
@@ -113,92 +118,152 @@ export const useInitialDataFetch = () => {
         useBoundStore.getState().chat.pushMembershipExtras(data);
     };
     const catchUp = async (since: Date, signal: AbortSignal) => {
+      const catchController = new AbortController();
+      const catchSignal = AbortSignal.any([signal, catchController.signal]);
+      const tasks = [
+        collectChangesSince(
+          since.toISOString(),
+          async (cursor) =>
+            (
+              await supabase
+                .from("conversations")
+                .select()
+                .eq("organization_id", orgId)
+                .or(afterCursorFilter(cursor))
+                .order("updated_at", { ascending: true })
+                .order("id", { ascending: true })
+                .limit(RECOVERY_PAGE_SIZE)
+                .abortSignal(catchSignal)
+                .throwOnError()
+            ).data,
+          (rows) => {
+            if (active(catchSignal))
+              useBoundStore.getState().chat.pushConversations(rows);
+          },
+          RECOVERY_PAGE_SIZE,
+          { signal: catchSignal },
+        ),
+        collectChangesSince(
+          since.toISOString(),
+          async (cursor) =>
+            (
+              await supabase
+                .from("messages")
+                .select()
+                .eq("organization_id", orgId)
+                .or(afterCursorFilter(cursor))
+                .order("updated_at", { ascending: true })
+                .order("id", { ascending: true })
+                .limit(RECOVERY_PAGE_SIZE)
+                .abortSignal(catchSignal)
+                .throwOnError()
+            ).data,
+          (rows) => {
+            if (active(catchSignal))
+              useBoundStore.getState().chat.pushMessages(rows);
+          },
+          RECOVERY_PAGE_SIZE,
+          { signal: catchSignal },
+        ),
+      ];
       try {
-        await Promise.all([
-          collectChangesSince(
-            since.toISOString(),
-            async (cursor) =>
-              (
-                await supabase
-                  .from("conversations")
-                  .select()
-                  .eq("organization_id", orgId)
-                  .or(afterCursorFilter(cursor))
-                  .order("updated_at", { ascending: true })
-                  .order("id", { ascending: true })
-                  .limit(RECOVERY_PAGE_SIZE)
-                  .abortSignal(signal)
-                  .throwOnError()
-              ).data,
-            (rows) => {
-              if (active(signal))
-                useBoundStore.getState().chat.pushConversations(rows);
-            },
-            RECOVERY_PAGE_SIZE,
-            { signal },
-          ),
-          collectChangesSince(
-            since.toISOString(),
-            async (cursor) =>
-              (
-                await supabase
-                  .from("messages")
-                  .select()
-                  .eq("organization_id", orgId)
-                  .or(afterCursorFilter(cursor))
-                  .order("updated_at", { ascending: true })
-                  .order("id", { ascending: true })
-                  .limit(RECOVERY_PAGE_SIZE)
-                  .abortSignal(signal)
-                  .throwOnError()
-              ).data,
-            (rows) => {
-              if (active(signal))
-                useBoundStore.getState().chat.pushMessages(rows);
-            },
-            RECOVERY_PAGE_SIZE,
-            { signal },
-          ),
-        ]);
+        await Promise.all(tasks);
       } catch (error) {
+        catchController.abort();
+        await Promise.allSettled(tasks);
         if (error instanceof RecoveryBudgetExceeded && active(signal)) {
-          controller.abort();
-          controller = new AbortController();
-          await initData(controller.signal, true);
+          await initData(signal, true);
         } else throw error;
       }
     };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        controller.abort();
-        lastVisibleAt = new Date();
-      } else if (document.visibilityState === "visible") {
-        controller.abort();
-        controller = new AbortController();
-        const signal = controller.signal;
-        const operation =
-          !initialized || shouldReloadInsteadOfCatchUp(lastVisibleAt)
+    const cancel = () => {
+      controller.abort();
+      clearTimeout(retryTimer);
+      retryTimer = undefined;
+      running = false;
+    };
+    const recover = async (initial = false) => {
+      if (disposed || running || document.visibilityState === "hidden") return;
+      clearTimeout(retryTimer);
+      controller = new AbortController();
+      const signal = controller.signal;
+      const since = checkpoint;
+      const startedAt = new Date();
+      const started = performance.now();
+      running = true;
+      const diagnostic = (outcome: string) => {
+        observeClient(
+          initial ? "client.initial" : "client.recovery",
+          outcome === "failed" ? "failure" : "success",
+          performance.now() - started,
+        );
+        return window.dispatchEvent(
+          new CustomEvent("dropchat:recovery", {
+            detail: {
+              outcome,
+              duration_ms: performance.now() - started,
+              attempt,
+              release: import.meta.env.VITE_RELEASE,
+            },
+          }),
+        );
+      };
+      try {
+        await Promise.all([
+          !initialized || shouldReloadInsteadOfCatchUp(since)
             ? initData(signal, initialized)
-            : catchUp(lastVisibleAt, signal);
-        void operation.catch((error) => {
-          if (!signal.aborted) report(error);
+            : catchUp(since, signal),
+          loadMemberships(signal),
+        ]);
+        if (!active(signal)) return;
+        // Advance only after BOTH tables and memberships converge. The lower
+        // bound is the start of the pass, so changes during the pass are replayed.
+        checkpoint = startedAt;
+        attempt = 0;
+        diagnostic(initial ? "initialized" : "recovered");
+      } catch (error) {
+        if (!active(signal)) return;
+        diagnostic("failed");
+        reportError(error, {
+          event: "client.recovery",
+          outcome: "failure",
+          attempt,
         });
-        void loadMemberships(signal).catch((error) => {
-          if (!signal.aborted) report(error);
-        });
+        retryTimer = setTimeout(
+          () => {
+            void recover();
+          },
+          Math.min(30_000, 1000 * 2 ** Math.min(attempt++, 5)),
+        );
+      } finally {
+        if (controller.signal === signal) running = false;
       }
     };
-    const signal = controller.signal;
-    void initData(signal).catch((error) => {
-      if (!signal.aborted) report(error);
+    const offline = () => {
+      cancel();
+    };
+    const online = () => {
+      void recover();
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") offline();
+      else online();
+    };
+    const unsubscribe = onRecoverySignal((event) => {
+      if (event.organizationId !== orgId || event.userId !== userId) return;
+      if (event.state === "reconnected") online();
     });
-    void loadMemberships(signal).catch((error) => {
-      if (!signal.aborted) report(error);
-    });
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    void recover(true);
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
+    document.addEventListener("visibilitychange", visibility);
     return () => {
-      controller.abort();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      disposed = true;
+      cancel();
+      unsubscribe();
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", offline);
+      document.removeEventListener("visibilitychange", visibility);
     };
   }, [orgId, userId]);
 };

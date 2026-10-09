@@ -92,7 +92,12 @@ beforeEach(() => {
   messageRequests = [];
   channelSpy = fakeChannels();
   useBoundStore.setState((state) => ({
-    ui: { ...state.ui, activeOrgId: ORG_A, activeConvId: CONV_1 },
+    ui: {
+      ...state.ui,
+      activeOrgId: ORG_A,
+      activeConvId: CONV_1,
+      user: { id: "user" } as typeof state.ui.user,
+    },
     chat: {
       ...state.chat,
       ownAgentId: "aaaaaaaa-0000-4000-8000-00000000a0a1",

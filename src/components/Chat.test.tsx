@@ -151,6 +151,7 @@ describe("loading earlier conversation messages", () => {
     history.hasOlder = true;
     const { container } = render(<Chat />);
     const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    fireEvent.wheel(scroller, { deltaY: -10 });
     fireEvent.scroll(scroller, { target: { scrollTop: 20 } });
     fireEvent.scroll(scroller, { target: { scrollTop: 10 } });
     // Repeated scroll events before React updates must not cancel and

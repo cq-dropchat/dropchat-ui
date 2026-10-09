@@ -1,4 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+
+const localUrl = process.env.VITE_SUPABASE_URL || "http://127.0.0.1:54321";
+if (!/^http:\/\/(127\.0\.0\.1|localhost):54321$/.test(localUrl))
+  throw new Error("E2E only runs against the disposable local stack");
+process.env.VITE_SUPABASE_URL = localUrl;
+if (!process.env.VITE_SUPABASE_ANON_KEY) {
+  const status = JSON.parse(
+    execFileSync("supabase", ["status", "-o", "json"], {
+      cwd: path.resolve(process.env.API_REPO_DIR || "../api"),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }),
+  );
+  process.env.VITE_SUPABASE_ANON_KEY = status.ANON_KEY;
+}
 
 // One end-to-end flow against a LOCAL Supabase (`supabase start` in the API
 // repo, which applies seed.sql: goat@craft.com / goat) and `vite preview`.
@@ -13,8 +30,17 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
   fullyParallel: false,
-  retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
+  // The seeded actors and org attention policy are shared. Repeats must not
+  // revoke another browser's session or overwrite its fixture policy.
+  workers: 1,
+  retries: 0,
+  reporter: process.env.CI
+    ? [
+        ["list"],
+        ["html", { open: "never" }],
+        ["json", { outputFile: "test-results/results.json" }],
+      ]
+    : "list",
   use: {
     baseURL: "http://127.0.0.1:4173",
     // The UI has no language setting on the login screen: it reads

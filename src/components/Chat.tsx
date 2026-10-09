@@ -315,6 +315,18 @@ export default function Chat() {
     heightBefore.current = scroller.current?.scrollHeight ?? 0;
   }, [activeConvId]);
 
+  // The preview can already have the newest ID before the first full history
+  // arrives. Its first hydration still opens at the present, even when that
+  // ID does not change and media rows have different measured heights.
+  const firstHistoryFor = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (history.pageCount > 0 && firstHistoryFor.current !== activeConvId) {
+      firstHistoryFor.current = activeConvId;
+      scrollToBottom.current();
+      heightBefore.current = scroller.current?.scrollHeight ?? 0;
+    }
+  }, [activeConvId, history.pageCount]);
+
   // Scrolling behavior (see above): if at the bottom, it sticks; a new
   // outgoing message of mine goes to the bottom; a new incoming one leaves
   // the reader where they are.
@@ -344,8 +356,16 @@ export default function Chat() {
     withinRow: number;
     height: number;
     top: number;
+    frames: number;
   } | null>(null);
   const historyRequest = useRef<object | null>(null);
+  // Scroll anchoring and virtualizer measurements also dispatch scroll events.
+  // Only a reader's gesture can request another page; evicting a page from the
+  // bounded window must never immediately fetch it back in the opposite direction.
+  const scrollIntent = useRef<{
+    direction: "older" | "newer" | "either";
+    at: number;
+  } | null>(null);
 
   const loadPage = (newer = false, retry = false) => {
     const el = scroller.current;
@@ -357,6 +377,7 @@ export default function Chat() {
     )
       return;
     const request = {};
+    scrollIntent.current = null;
     historyRequest.current = request;
     const visible = virtualizer
       .getVirtualItems()
@@ -368,6 +389,7 @@ export default function Chat() {
       withinRow: visible ? el.scrollTop - visible.start : 0,
       height: el.scrollHeight,
       top: el.scrollTop,
+      frames: 0,
     };
     const loader = retry
       ? history.retry
@@ -399,19 +421,39 @@ export default function Chat() {
       return;
     }
     if (history.pageCount <= anchor.pageCount) return;
-    const index = rows.findIndex(
-      (row) => ("message" in row ? row.message.id : row.key) === anchor.rowKey,
-    );
-    const offset =
-      index >= 0
-        ? virtualizer.getOffsetForIndex(index, "start")?.[0]
-        : undefined;
-    el.scrollTop =
-      offset === undefined
-        ? anchor.top + el.scrollHeight - anchor.height
-        : offset + anchor.withinRow;
-    heightBefore.current = el.scrollHeight;
-    prependAnchor.current = null;
+    const restore = () => {
+      const index = rows.findIndex(
+        (row) =>
+          ("message" in row ? row.message.id : row.key) === anchor.rowKey,
+      );
+      const offset =
+        index >= 0
+          ? virtualizer.getOffsetForIndex(index, "start")?.[0]
+          : undefined;
+      el.scrollTop =
+        offset === undefined
+          ? anchor.top + el.scrollHeight - anchor.height
+          : offset + anchor.withinRow;
+      heightBefore.current = el.scrollHeight;
+    };
+    restore();
+    // Newly mounted virtual rows replace estimates after the first restoration.
+    // Hold the reader's keyed anchor through those measurements; a retry must
+    // behave like a successful page load, including the first older page.
+    let frame = 0;
+    let stable = 0;
+    let previous = el.scrollTop;
+    const settle = () => {
+      if (prependAnchor.current !== anchor) return;
+      restore();
+      stable = Math.abs(previous - el.scrollTop) < 1 ? stable + 1 : 0;
+      previous = el.scrollTop;
+      anchor.frames++;
+      if (stable >= 2 || anchor.frames >= 8) prependAnchor.current = null;
+      else frame = requestAnimationFrame(settle);
+    };
+    frame = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(frame);
   }, [activeConvId, rows, history.pageCount, totalSize, virtualizer]);
 
   useLayoutEffect(() => {
@@ -480,16 +522,55 @@ export default function Chat() {
           </div>
         )}
         <div
+          data-testid="chat-history"
+          data-history-count={messages.length}
           ref={scroller}
           className="grow min-h-0 overflow-y-auto [scrollbar-gutter:stable]"
+          onWheel={(event) => {
+            scrollIntent.current = {
+              direction: event.deltaY < 0 ? "older" : "newer",
+              at: performance.now(),
+            };
+          }}
+          onTouchMove={() => {
+            scrollIntent.current = {
+              direction: "either",
+              at: performance.now(),
+            };
+          }}
+          onPointerDown={() => {
+            scrollIntent.current = {
+              direction: "either",
+              at: performance.now(),
+            };
+          }}
+          onKeyDown={(event) => {
+            if (["ArrowUp", "PageUp", "Home"].includes(event.key))
+              scrollIntent.current = {
+                direction: "older",
+                at: performance.now(),
+              };
+            if (["ArrowDown", "PageDown", "End"].includes(event.key))
+              scrollIntent.current = {
+                direction: "newer",
+                at: performance.now(),
+              };
+          }}
           onScroll={(event) => {
-            if (event.currentTarget.scrollTop < 120 && !history.error)
+            const intent = scrollIntent.current;
+            if (!intent || performance.now() - intent.at > 500) return;
+            if (
+              event.currentTarget.scrollTop < 120 &&
+              !history.error &&
+              intent.direction !== "newer"
+            )
               loadPage();
             else if (
               event.currentTarget.scrollHeight -
                 event.currentTarget.scrollTop -
                 event.currentTarget.clientHeight <
                 120 &&
+              intent.direction !== "older" &&
               !history.error
             )
               loadPage(true);
@@ -504,6 +585,9 @@ export default function Chat() {
               return (
                 <div
                   key={item.key}
+                  data-message-id={
+                    "message" in row ? row.message.id : undefined
+                  }
                   data-index={item.index}
                   ref={virtualizer.measureElement}
                   // flex: a flex container holds its children's margins, so the
