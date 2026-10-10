@@ -125,6 +125,7 @@ jobs:
       - run: cd open-bsp-ui && npm ci && npx playwright install --with-deps chromium
       - run: cd open-bsp-ui && npm run e2e
         env:
+          API_REPO_DIR: ../open-bsp-api
           VITE_SUPABASE_URL: http://127.0.0.1:54321
       - name: Record tested immutable pair
         run: |
